@@ -1,0 +1,148 @@
+---
+title: 環境変数
+description: 環境変数で OpencodeSilver と OpenCode 連携を設定します。
+---
+
+# 環境変数
+
+OpencodeSilver は起動時にこれらの環境変数を読み取ります。スタートアップサービスでは、`opencodesilver startup enable` がデフォルトで現在の環境をスナップショットするため、サービスに使わせたい変数を変更した後は再実行してください。
+
+## OpencodeSilver サーバー
+
+### `OPENCODESILVER_HOST`
+
+OpencodeSilver Web サーバーのバインドアドレスです。他のマシンからアクセスできるようにするには `0.0.0.0` を使います。
+
+### `OPENCODESILVER_UI_PASSWORD`
+
+ブラウザ UI のパスワードです。localhost 以外にバインドする場合、トンネルを使う場合、またはリバースプロキシの背後で実行する場合に使います。
+
+### `OPENCODESILVER_API_ONLY`
+
+`true` または `1` に設定すると、OpencodeSilver をヘッドレスモードで起動します。デスクトップおよびモバイルクライアント向けの API ルートは利用できますが、ブラウザ UI は配信されません。
+
+### `OPENCODESILVER_FRAME_ANCESTORS`
+
+自分のページのフレーム内に OpencodeSilver を表示できるオリジンをスペース区切りで指定します（例: `https://dash.example.com`）。`*` はすべてのサイトを許可します。既定では OpencodeSilver 自身とそのデスクトップ・モバイルアプリだけが埋め込めるため、他のサイトがボタンの上に重ねることはできません。
+
+### `OPENCODESILVER_DATA_DIR`
+
+OpencodeSilver のデータディレクトリを上書きします。デフォルトは `~/.config/opencodesilver` です。
+
+OpencodeSilver が保存するものはすべてこのディレクトリ配下にあります: 設定、認証、プロジェクト設定、テーマ、プラン、音声モデル。バージョン 1.23 より前にカスタムディレクトリを使っていたインスタンスでは、初回起動時に `projects`、`themes`、`speech-models` フォルダーが `~/.config/opencodesilver` からここへコピーされます。元のフォルダーはそのまま残り、マージはされません。
+
+### `OPENCODESILVER_CHATS_DIR`
+
+プロジェクトを持たないチャット用に OpencodeSilver が作成する管理チャットディレクトリの場所を変更します。デフォルトは `~/.config/opencodesilver/chats` です。OpencodeSilver と OpenCode を別のユーザーで実行している場合は、OpenCode サーバーが読み取れるディレクトリを指定してください。既存のチャットは移動されません。
+
+### `OPENCODESILVER_COMPRESS_API`
+
+API レスポンス圧縮を制御します。`true` または `1` で強制的に有効化し、`false` または `0` で強制的に無効化します。
+
+### `OPENCODESILVER_SKIP_API_COMPRESSION`
+
+`true` または `1` に設定すると API レスポンス圧縮を無効化します。これは `OPENCODESILVER_COMPRESS_API` より優先されます。
+
+### `OPENCODESILVER_VERBOSE_REQUEST_LOGS`
+
+`true` または `1` に設定すると詳細な HTTP リクエストログを有効にします。
+
+### `OPENCODESILVER_UPDATE_API_URL`
+
+更新確認 API エンドポイントを上書きします。ほとんどのユーザーは未設定のままでかまいません。
+
+### `OPENCODESILVER_PACKAGE_MANAGER`
+
+自動検出が間違っている場合に、更新操作で使うパッケージマネージャーを強制します。
+
+## OpenCode サーバー
+
+### `OPENCODE_HOST`
+
+OpencodeSilver を既存の OpenCode サーバーに接続します。値は明示的なポートを含み、パス、クエリ、ハッシュを含まない `http` または `https` の origin である必要があります。`OPENCODE_HOST` は `OPENCODE_PORT` より優先されます。
+
+### `OPENCODE_PORT`
+
+OpenCode サーバーのポートを設定します。管理対象 OpenCode では管理対象ポートの要求になり、`OPENCODE_SKIP_START=true` ではそのポートの外部サーバーに接続します。
+
+### `OPENCODE_SKIP_START`
+
+`true` に設定すると、OpencodeSilver が独自の OpenCode サーバーを起動しません。
+
+### `OPENCODESILVER_OPENCODE_HOSTNAME`
+
+OpencodeSilver が管理する OpenCode サーバーのバインドホスト名です。デフォルトは `127.0.0.1` です。
+
+### `OPENCODE_BINARY`
+
+OpencodeSilver が実行する `opencode` 実行ファイルへのパスです。
+
+### `OPENCODE_CONFIG`
+
+特定の OpenCode 設定ファイルへのパスです。
+
+### `OPENCODE_CONFIG_DIR`
+
+エージェント、スキル、スニペット、設定検出に使う特定の OpenCode 設定ディレクトリへのパスです。
+
+### `OPENCODE_DATA_DIR`
+
+管理対象 OpenCode サーバーのカスタムデータディレクトリです。
+
+### `OPENCODE_WSL_DISTRO`
+
+Windows 上の OpenCode 連携に使う WSL ディストリビューションを選びます。
+
+### `OPENCODESILVER_OPENCODE_WSL_DISTRO`
+
+WSL ディストリビューション選択用の OpencodeSilver 固有エイリアスです。両方が設定されている場合は `OPENCODE_WSL_DISTRO` が優先されます。
+
+### `OPENCODE_JWT_SECRET`
+
+UI 認証トークンの署名に使うシークレットです。永続的なサービス配置では長いランダム値を使ってください。
+
+## ターミナルと Git
+
+### `OPENCODESILVER_TERMINAL_SHELL`
+
+OpencodeSilver のターミナルセッションで使うシェル実行ファイルです。
+
+### `OPENCODESILVER_GIT_BINARY`
+
+OpencodeSilver の Git 機能で使う Git 実行ファイルです。
+
+### `GIT_BINARY`
+
+代替の Git 実行ファイル上書きです。OpencodeSilver 固有の設定には `OPENCODESILVER_GIT_BINARY` を推奨します。
+
+### `OPENCODESILVER_GIT_READ_CACHE_TTL_MS`
+
+Git に基づくファイル読み取りキャッシュの有効期間（ミリ秒）です。デバッグ中にこのキャッシュを無効化するには `0` を設定します。
+
+## 音声とトンネル
+
+### `OPENAI_API_KEY`
+
+OpencodeSilver の音声機能が OpenAI 本体を呼び出すときに使う API キーです。カスタムの OpenAI 互換サーバーには送信されません。そのサーバーには設定で専用のキーを指定してください。
+
+### `OPENCODESILVER_ALLOW_REMOTE_OPENAI_COMPAT_URLS`
+
+`true` または `1` に設定すると、音声機能でリモートの OpenAI 互換 base URL を許可します。
+
+### `NGROK_AUTHTOKEN`
+
+OpencodeSilver のトンネルコマンドで使う ngrok 認証トークンです。`ngrok config add-authtoken <token>` で ngrok 側に設定することもできます。
+
+## ランタイムヘルパー
+
+### `BUN_BINARY`
+
+デーモンプロセスを起動するときに OpencodeSilver が使う Bun 実行ファイルです。
+
+### `BUN_INSTALL`
+
+Bun のインストールルートです。OpencodeSilver はデーモン起動と更新のために `bin/bun` を探す際に使います。
+
+### `VITE_OPENCODE_URL`
+
+Vite でビルドされた Web アプリ向けのビルド時 API base URL です。通常の CLI またはデスクトップ利用では、ほとんどのユーザーは設定する必要がありません。

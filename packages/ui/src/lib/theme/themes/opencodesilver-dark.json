@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "id": "opencodesilver-dark",
+    "name": "OpencodeSilver",
+    "variant": "dark",
+    "description": "The OpencodeSilver signature - Vitesse syntax over OpenCode-deep neutrals with Flexoki accents, harmonized in OKLCH (dark variant)",
+    "version": "1.0.0",
+    "author": "OpencodeSilver",
+    "tags": [
+      "dark",
+      "brand",
+      "hybrid",
+      "warm",
+      "ink"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#ececec",
+      "hover": "#ffffff",
+      "active": "#d4d4d4",
+      "foreground": "#171717",
+      "muted": "#ececec40"
+    },
+    "surface": {
+      "background": "#171717",
+      "foreground": "#ececec",
+      "muted": "#171717",
+      "mutedForeground": "#8e8e8e",
+      "elevated": "#232323",
+      "elevatedForeground": "#ececec",
+      "overlay": "#171717cc",
+      "subtle": "#1d1d1d"
+    },
+    "interactive": {
+      "border": "#282828",
+      "selection": "#262626",
+      "selectionForeground": "#ececec",
+      "borderHover": "#3a3a3a",
+      "borderFocus": "#484848",
+      "focus": "#ececec",
+      "focusRing": "#ececec40",
+      "cursor": "#ececec",
+      "hover": "#ffffff0f",
+      "active": "#ffffff1a"
+    },
+    "status": {
+      "error": "#f85149",
+      "warning": "#d29922",
+      "success": "#3fb950",
+      "info": "#58a6ff"
+    },
+    "syntax": {
+      "base": {
+        "background": "#141414",
+        "foreground": "#ececec",
+        "comment": "#7d8590",
+        "keyword": "#ff7b72",
+        "string": "#a5d6ff",
+        "number": "#79c0ff",
+        "function": "#d2a8ff",
+        "variable": "#ffa657",
+        "type": "#79c0ff",
+        "operator": "#ff7b72"
+      },
+      "tokens": {
+        "commentDoc": "#8b949e",
+        "stringEscape": "#a5d6ff",
+        "variableProperty": "#79c0ff",
+        "variableLocal": "#ececec",
+        "className": "#ffa657",
+        "punctuation": "#8b949e"
+      },
+      "highlights": {
+        "diffAdded": "#3fb950",
+        "diffRemoved": "#f85149",
+        "diffModified": "#58a6ff",
+        "lineNumber": "#484f58"
+      }
+    },
+    "pr": {
+      "open": "#3fb950",
+      "blocked": "#d29922",
+      "merged": "#a371f7"
+    },
+    "chat": {
+      "userMessageBackground": "#232323",
+      "divider": "#282828"
+    },
+    "markdown": {
+      "link": "#58a6ff",
+      "linkHover": "#79c0ff",
+      "inlineCode": "#ececec",
+      "inlineCodeBackground": "#232323",
+      "blockquote": "#8e8e8e",
+      "blockquoteBorder": "#2e2e2e",
+      "listMarker": "#8e8e8e"
+    },
+    "tools": {
+      "border": "#282828",
+      "icon": "#9e9e9e",
+      "title": "#ececec",
+      "description": "#8e8e8e",
+      "edit": {
+        "addedBackground": "#3fb95022",
+        "removedBackground": "#f8514922",
+        "lineNumber": "#484f58"
+      }
+    }
+  },
+  "config": {
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

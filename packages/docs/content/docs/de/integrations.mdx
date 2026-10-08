@@ -1,0 +1,87 @@
+---
+title: Integrationen
+description: Verbinde die Dienste und Abonnements, mit denen OpencodeSilver arbeitet.
+---
+
+# Integrationen
+
+Unter **Einstellungen → Integrationen** meldest du dich bei den Diensten an, mit denen OpencodeSilver arbeitet. Die Anmeldung wird auf dem OpencodeSilver-Server gespeichert, sodass Web, Desktop und ein gekoppeltes Telefon sie teilen.
+
+## GitHub
+
+Klappe die Karte **GitHub** auf und wähle **Connect GitHub**, um dich mit einem kurzen Gerätecode anzumelden. Danach kann OpencodeSilver Sessions aus Issues und Pull Requests starten, sie an Nachrichten hängen und PRs öffnen oder aktualisieren. Alles, was GitHub kann, steht unter [GitHub Issues & PRs](/de/github/).
+
+## Linear
+
+### Workspace verbinden
+
+1. Klappe die Karte **Linear** auf und wähle **Connect**.
+2. Bestätige den Zugriff im Browser-Tab, der sich öffnet. Bis dahin zeigt die Karte **Waiting for Linear**.
+
+Eine weitere Linear-Organisation verbindest du mit **Add workspace**. Es ist immer genau ein Workspace aktuell: Wechsle mit **Switch to**, und **Disconnect** entfernt nur den aktuellen. Deine Projektzuordnung bleibt erhalten.
+
+### Issues durchsuchen
+
+Sobald ein Workspace verbunden ist, erscheint das Panel **Linear** in der rechten Kontextleiste. Es listet die Issues des aktuellen Workspace und erlaubt dir:
+
+- nach Status (**Backlog**, **To Do**, **In Progress**, **In Review**, **Done**, **Canceled**, **Duplicate**), Zuständigem (**Anyone** oder **Assigned to me**), Team und Priorität zu filtern
+- nach Titel, Kennung oder Linear-URL zu suchen
+- ein Issue zu öffnen und Beschreibung, Kommentare, Labels und Priorität zu lesen
+- seinen **Status** zu ändern oder **Close issue** zu wählen
+- den aktuellen **Workspace** zu wechseln
+
+### Session aus einem Issue starten
+
+- Öffne im Linear-Panel ein Issue und wähle **Start session**. Der Button bleibt in der Fußzeile, während das Issue scrollt.
+- Wähle im Chat **New Session From Linear Issue**, um eines aus der Liste zu wählen, mit **Create in worktree**, wenn du einen frischen Branch möchtest.
+- Wähle im Dialog **New Worktree** ein Linear-Issue. Die neue Session öffnet sich mit dem Issue im Nachrichtenfeld angehängt, und die erste Nachricht schreibst du selbst.
+
+Aus dem Linear-Panel und dem Chat öffnet sich die Session im Projekt, das dem Team des Issues zugeordnet ist, mit dem Issue als erstem Prompt. Teams ordnest du in der Linear-Karte zu: **Default project** gilt für alle Teams, **Team projects** überschreibt es pro Team. Bei einem nicht zugeordneten Team wirst du zuerst um die Zuordnung gebeten. Die erste Nachricht entsteht aus dem Magic Prompt **Issue Review**, den du unter **Einstellungen → Magic Prompts → Linear** bearbeiten kannst.
+
+### Issue an eine Nachricht hängen
+
+Öffne im Chat-Composer das Menü **+** und wähle **Linear**. Das Issue geht als Kontext mit deiner nächsten Nachricht mit, und das Arbeitsstatus-Panel der Session behält einen Link darauf.
+
+### Session-Kommentare
+
+Schalte **Session comments** in der Linear-Karte ein, und eine Session, die aus einem Issue gestartet wurde oder deren erste Nachricht das Issue angehängt hat, schreibt beim Start, beim Abschluss oder bei einem Fehler einen Kommentar auf das Issue, jeweils mit einem Link, der die Session öffnet. Kommentare werden nur gepostet, wenn dieser OpencodeSilver-Server eine öffentliche Adresse hat, damit der Link für alle am Issue funktioniert; bei einer lokalen oder privaten Adresse wird nichts gepostet.
+
+## Integration installieren
+
+1. Öffne **Settings → Integrations**.
+2. Suche die Integration und wähle **Install**.
+3. Starte OpenCode neu, wenn darum gebeten wird — der Provider erscheint nach dem Neustart.
+4. Wähle **Set up** und melde dich an. Die Modelle erscheinen danach in der Modellauswahl im Chat.
+
+Integrationen werden für deinen Benutzer installiert und funktionieren damit in jedem Projekt. Aktualisieren oder entfernen kannst du sie jederzeit über dieselbe Karte.
+
+## Claude Code
+
+Claude Code nutzt deinen Claude Pro- oder Max-Plan über die Claude Code CLI auf deinem Rechner — ohne API-Keys.
+
+1. Installiere die Integration (siehe oben).
+2. Wähle **Set up** und melde dich an. Wenn du die Claude Code CLI noch nicht hast, bietet die Einrichtung an, sie zuerst zu installieren, und meldet dich danach an.
+
+**Wie dein Claude-Konto geschützt bleibt:** Diese Integration nutzt das offizielle Claude Agent SDK von Anthropic und deine installierte Claude Code CLI. Sie kapert kein OAuth, extrahiert oder wiederholt keine Browser-Tokens, gibt sich nicht als nicht unterstützter Client aus und umgeht nicht Anthropics Authentifizierung. Sie bleibt auf dem von Anthropic unterstützten Zugriffsweg und trägt daher nicht das mit Token-Hijacking oder unautorisierten Authentifizierungsumgehungen verbundene Sperrrisiko.
+
+## Aktualisieren oder entfernen
+
+- **Update** installiert die neueste veröffentlichte Version des Plugins.
+- **Remove** löscht das Plugin aus deiner OpenCode-Konfiguration. Der Provider wird beim nächsten Neuladen von OpenCode nicht mehr geladen.
+
+Wenn eine Karte meldet, dass Einträge manuell verwaltet werden müssen, wähle **Manage plugins** und bereinige die Duplikate dort.
+
+## Excalidraw
+
+Mit Excalidraw zeichnest du in `.excalidraw`-Dateien und Obsidian-Zeichnungen im Format `.excalidraw.md` direkt in Files. Es ist eine OpencodeSilver-Erweiterung und steht auf derselben Seite unter **OpencodeSilver extensions**.
+
+1. Öffne **Settings → Integrations** und wähle **Install** auf der Excalidraw-Karte. Du kannst auch eine Zeichnung in Files öffnen und im Hinweis darüber **Install** wählen.
+2. Öffne die Zeichnung erneut. Die Zeichenfläche ersetzt den Text der Datei, und Cmd/Ctrl+S, automatisches Speichern, der Umschalter zur Quellansicht und der Vollbildmodus funktionieren wie bei jeder anderen Datei.
+
+Über die Karte aktualisierst du die Erweiterung, sobald eine neue Version erscheint, schaltest sie wieder ein, wenn du sie pausiert hast, und entfernst sie. Deine Zeichnungen bleiben beim Entfernen unverändert; sie öffnen sich dann einfach als Text. Nur Web und Desktop.
+
+## Verwandtes
+
+- [GitHub Issues & PRs](/de/github/) — alles, was GitHub in OpencodeSilver kann
+- [Worktree-Sessions](/de/worktrees/) — wo Issue-Sessions starten können
+- [Magic Prompts](/de/magic-prompts/) — den Prompt bearbeiten, mit dem eine Linear-Session beginnt

@@ -1,0 +1,40 @@
+---
+title: Narzędzie sterowania dla agentów
+description: Pozwól agentowi zarządzać sesjami, worktree i zaplanowanymi zadaniami OpencodeSilver z czatu.
+---
+
+# Narzędzie sterowania dla agentów
+
+Użyj narzędzia agenta `opencodesilver`, aby zarządzać pracą w aplikacji bezpośrednio z czatu. Jest ono domyślnie włączone, gdy OpencodeSilver uruchamia własny lokalny serwer OpenCode; nie trzeba instalować osobnego narzędzia ani uruchamiać polecenia powłoki.
+
+## O co możesz poprosić
+
+Poproś agenta zwykłym językiem. Na przykład:
+
+- „Utwórz nową sesję OpencodeSilver w tym projekcie, użyj modelu `openai/gpt-5.6-sol` i wyślij jej prompt: sprawdź proces uwierzytelniania”.
+- „Utwórz dla tego zadania nową sesję OpencodeSilver w osobnym worktree i poproś ją o dodanie testów procesu logowania”.
+- „Użyj OpencodeSilver, aby wyświetlić 10 moich ostatnich sesji wraz z ich bieżącym stanem”.
+- „Utwórz w OpencodeSilver zaplanowane zadanie o nazwie Przegląd w dni robocze, które o 09:00 w każdy dzień roboczy wyśle prompt: sprawdź zmiany od ostatniego uruchomienia”.
+- „Uruchom teraz zaplanowane zadanie OpencodeSilver o nazwie Przegląd w dni robocze”.
+- „Sprawdź sesję OpencodeSilver o nazwie Przegląd uwierzytelniania i pokaż najnowszą odpowiedź asystenta”.
+
+Narzędzie może wyświetlać projekty i preferencje modeli, tworzyć i kontynuować sesje, rozwidlać sesję, tworzyć izolowane sesje worktree oraz zarządzać zaplanowanymi zadaniami. Uruchomione w ten sposób sesje pojawiają się w OpencodeSilver jak każde inne, więc możesz je otworzyć i samodzielnie kontynuować pracę.
+
+## Pamiętaj
+
+- Prompty nowych sesji domyślnie zwracają sterowanie od razu. Śledź sesję w OpencodeSilver lub poproś agenta, aby sprawdził ją później.
+- Osobny worktree jest tworzony tylko na Twoją prośbę. Niezatwierdzone zmiany z bieżącego worktree nie są do niego kopiowane.
+- Narzędzie nie może usuwać sesji ani worktree, rejestrować ścieżek projektów, uruchamiać dowolnych poleceń powłoki ani wywoływać dowolnych adresów URL.
+
+## Włączanie i wyłączanie narzędzia
+
+Otwórz **Ustawienia → Ogólne → Narzędzia OpencodeSilver** i zmień **Narzędzie sterowania dla agentów**. Ustawienie zacznie działać po ponownym uruchomieniu zarządzanego serwera OpenCode, które OpencodeSilver proponuje jako **Apply & Restart**.
+
+Narzędzie nie jest dostępne, gdy OpencodeSilver łączy się z zewnętrznym serwerem OpenCode przez `OPENCODE_HOST` lub skip-start, ani w rozszerzeniu VS Code. Instalacje desktopowe i webowe korzystające z serwera OpenCode zarządzanego przez OpencodeSilver obsługują je automatycznie.
+
+## Powiązane
+
+- [Zaplanowane zadania](/pl/scheduled-tasks/)
+- [Sesje worktree](/pl/worktrees/)
+- [Cele sesji](/pl/session-goals/)
+- [Panel przeglądarki](/pl/desktop-browser/) — narzędzie OpencodeSilver Web — oglądanie strony i sterowanie nią

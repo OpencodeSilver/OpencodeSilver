@@ -1,0 +1,39 @@
+---
+title: Worktree-Sitzungen
+description: Gib einer Sitzung einen eigenen Branch und Ordner, damit die Arbeit isoliert bleibt.
+---
+
+# Worktree-Sitzungen
+
+Eine Worktree-Sitzung läuft in einer eigenen ausgecheckten Kopie deines Repos auf einem eigenen Branch (einem Git-Worktree). So kommen sich parallele Sitzungen nicht in die Quere — die eine kann refaktorieren, während eine andere einen Fehler behebt, ohne ständiges Hin- und Herwechseln.
+
+## Eine erstellen
+
+1. Öffne den Dialog für einen neuen Worktree: Wähle **Neuer Worktree…** im Branch-Menü über dem Eingabefeld, wenn du eine neue Sitzung startest, oder nutze die Worktree-Schaltfläche in einer Projektzeile der Seitenleiste.
+2. Wähle unter **Start from** eine Option:
+   - **new branch** — benenne den Branch
+   - **existing branch** — checke einen bereits vorhandenen Branch aus
+   - **PR or issue** — wähle einen Eintrag aus GitHub, Linear oder einer Erweiterung; der Branch wird danach benannt (ein PR checkt seinen eigenen Branch aus), und der Eintrag wird an deine erste Nachricht angehängt
+3. Prüfe **Based on** (der Branch, von dem ein neuer Branch ausgeht, standardmäßig der aktuelle Branch des Projekts) und **Folder name**; ändere sie nur, wenn es nötig ist.
+4. Erstelle ihn. Hat das Projekt Setup-Befehle, laufen sie direkt danach.
+
+OpencodeSilver legt den Branch an, richtet den Ordner ein und öffnet dort eine neue Sitzung, bereit für deine erste Nachricht. Du kannst auch direkt von einer [todo](/notes-todos-plans/) oder einem [GitHub issue or PR](/github/) aus damit beginnen.
+
+Ohne Rückfragen geht es mit **Schneller Worktree** im selben Branch-Menü: OpencodeSilver benennt den Branch selbst und richtet die neue Sitzung darauf aus.
+
+## Die Arbeit zurückbringen
+
+Wenn die Arbeit gut ist, verwende **Integrate** in der Git-Ansicht, um die Commits des Worktrees auf einen anderen Branch (etwa `main`) zu übertragen. Wenn ein Konflikt auftritt, kannst du den Konflikt dem Agenten zur Lösung geben.
+
+## Aufräumen
+
+Das Löschen oder Archivieren der Sitzung kann den Worktree entfernen. Du entscheidest, ob auch der Branch gelöscht werden soll — lokal und, falls vorhanden, remote. Nichts wird gelöscht, ohne dass du es anforderst.
+
+## Wenn etwas seltsam aussieht
+
+Ein Worktree braucht möglicherweise Aufmerksamkeit, wenn sein Ordner fehlt, sein Branch in einem detached-Zustand ist oder ein Merge oder Rebase noch nicht abgeschlossen wurde. OpencodeSilver markiert das, damit du es beheben kannst — siehe [Worktrees & Git](/troubleshooting/worktrees-git/).
+
+## Verwandt
+
+- [Multi-run](/multi-run/) — viele Worktree-Sitzungen gleichzeitig starten
+- [Git- & GitHub-Workflows](/git/) — von innen in OpencodeSilver committen und integrieren

@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "id": "jetbrains-dark",
+    "name": "JetBrains",
+    "variant": "dark",
+    "description": "JetBrains IDE-inspired colors for OpencodeSilver - dark variant",
+    "version": "1.0.0",
+    "author": "Artem Evsevev, adapted for OpencodeSilver",
+    "tags": [
+      "dark",
+      "jetbrains",
+      "ide",
+      "blue"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#6796f5",
+      "foreground": "#1E1F22",
+      "hover": "#70AEFF",
+      "active": "#5594FA",
+      "muted": "#6796f580"
+    },
+    "surface": {
+      "background": "#1E1F22",
+      "foreground": "#DFE1E5",
+      "muted": "#26282B",
+      "mutedForeground": "#9fa0a2",
+      "elevated": "#2B2D30",
+      "overlay": "#00000080",
+      "subtle": "#28292c"
+    },
+    "interactive": {
+      "border": "#303238",
+      "selection": "#43454A",
+      "borderHover": "#4B5059",
+      "focusRing": "#6796f550",
+      "cursor": "#CED0D6",
+      "hover": "#3C3E41",
+      "active": "#494A4D"
+    },
+    "status": {
+      "error": "#FA6675",
+      "errorForeground": "#1E1F22",
+      "errorBackground": "#402929",
+      "errorBorder": "#FA6675",
+      "warning": "#F2C55C",
+      "warningForeground": "#1E1F22",
+      "warningBackground": "#665014",
+      "warningBorder": "#F2C55C",
+      "success": "#57965D",
+      "successForeground": "#1E1F22",
+      "successBackground": "#253627",
+      "successBorder": "#57965D",
+      "info": "#3592C4",
+      "infoForeground": "#1E1F22",
+      "infoBackground": "#243846",
+      "infoBorder": "#3592C4"
+    },
+    "syntax": {
+      "base": {
+        "foreground": "#BCBEC4",
+        "comment": "#7A7E85",
+        "keyword": "#CF8E6D",
+        "string": "#6AAB73",
+        "number": "#2AACB8",
+        "function": "#6AA2D7",
+        "variable": "#BCBEC4",
+        "type": "#A6BB77",
+        "operator": "#BCBEC4"
+      },
+      "tokens": {
+        "commentDoc": "#5F826B",
+        "stringEscape": "#CF8E6D",
+        "keywordImport": "#CF8E6D",
+        "functionBuiltin": "#D5A563",
+        "variableProperty": "#C77DBB",
+        "variableGlobal": "#E59EAE",
+        "parameter": "#3CACAC",
+        "constant": "#C77DBB",
+        "className": "#57AAF7",
+        "interface": "#8D91DC",
+        "struct": "#A6BB77",
+        "enum": "#A6BB77",
+        "typeParameter": "#3CACAC",
+        "namespace": "#BCBEC4",
+        "module": "#8D91DC",
+        "tag": "#D5B778",
+        "tagAttribute": "#B3AE60",
+        "decorator": "#B3AE60",
+        "label": "#D5A563",
+        "punctuation": "#BCBEC4",
+        "macro": "#D5A563",
+        "preprocessor": "#D5A563",
+        "url": "#57AAF7",
+        "exception": "#E59EAE"
+      },
+      "highlights": {
+        "diffAdded": "#549159",
+        "diffAddedBackground": "#294436",
+        "diffRemoved": "#F75464",
+        "diffRemovedBackground": "#45302B",
+        "diffModified": "#70AEFF",
+        "diffModifiedBackground": "#243C63",
+        "lineNumber": "#4B5059",
+        "lineNumberActive": "#A1A3AB"
+      }
+    },
+    "pr": {
+      "open": "#5FAD65",
+      "draft": "#868A91",
+      "merged": "#A571E6",
+      "closed": "#DB5C5C"
+    },
+    "chat": {
+      "userMessageBackground": "#2a3b5d76",
+      "divider": "#303238"
+    },
+    "markdown": {
+      "link": "#56A8F5",
+      "linkHover": "#6796f5",
+      "inlineCode": "#6AAB73",
+      "inlineCodeBackground": "#2B2C2F",
+      "blockquote": "#7A7E85",
+      "blockquoteBorder": "#303238",
+      "listMarker": "#B3AE6099"
+    },
+    "tools": {
+      "border": "#303238",
+      "icon": "#B0B1B3",
+      "title": "#DFE1E5",
+      "description": "#B0B1B3",
+      "edit": {
+        "addedBackground": "#29443640",
+        "removedBackground": "#45302B40",
+        "lineNumber": "#4B5059"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "\"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "\"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "\"JetBrains Mono\", ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "metadata": {
+    "id": "fields-of-the-shire-dark",
+    "name": "Fields of the Shire",
+    "variant": "dark",
+    "description": "Fields of the Shire theme - dark variant",
+    "version": "1.0.0",
+    "author": "OpencodeSilver",
+    "tags": [
+      "dark",
+      "warm",
+      "earthy",
+      "brand"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#7a8a5a",
+      "foreground": "#0c0a08",
+      "hover": "#93a56b",
+      "active": "#a4b67d",
+      "muted": "#7a8a5a80"
+    },
+    "surface": {
+      "background": "#1b1815",
+      "foreground": "#ebe0d1",
+      "muted": "#23201c",
+      "mutedForeground": "#83796f",
+      "elevated": "#2b2622",
+      "overlay": "#1b1815cc",
+      "subtle": "#282320"
+    },
+    "interactive": {
+      "border": "#2E2B28",
+      "selection": "#f0e6d81f",
+      "borderHover": "#f0e6d830",
+      "borderFocus": "#373d2c",
+      "focusRing": "#7a8a5a4d",
+      "hover": "#332d28",
+      "active": "#f0e6d824"
+    },
+    "status": {
+      "error": "#b34d3b",
+      "errorForeground": "#0c0a08",
+      "errorBackground": "#b85a4a20",
+      "errorBorder": "#b85a4a50",
+      "warning": "#c47a3a",
+      "warningForeground": "#0c0a08",
+      "success": "#7f905e",
+      "successForeground": "#0c0a08",
+      "successBackground": "#7a8a5a20",
+      "successBorder": "#7a8a5a50",
+      "info": "#667c8a",
+      "infoForeground": "#f0e6d8",
+      "infoBackground": "#5a6d7a20",
+      "infoBorder": "#5a6d7a50"
+    },
+    "syntax": {
+      "base": {
+        "background": "#23201c",
+        "comment": "#6a5e52",
+        "keyword": "#5a6d7a",
+        "string": "#93a56b",
+        "number": "#c47a3a",
+        "function": "#c47a3a",
+        "variable": "#ebe0d1",
+        "type": "#7a8a5a",
+        "operator": "#a89888"
+      },
+      "tokens": {
+        "commentDoc": "#4a4238",
+        "keywordImport": "#5a6d7a",
+        "method": "#93a56b",
+        "variableProperty": "#5a6d7a",
+        "variableGlobal": "#c47a3a",
+        "variableLocal": "#a89888",
+        "typeParameter": "#93a56b",
+        "namespace": "#5a6d7a",
+        "module": "#5a6d7a",
+        "tag": "#c47a3a",
+        "tagAttribute": "#93a56b",
+        "boolean": "#7a8a5a",
+        "decorator": "#5a6d7a",
+        "label": "#c47a3a",
+        "punctuation": "#a89888",
+        "preprocessor": "#5a6d7a",
+        "url": "#5a6d7a",
+        "key": "#c47a3a",
+        "exception": "#b85a4a"
+      },
+      "highlights": {
+        "diffAdded": "#7a8a5a",
+        "diffRemoved": "#b85a4a",
+        "diffModified": "#5a6d7a",
+        "lineNumber": "#6a5e52"
+      }
+    },
+    "pr": {
+      "open": "#7a8a5a",
+      "draft": "#6a5e52",
+      "merged": "#5a6d7a",
+      "closed": "#b85a4a"
+    },
+    "chat": {
+      "userMessageBackground": "#272a25",
+      "divider": "#f0e6d81c"
+    },
+    "markdown": {
+      "link": "#5a6d7a",
+      "linkHover": "#93a56b",
+      "inlineCode": "#93a56b",
+      "inlineCodeBackground": "#282522",
+      "blockquote": "#a89888",
+      "blockquoteBorder": "#f0e6d81c",
+      "listMarker": "#c47a3a99"
+    },
+    "tools": {
+      "border": "#f0e6d81c",
+      "icon": "#a89888",
+      "title": "#ebe0d1",
+      "description": "#a19a96",
+      "edit": {
+        "addedBackground": "#7a8a5a25",
+        "removedBackground": "#b85a4a25",
+        "lineNumber": "#6a5e52"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

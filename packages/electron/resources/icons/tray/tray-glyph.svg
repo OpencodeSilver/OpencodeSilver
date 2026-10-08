@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none"
+     stroke="#000" stroke-linejoin="round" stroke-linecap="round">
+  <g stroke-width="2.3">
+    <path d="M16 2.5 L28.5 9.5 L28.5 23 L16 30 L3.5 23 L3.5 9.5 Z"/>
+    <path d="M3.5 9.5 L16 16.25 L28.5 9.5"/>
+    <path d="M16 16.25 L16 30"/>
+  </g>
+  <!-- infinity symbol on top face -->
+  <g transform="translate(16, 9.5) rotate(-45) scale(0.6 0.35)">
+    <path stroke-width="1.8" d="M 0 0 c -2 -2.67 -4 -4 -6 -4 a 4 4 0 1 0 0 8 c 2 0 4 -1.33 6 -4 Z m 0 0 c 2 2.67 4 4 6 4 a 4 4 0 0 0 0 -8 c -2 0 -4 1.33 -6 4 Z" fill="#000"/>
+  </g>
+</svg>

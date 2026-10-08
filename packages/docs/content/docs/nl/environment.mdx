@@ -1,0 +1,148 @@
+---
+title: Omgevingsvariabelen
+description: Stel OpencodeSilver en de OpenCode-integratie in via omgevingsvariabelen.
+---
+
+# Omgevingsvariabelen
+
+OpencodeSilver leest deze omgevingsvariabelen bij het starten. Voor opstartservices neemt `opencodesilver startup enable` standaard de huidige omgeving over. Voer die opdracht opnieuw uit nadat u variabelen wijzigt die de service moet gebruiken.
+
+## OpencodeSilver-server
+
+### `OPENCODESILVER_HOST`
+
+Het adres waarop de OpencodeSilver-webserver luistert. Gebruik `0.0.0.0` om toegang vanaf andere computers toe te staan.
+
+### `OPENCODESILVER_UI_PASSWORD`
+
+Wachtwoord voor de browserinterface. Gebruik dit bij luisteren buiten localhost, tunnels of een reverse proxy.
+
+### `OPENCODESILVER_API_ONLY`
+
+Start zonder webinterface bij `true` of `1`. De API-routes blijven beschikbaar voor desktop- en mobiele clients, maar de browserinterface wordt niet aangeboden.
+
+### `OPENCODESILVER_FRAME_ANCESTORS`
+
+Origins die OpencodeSilver in een frame op hun eigen pagina mogen tonen, gescheiden door spaties, bijvoorbeeld `https://dash.example.com`. `*` staat elke site toe. Standaard mogen alleen OpencodeSilver zelf en de desktop- en mobiele apps het insluiten, zodat geen andere site over de knoppen heen kan leggen.
+
+### `OPENCODESILVER_DATA_DIR`
+
+Stelt een andere gegevensmap in. De standaard is `~/.config/opencodesilver`.
+
+Alles wat OpencodeSilver bewaart, staat hieronder: instellingen, authenticatiegegevens, projectconfiguraties, thema's, plannen en spraakmodellen. Bij een instantie die vóór versie 1.23 al een eigen map gebruikte, worden bij de eerste start de mappen `projects`, `themes` en `speech-models` uit `~/.config/opencodesilver` gekopieerd. De originelen blijven staan en niets wordt samengevoegd.
+
+### `OPENCODESILVER_CHATS_DIR`
+
+Wijzigt de locatie van de beheerde mappen voor chats zonder project. De standaard is `~/.config/opencodesilver/chats`. Kies een map die de OpenCode-server kan lezen als OpencodeSilver en OpenCode onder verschillende gebruikers draaien. Bestaande chats worden niet verplaatst.
+
+### `OPENCODESILVER_COMPRESS_API`
+
+Regelt de compressie van API-antwoorden. `true` of `1` schakelt die verplicht in; `false` of `0` schakelt die uit.
+
+### `OPENCODESILVER_SKIP_API_COMPRESSION`
+
+Schakelt API-compressie uit bij `true` of `1`. Deze instelling krijgt voorrang op `OPENCODESILVER_COMPRESS_API`.
+
+### `OPENCODESILVER_VERBOSE_REQUEST_LOGS`
+
+Schakelt uitgebreide HTTP-verzoeklogs in bij `true` of `1`.
+
+### `OPENCODESILVER_UPDATE_API_URL`
+
+Vervangt het API-adres voor updatecontroles. Laat dit bij normaal gebruik ongemoeid.
+
+### `OPENCODESILVER_PACKAGE_MANAGER`
+
+Dwingt een pakketbeheerder voor updates af als automatische herkenning de verkeerde kiest.
+
+## OpenCode-server
+
+### `OPENCODE_HOST`
+
+Verbindt OpencodeSilver met een bestaande OpenCode-server. De waarde moet een `http`- of `https`-origin zijn met een expliciete poort, zonder pad, query of fragment. `OPENCODE_HOST` krijgt voorrang op `OPENCODE_PORT`.
+
+### `OPENCODE_PORT`
+
+Stelt de OpenCode-serverpoort in. Bij beheerd OpenCode wordt deze poort voor de beheerde server aangevraagd. Met `OPENCODE_SKIP_START=true` wordt met een externe server op die poort verbonden.
+
+### `OPENCODE_SKIP_START`
+
+Voorkomt bij `true` dat OpencodeSilver zelf een OpenCode-server start.
+
+### `OPENCODESILVER_OPENCODE_HOSTNAME`
+
+Hostnaam waarop de door OpencodeSilver beheerde OpenCode-server luistert. Standaard `127.0.0.1`.
+
+### `OPENCODE_BINARY`
+
+Pad naar het uitvoerbare bestand `opencode` dat OpencodeSilver moet starten.
+
+### `OPENCODE_CONFIG`
+
+Pad naar een specifiek OpenCode-configuratiebestand.
+
+### `OPENCODE_CONFIG_DIR`
+
+Pad naar een specifieke OpenCode-configuratiemap voor agents, skills, snippets en het vinden van configuratie.
+
+### `OPENCODE_DATA_DIR`
+
+Eigen gegevensmap voor de beheerde OpenCode-server.
+
+### `OPENCODE_WSL_DISTRO`
+
+Kiest de WSL-distributie voor de OpenCode-integratie op Windows.
+
+### `OPENCODESILVER_OPENCODE_WSL_DISTRO`
+
+OpencodeSilver-specifieke alias voor de WSL-distributie. Als beide variabelen zijn ingesteld, krijgt `OPENCODE_WSL_DISTRO` voorrang.
+
+### `OPENCODE_JWT_SECRET`
+
+Geheim voor het ondertekenen van authenticatietokens voor de interface. Gebruik bij permanente services een lange willekeurige waarde.
+
+## Terminal en Git
+
+### `OPENCODESILVER_TERMINAL_SHELL`
+
+Uitvoerbaar shellprogramma voor terminalsessies in OpencodeSilver.
+
+### `OPENCODESILVER_GIT_BINARY`
+
+Uitvoerbaar Git-programma voor de Git-functies van OpencodeSilver.
+
+### `GIT_BINARY`
+
+Alternatieve instelling voor het Git-programma. Gebruik bij voorkeur `OPENCODESILVER_GIT_BINARY` voor configuratie die alleen voor OpencodeSilver geldt.
+
+### `OPENCODESILVER_GIT_READ_CACHE_TTL_MS`
+
+Geldigheidsduur in milliseconden van gecachte bestandslezingen via Git. Stel in op `0` om deze cache tijdens foutonderzoek uit te schakelen.
+
+## Spraak en tunnels
+
+### `OPENAI_API_KEY`
+
+API-sleutel die de spraakfuncties van OpencodeSilver gebruiken wanneer ze OpenAI zelf aanroepen. Hij wordt nooit naar een eigen OpenAI-compatibele server gestuurd: geef die server in Instellingen een eigen sleutel.
+
+### `OPENCODESILVER_ALLOW_REMOTE_OPENAI_COMPAT_URLS`
+
+Staat bij `true` of `1` remote OpenAI-compatibele basis-URL's voor spraakfuncties toe.
+
+### `NGROK_AUTHTOKEN`
+
+ngrok-authenticatietoken voor de tunnelopdrachten. U kunt ngrok ook instellen met `ngrok config add-authtoken <token>`.
+
+## Hulpprogramma's voor uitvoering
+
+### `BUN_BINARY`
+
+Uitvoerbaar Bun-programma dat OpencodeSilver gebruikt om daemonprocessen te starten.
+
+### `BUN_INSTALL`
+
+Hoofdmap van de Bun-installatie. OpencodeSilver zoekt hiermee `bin/bun` voor het starten en bijwerken van daemons.
+
+### `VITE_OPENCODE_URL`
+
+API-basis-URL die tijdens het bouwen van de Vite-webapp wordt ingesteld. Stel deze bij normaal CLI- of desktopgebruik niet in.

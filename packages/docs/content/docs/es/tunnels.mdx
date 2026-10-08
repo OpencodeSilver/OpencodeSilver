@@ -1,0 +1,120 @@
+---
+title: Túneles
+description: Expón OpencodeSilver de forma segura para acceso remoto y móvil.
+---
+
+# Túneles
+
+Un túnel es un enlace público a tu OpencodeSilver, para que puedas acceder a él desde un navegador corriente en otra red. Usa `opencodesilver tunnel` para crear uno para una instancia en marcha.
+
+> Conectar tus **propios dispositivos** (la app móvil, otro escritorio) normalmente no necesita un túnel: [vincúlalos](/es/connect-devices/) y deja que el [Private Relay](/es/private-relay/), cifrado de extremo a extremo, se encargue del acceso fuera de casa sin configuración.
+
+## Requisitos previos
+
+OpencodeSilver inicia el CLI del proveedor de túnel en tu máquina. Instala primero el proveedor que quieras usar:
+
+```bash
+brew install cloudflared
+brew install ngrok
+```
+
+Los túneles rápidos de Cloudflare pueden funcionar con `cloudflared`. Ngrok requiere una cuenta de ngrok y un authtoken del panel de ngrok:
+
+```bash
+ngrok config add-authtoken <your-ngrok-token>
+```
+
+## Inicio rápido
+
+1. Inicia OpencodeSilver:
+
+```bash
+opencodesilver
+```
+
+Si omites este paso, `opencodesilver tunnel start` puede iniciar automáticamente un servidor CLI. Al hacerlo, puedes pasar opciones del servidor como `--port`, `--host`, `--lan`, `--ui-password` y `--api-only`.
+
+2. Inicia un túnel de Cloudflare:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode quick
+```
+
+O inicia un túnel de Ngrok:
+
+```bash
+opencodesilver tunnel start --provider ngrok --mode quick
+```
+
+3. Comprueba el estado:
+
+```bash
+opencodesilver tunnel status
+```
+
+Cuando el túnel está activo, `status` muestra una URL pública. Ábrela, o escanea el código QR, para acceder a OpencodeSilver desde cualquier lugar.
+
+Por defecto, OpencodeSilver imprime un código QR en sesiones TTY interactivas. Usa `--qr` para forzar la salida del QR, o `--no-qr` para desactivarla.
+
+## Proveedores
+
+- `cloudflare`: modos quick, managed remote y managed local
+- `ngrok`: modo quick
+
+## Modos gestionados
+
+### Gestionado remoto
+
+Usa un token + nombre de host gestionados por Cloudflare:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-remote --token-file ~/.secrets/cf-token --hostname app.example.com
+```
+
+### Gestionado local
+
+Usa una configuración local de `cloudflared`:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-local --config ~/.cloudflared/config.yml
+```
+
+## Perfiles (managed-remote)
+
+Guarda un perfil reutilizable:
+
+```bash
+opencodesilver tunnel profile add --provider cloudflare --mode managed-remote --name prod-main --hostname app.example.com --token-file ~/.secrets/cf-token
+```
+
+Inicia usando el perfil guardado:
+
+```bash
+opencodesilver tunnel start --profile prod-main
+```
+
+## Comandos útiles
+
+```bash
+opencodesilver tunnel providers
+opencodesilver tunnel ready --provider cloudflare
+opencodesilver tunnel ready --provider ngrok
+opencodesilver tunnel doctor --provider cloudflare
+opencodesilver tunnel doctor --provider ngrok
+opencodesilver tunnel stop --port 3000
+```
+
+## Notas de comportamiento
+
+- un único túnel activo por instancia de OpencodeSilver (puerto)
+- iniciar un nuevo modo/proveedor en la misma instancia reemplaza el túnel anterior
+- generar un nuevo enlace de conexión revoca el anterior sin usar
+- el autoarranque del túnel conserva flags del servidor como `--ui-password` y `--api-only` en los ajustes de instancia usados por reinicios y actualizaciones
+
+## Relacionado
+
+- [Conectar un dispositivo](/es/connect-devices/) — vincula tus propios dispositivos sin una URL pública
+- [Seguridad](/es/security/) — protege la interfaz antes de exponerla
+- [Túneles de escritorio](/es/desktop-tunnels/) — configuración de túneles en la app de escritorio sin iniciar desde CLI
+- [PWA y acceso móvil](/es/mobile/) — accede a OpencodeSilver desde tu teléfono
+- [Resolución de problemas](/es/troubleshooting/) — si el enlace del túnel no funciona

@@ -1,0 +1,39 @@
+---
+title: Sesiones de worktree
+description: Da a una sesión su propia rama y carpeta para que el trabajo quede aislado.
+---
+
+# Sesiones de worktree
+
+Una sesión de worktree se ejecuta en su propia copia del repositorio, en su propia rama (un worktree de git). Eso evita que las sesiones paralelas se pisen los archivos: una puede refactorizar mientras otra corrige un error, sin estar cambiando de un lado a otro.
+
+## Crea una
+
+1. Abre el diálogo de nuevo worktree: elige **Nuevo worktree…** en el menú de ramas sobre el campo de mensaje al empezar una sesión nueva, o usa el botón de worktree en la fila de un proyecto de la barra lateral.
+2. En **Start from**, elige una opción:
+   - **nueva rama** — nombra la rama
+   - **rama existente** — haz checkout de una rama que ya tengas
+   - **PR or issue** — elige uno de GitHub, Linear o una extensión; la rama toma su nombre (un PR hace checkout de su propia rama) y el elemento se adjunta a tu primer mensaje
+3. Revisa **Based on** (la rama desde la que parte una nueva; por defecto, la rama actual del proyecto) y **Folder name**; cámbialos solo si lo necesitas.
+4. Créala. Si el proyecto tiene comandos de configuración, se ejecutan justo después.
+
+OpencodeSilver crea la rama, configura la carpeta y abre ahí una nueva sesión, lista para tu primer mensaje. También puedes arrancar una directamente desde una [tarea](/es/notes-todos-plans/) o desde una [issue o PR de GitHub](/es/github/).
+
+Para saltarte las preguntas, elige **Worktree rápido** en el mismo menú de ramas: OpencodeSilver le pone nombre a la rama y apunta la nueva sesión a ella.
+
+## Trae el trabajo de vuelta
+
+Cuando el trabajo esté listo, usa **Integrate** en la vista de Git para traer los commits del worktree a otra rama (como `main`). Si un cambio entra en conflicto, puedes entregarle el conflicto al agente para que lo resuelva.
+
+## Limpieza
+
+Eliminar o archivar la sesión puede quitar el worktree. Tú eliges si también eliminar la rama: local, y remota si la hay. No se elimina nada sin que lo pidas.
+
+## Si algo no encaja
+
+Un worktree puede requerir atención si su carpeta desapareció, su rama está en un estado desacoplado, o una fusión o rebase quedó a medias. OpencodeSilver lo señala para que lo arregles; consulta [Worktrees y Git](/es/troubleshooting/worktrees-git/).
+
+## Relacionado
+
+- [Multi-run](/es/multi-run/) — lanza muchas sesiones de worktree a la vez
+- [Flujos de trabajo de Git y GitHub](/es/git/) — haz commit e integra desde dentro de OpencodeSilver

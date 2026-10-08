@@ -1,0 +1,736 @@
+import path from 'node:path';
+import { OpenCode } from '@opencode/client';
+import { OpencodeSilverControlError, asControlError } from './error.js';
+import { OPENCODESILVER_ALL_ACTIONS } from './actions.js';
+import { writeScreenshot } from './screenshots.js';
+
+const DEFAULT_WAIT_TIMEOUT_SECONDS = 600;
+const MAX_WAIT_TIMEOUT_SECONDS = 86_400;
+const WAIT_POLL_INTERVAL_MS = 500;
+// One service, both capabilities: which tool asked is the caller's concern.
+const CONTROL_ACTIONS = new Set(OPENCODESILVER_ALL_ACTIONS);
+const SCHEDULE_TASK_ID_ACTIONS = new Set([
+  'schedule.run',
+  'schedule.delete',
+  'schedule.toggle',
+]);
+
+const asNonEmptyString = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const positiveInteger = (value, fallback, field) => {
+  if (value === undefined || value === null) return fallback;
+  const number = Number(value);
+  if (!Number.isSafeInteger(number) || number < 1) {
+    throw new OpencodeSilverControlError(`${field} must be a positive integer`, 400);
+  }
+  return number;
+};
+
+const normalizeWaitTimeoutMs = (value) => {
+  const seconds = value === undefined || value === null ? DEFAULT_WAIT_TIMEOUT_SECONDS : Number(value);
+  if (!Number.isSafeInteger(seconds) || seconds < 1 || seconds > MAX_WAIT_TIMEOUT_SECONDS) {
+    throw new OpencodeSilverControlError(`timeout must be from 1 to ${MAX_WAIT_TIMEOUT_SECONDS} seconds`, 400);
+  }
+  return seconds * 1000;
+};
+
+// v2 messages are not { info, parts }: the record itself is the message, a
+// user message carries `text`, and an assistant message carries `content[]`
+// whose text items are the visible answer.
+const messageText = (record) => {
+  if (record.type === 'user') return typeof record.text === 'string' ? record.text.trim() : '';
+  return (Array.isArray(record.content) ? record.content : [])
+    .filter((item) => item?.type === 'text' && typeof item.text === 'string')
+    .map((item) => item.text)
+    .join('')
+    .trim();
+};
+
+const extractTextMessages = (messages, role = 'all') => {
+  const result = [];
+  for (const record of Array.isArray(messages) ? messages : []) {
+    const messageRole = record?.type;
+    if ((messageRole !== 'user' && messageRole !== 'assistant') || (role !== 'all' && role !== messageRole)) continue;
+    const text = messageText(record);
+    if (!text) continue;
+    const providerID = asNonEmptyString(record.model?.providerID);
+    const modelID = asNonEmptyString(record.model?.id);
+    result.push({
+      id: asNonEmptyString(record.id) || '',
+      role: messageRole,
+      createdAt: Number.isFinite(record?.time?.created) ? record.time.created : null,
+      completedAt: Number.isFinite(record?.time?.completed) ? record.time.completed : null,
+      model: providerID && modelID ? `${providerID}/${modelID}` : null,
+      text,
+    });
+  }
+  return result.sort((left, right) => (left.createdAt || 0) - (right.createdAt || 0));
+};
+
+const parseModel = (value) => {
+  const model = asNonEmptyString(value);
+  if (!model) throw new OpencodeSilverControlError('model is required', 400);
+  const slashIndex = model.indexOf('/');
+  if (slashIndex <= 0 || slashIndex === model.length - 1) {
+    throw new OpencodeSilverControlError('model must be in provider/model format', 400);
+  }
+  return { providerID: model.slice(0, slashIndex), modelID: model.slice(slashIndex + 1) };
+};
+
+const parseWeekdays = (value) => {
+  const raw = asNonEmptyString(value);
+  if (!raw) throw new OpencodeSilverControlError('weekly is required', 400);
+  const weekdays = raw.split(',').map((entry) => Number.parseInt(entry.trim(), 10));
+  if (weekdays.some((entry) => !Number.isInteger(entry) || entry < 0 || entry > 6)) {
+    throw new OpencodeSilverControlError('weekly must contain weekdays from 0 to 6', 400);
+  }
+  return Array.from(new Set(weekdays)).sort((a, b) => a - b);
+};
+
+const buildSchedule = (input) => {
+  const daily = asNonEmptyString(input.daily);
+  const weekly = asNonEmptyString(input.weekly);
+  const once = asNonEmptyString(input.once);
+  const cron = asNonEmptyString(input.cron);
+  const selectors = [daily, weekly, once, cron].filter(Boolean);
+  if (selectors.length !== 1) {
+    throw new OpencodeSilverControlError('Provide exactly one of daily, weekly, once, or cron', 400);
+  }
+  const timezone = asNonEmptyString(input.timezone);
+  if (daily) return { kind: 'daily', times: [daily], ...(timezone ? { timezone } : {}) };
+  if (weekly) {
+    const time = asNonEmptyString(input.time);
+    if (!time) throw new OpencodeSilverControlError('time is required with weekly', 400);
+    return { kind: 'weekly', weekdays: parseWeekdays(weekly), times: [time], ...(timezone ? { timezone } : {}) };
+  }
+  if (once) {
+    const time = asNonEmptyString(input.time);
+    if (!time) throw new OpencodeSilverControlError('time is required with once', 400);
+    return { kind: 'once', date: once, time, ...(timezone ? { timezone } : {}) };
+  }
+  return { kind: 'cron', cron, ...(timezone ? { timezone } : {}) };
+};
+
+const buildScheduledTask = (input) => {
+  const name = asNonEmptyString(input.name);
+  const prompt = asNonEmptyString(input.prompt);
+  if (!name) throw new OpencodeSilverControlError('name is required', 400);
+  if (!prompt) throw new OpencodeSilverControlError('prompt is required', 400);
+  const model = parseModel(input.model);
+  const goalTokenBudget = input.goalTokenBudget;
+  if (goalTokenBudget !== undefined && input.goal !== true) {
+    throw new OpencodeSilverControlError('goalTokenBudget requires goal', 400);
+  }
+  if (goalTokenBudget !== undefined && (!Number.isSafeInteger(goalTokenBudget) || goalTokenBudget < 1000 || goalTokenBudget > 100_000_000)) {
+    throw new OpencodeSilverControlError('goalTokenBudget must be from 1000 to 100000000', 400);
+  }
+  return {
+    name,
+    enabled: input.disabled !== true,
+    schedule: buildSchedule(input),
+    execution: {
+      prompt,
+      ...model,
+      ...(asNonEmptyString(input.agent) ? { agent: input.agent.trim() } : {}),
+      ...(asNonEmptyString(input.variant) ? { variant: input.variant.trim() } : {}),
+      ...(input.goal === true ? { goalEnabled: true } : {}),
+      ...(goalTokenBudget !== undefined ? { goalTokenBudget } : {}),
+    },
+  };
+};
+
+export const createOpencodeSilverControlService = (dependencies) => {
+  const {
+    readSettingsFromDiskMigrated,
+    sanitizeProjects,
+    buildOpenCodeUrl,
+    getOpenCodeAuthHeaders,
+    waitForOpenCodeReady,
+    sessionService,
+    scheduledTaskService,
+    browserControl = null,
+    fileOpen = null,
+    notifyUser = null,
+    agentMemoryActions = null,
+    sessionLinks = null,
+    // Delivers a dispatched session's result back to the session that asked
+    // (`returnResult`); absent means the server cannot offer it.
+    dispatchResults = null,
+    // Archive lives in OpencodeSilver's own store now — v2 has no route that sets
+    // Session.time.archived — so an unwired store simply means nothing is archived.
+    archiveStore = null,
+    createClient = OpenCode.make,
+    sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
+    now = Date.now,
+  } = dependencies;
+
+  const wait = (duration, signal) => {
+    if (!signal) return sleep(duration);
+    if (signal.aborted) return Promise.reject(new OpencodeSilverControlError('OpencodeSilver action was cancelled', 499));
+    return new Promise((resolve, reject) => {
+      const onAbort = () => {
+        signal.removeEventListener('abort', onAbort);
+        reject(new OpencodeSilverControlError('OpencodeSilver action was cancelled', 499));
+      };
+      signal.addEventListener('abort', onAbort, { once: true });
+      sleep(duration).then(() => {
+        signal.removeEventListener('abort', onAbort);
+        resolve();
+      }, (error) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(error);
+      });
+    });
+  };
+
+  // Every v2 route lives under /api and the client appends it, so it only
+  // wants the origin. Per-directory scoping is a request header.
+  const getClient = async (directory = '') => {
+    if (typeof waitForOpenCodeReady === 'function') await waitForOpenCodeReady(10_000, 250);
+    return createClient({
+      baseUrl: new URL(buildOpenCodeUrl('/api/info', '')).origin,
+      headers: {
+        ...getOpenCodeAuthHeaders(),
+        ...(directory ? { 'x-opencode-directory': encodeURIComponent(directory) } : {}),
+      },
+      fetch,
+    });
+  };
+
+  // The store answers asynchronously; its archive timestamp, or null.
+  const archivedAt = async (sessionID) => {
+    if (!archiveStore) return null;
+    return (await archiveStore.archivedAt(sessionID)) ?? null;
+  };
+
+  const projects = async () => {
+    const settings = await readSettingsFromDiskMigrated();
+    return sanitizeProjects(settings?.projects || []).map((project) => ({
+      id: project.id,
+      path: path.resolve(project.path),
+      label: asNonEmptyString(project.label) || path.basename(project.path) || project.path,
+    }));
+  };
+
+  // projectId and directory are two names for one scope. Accepting both let
+  // one silently win over the other, so every session action refuses the pair.
+  const assertSingleScope = (input) => {
+    if (asNonEmptyString(input.projectId) && asNonEmptyString(input.directory)) {
+      throw new OpencodeSilverControlError('Provide only one of projectId or directory', 400);
+    }
+  };
+
+  // An explicit projectId scopes a session read to that project's directory,
+  // resolved the same way create/send/fork resolve it. An unknown project is
+  // an error, never a silent read of the caller's directory or of every project.
+  const resolveReadDirectory = async (input, contextDirectory) => {
+    assertSingleScope(input);
+    const projectID = asNonEmptyString(input.projectId);
+    if (!projectID) return asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory);
+    return sessionService.resolveDirectory({ projectId: projectID });
+  };
+
+  const models = async () => {
+    const settings = await readSettingsFromDiskMigrated();
+    return {
+      defaultModel: asNonEmptyString(settings?.defaultModel),
+      defaultVariant: asNonEmptyString(settings?.defaultVariant),
+      defaultAgent: asNonEmptyString(settings?.defaultAgent),
+      favoriteModels: Array.isArray(settings?.favoriteModels) ? settings.favoriteModels : [],
+      recentModels: Array.isArray(settings?.recentModels) ? settings.recentModels : [],
+    };
+  };
+
+  // /api/session/active is global in v2 and reports only `{ type: 'running' }`.
+  // The action contract stays busy/idle, so running is reported as busy.
+  const activeSessions = async (client) => {
+    const statuses = await client.session.active();
+    if (!statuses || typeof statuses !== 'object' || Array.isArray(statuses)) {
+      throw new OpencodeSilverControlError('Invalid session status response', 500);
+    }
+    return statuses;
+  };
+
+  const asPublicStatus = (active) => (active ? { type: 'busy' } : { type: 'idle' });
+
+  const sessionStatus = async (client, sessionID) => {
+    const statuses = await activeSessions(client);
+    return asPublicStatus(statuses[sessionID]);
+  };
+
+  // `order: 'desc'` puts the newest messages in the limited page;
+  // extractTextMessages re-sorts them oldest-first for the caller.
+  const sessionMessages = async (client, sessionID, role, limit) => {
+    const fetchLimit = limit === undefined ? undefined : Math.max(100, limit * 4);
+    let response = await client.message.list({ sessionID, ...(fetchLimit ? { limit: fetchLimit, order: 'desc' } : {}) });
+    let raw = Array.isArray(response?.data) ? response.data : [];
+    let messages = extractTextMessages(raw, role);
+    if (limit !== undefined && messages.length < limit && raw.length >= fetchLimit) {
+      response = await client.message.list({ sessionID });
+      raw = Array.isArray(response?.data) ? response.data : [];
+      messages = extractTextMessages(raw, role);
+    }
+    return limit === undefined ? messages : messages.slice(-limit);
+  };
+
+  const waitForIdle = async ({ client, sessionID, directory, timeoutMs, requireActivity, baselineMessageID, startedAt, signal }) => {
+    const deadline = now() + timeoutMs;
+    let observedActivity = false;
+    while (true) {
+      if (signal?.aborted) throw new OpencodeSilverControlError('OpencodeSilver action was cancelled', 499);
+      const status = await sessionStatus(client, sessionID);
+      if (status.type === 'busy') {
+        observedActivity = true;
+      } else if (!requireActivity || observedActivity) {
+        return status;
+      } else {
+        const messages = await sessionMessages(client, sessionID, 'assistant', 1);
+        const message = messages[0];
+        if (message?.completedAt && (baselineMessageID ? message.id !== baselineMessageID : message.completedAt >= startedAt)) {
+          return status;
+        }
+      }
+      const remaining = deadline - now();
+      if (remaining <= 0) {
+        throw new OpencodeSilverControlError(`Session did not become idle within ${Math.ceil(timeoutMs / 1000)} seconds`, 500);
+      }
+      await wait(Math.min(WAIT_POLL_INTERVAL_MS, remaining), signal);
+    }
+  };
+
+  // session.send/fork default the directory to the caller's context directory,
+  // which is wrong for sessions living in other worktrees: the prompt then
+  // targets an instance that does not hold the session and the run dies with
+  // UnknownError. Resolve the target session's directory from the global
+  // session list when the caller did not scope explicitly.
+  const resolveSessionDirectory = async (sessionID) => {
+    try {
+      const client = await getClient();
+      const response = await client.session.list({});
+      const sessions = Array.isArray(response?.data) ? response.data : [];
+      const session = sessions.find((item) => item?.id === sessionID);
+      return asNonEmptyString(session?.location?.directory) || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Checked before anything is created or sent: a result nobody can deliver
+  // must fail the call, not leave a dispatched session the agent waits on.
+  const assertReturnResult = (action, input, parentSessionID) => {
+    if (input.wait === true) throw new OpencodeSilverControlError('returnResult cannot be combined with wait', 400);
+    if (!dispatchResults) throw new OpencodeSilverControlError('Returning a session result is not available on this server', 503);
+    if (!parentSessionID) throw new OpencodeSilverControlError('returnResult needs a calling session to deliver the result to', 400);
+    if (!asNonEmptyString(input.prompt)) throw new OpencodeSilverControlError('returnResult requires prompt', 400);
+    // A fork is a new session, so only a send can target the caller itself.
+    if (action === 'session.send' && asNonEmptyString(input.sessionId) === parentSessionID) {
+      throw new OpencodeSilverControlError('returnResult cannot deliver a session\'s result to itself', 400);
+    }
+  };
+
+  // What the agent is told when its result is on the way. It replaces a wait,
+  // so it has to stop the agent from building one out of polls or sleeps.
+  const RESULT_PENDING_NOTE = 'The session runs in the background. Its final answer will be delivered to you automatically as a message when it finishes, and you will continue from there. Do not poll, sleep, or call session.messages to wait for it; carry on with other work or end your turn.';
+
+  /**
+   * After the dispatch: the session is already running, so a failure here is
+   * reported in the result rather than thrown, and the agent is told plainly
+   * that no answer is coming instead of waiting for one.
+   */
+  const scheduleResultDelivery = async (result, parentSessionID, dispatchedAt) => {
+    // The newest end-of-run record before the prompt went out (null: none yet).
+    // Absent when the history could not be read; the runtime then compares times.
+    const afterIdleId = result.baselineIdleRecordId;
+    if (result.promptDispatched !== true) {
+      return { status: 'not-scheduled', reason: 'The prompt was not dispatched, so there is no result to return.' };
+    }
+    try {
+      await dispatchResults.register({
+        parentSessionId: parentSessionID,
+        sessionId: result.sessionId,
+        dispatchedAt,
+        ...(afterIdleId !== undefined ? { afterIdleId } : {}),
+      });
+      return { status: 'pending', note: RESULT_PENDING_NOTE };
+    } catch (error) {
+      return {
+        status: 'not-scheduled',
+        reason: `The session runs, but its result will not be delivered: ${error instanceof Error ? error.message : String(error)}. Read it later with session.messages if the user asks.`,
+      };
+    }
+  };
+
+  const executeSessionAction = async (action, input, contextDirectory, signal, contextSessionId) => {
+    if (input.timeout !== undefined && input.wait !== true) throw new OpencodeSilverControlError('timeout requires wait', 400);
+    if (input.lastAssistant === true && input.wait !== true) throw new OpencodeSilverControlError('lastAssistant requires wait', 400);
+    assertSingleScope(input);
+    const sessionID = asNonEmptyString(input.sessionId);
+    const parentSessionID = asNonEmptyString(contextSessionId);
+    const returnResult = input.returnResult === true;
+    if (returnResult) assertReturnResult(action, input, parentSessionID);
+    let directory = asNonEmptyString(input.directory) || (!input.projectId ? asNonEmptyString(contextDirectory) : null);
+    if (sessionID && action !== 'session.create' && !asNonEmptyString(input.directory) && !input.projectId) {
+      const resolvedSessionDirectory = await resolveSessionDirectory(sessionID);
+      if (resolvedSessionDirectory) directory = resolvedSessionDirectory;
+    }
+    const payload = {
+      ...(directory ? { directory } : {}),
+      ...(asNonEmptyString(input.projectId) ? { projectId: input.projectId.trim() } : {}),
+      ...(asNonEmptyString(input.title) ? { title: input.title.trim() } : {}),
+      ...(asNonEmptyString(input.prompt) ? { prompt: input.prompt.trim() } : {}),
+      ...(asNonEmptyString(input.model) ? { model: input.model.trim() } : {}),
+      ...(asNonEmptyString(input.agent) ? { agent: input.agent.trim() } : {}),
+      ...(asNonEmptyString(input.variant) ? { variant: input.variant.trim() } : {}),
+      ...(input.goal === true ? { goal: true } : {}),
+      ...(input.goalTokenBudget !== undefined ? { goalTokenBudget: input.goalTokenBudget } : {}),
+      ...(asNonEmptyString(input.worktree) ? { worktree: {
+        name: input.worktree.trim(),
+        ...(asNonEmptyString(input.branch) ? { branchName: input.branch.trim() } : {}),
+        ...(asNonEmptyString(input.startRef) ? { startRef: input.startRef.trim() } : {}),
+      } } : {}),
+      ...(typeof input.setUpstream === 'boolean' ? { setUpstream: input.setUpstream } : {}),
+      ...(asNonEmptyString(input.messageId) ? { messageId: input.messageId.trim() } : {}),
+    };
+    const startedAt = now();
+    let result;
+    if (action === 'session.create') {
+      result = await sessionService.create(payload);
+    } else {
+      if (!sessionID) throw new OpencodeSilverControlError('sessionId is required', 400);
+      if (action === 'session.send') {
+        result = await sessionService.send(sessionID, payload);
+      } else {
+        result = await sessionService.fork(sessionID, payload);
+      }
+    }
+    if (returnResult) {
+      const publicResult = { ...result, resultDelivery: await scheduleResultDelivery(result, parentSessionID, startedAt) };
+      delete publicResult.baselineAssistantMessageId;
+      delete publicResult.baselineIdleRecordId;
+      return publicResult;
+    }
+    if (input.wait !== true) {
+      const publicResult = { ...result };
+      delete publicResult.baselineAssistantMessageId;
+      delete publicResult.baselineIdleRecordId;
+      return publicResult;
+    }
+    const client = await getClient(result.directory);
+    const status = await waitForIdle({
+      client,
+      sessionID: result.sessionId,
+      directory: result.directory,
+      timeoutMs: normalizeWaitTimeoutMs(input.timeout),
+      requireActivity: result.promptDispatched === true,
+      baselineMessageID: result.baselineAssistantMessageId,
+      startedAt,
+      signal,
+    });
+    const publicResult = { ...result, sessionStatus: status };
+    delete publicResult.baselineAssistantMessageId;
+    delete publicResult.baselineIdleRecordId;
+    if (input.lastAssistant === true) {
+      publicResult.lastAssistantMessage = (await sessionMessages(client, result.sessionId, 'assistant', 1))[0] || null;
+    }
+    return publicResult;
+  };
+
+  /**
+   * Validates browser inputs here rather than in the renderer: an invalid call
+   * should come back as a usage error the agent can correct, without waking a
+   * client or waiting for a round trip.
+   */
+  const browserAction = async (action, input, signal, contextDirectory, contextSessionId) => {
+    const parameters = {};
+    // Any action may name a tab; the browser that issued the id resolves it.
+    const tabId = asNonEmptyString(input.tabId);
+    if (tabId) {
+      if (tabId.length > 128) throw new OpencodeSilverControlError('tabId must be an id from browser.snapshot tabs', 400);
+      parameters.tabId = tabId;
+    }
+
+    const readViewport = (required) => {
+      const viewport = asNonEmptyString(input.viewport);
+      if (!viewport) {
+        if (required) throw new OpencodeSilverControlError('viewport is required for browser.resize', 400);
+        return;
+      }
+      if (!['mobile', 'tablet', 'desktop', 'fill'].includes(viewport)) {
+        throw new OpencodeSilverControlError('viewport must be mobile, tablet, desktop, or fill', 400);
+      }
+      parameters.viewport = viewport;
+    };
+
+    if (action === 'browser.resize') readViewport(true);
+
+    if (action === 'browser.capture') {
+      const label = asNonEmptyString(input.label);
+      if (label) parameters.label = label;
+    }
+
+    if (action === 'browser.open') {
+      readViewport(false);
+      const url = asNonEmptyString(input.url);
+      if (!url) throw new OpencodeSilverControlError('url is required for browser.open', 400);
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch {
+        throw new OpencodeSilverControlError('url must be an absolute http(s) URL', 400);
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new OpencodeSilverControlError('url must use http or https', 400);
+      }
+      parameters.url = parsed.toString();
+    }
+
+
+    if (action === 'browser.click') {
+      const selector = asNonEmptyString(input.selector);
+      const text = asNonEmptyString(input.text);
+      if (!selector && !text) {
+        throw new OpencodeSilverControlError('browser.click requires selector or text', 400);
+      }
+      if (selector) parameters.selector = selector;
+      if (text) parameters.text = text;
+    }
+
+    if (action === 'browser.snapshot') {
+      const selector = asNonEmptyString(input.selector);
+      if (selector) parameters.selector = selector;
+    }
+
+    if (action === 'browser.inspect') {
+      const selector = asNonEmptyString(input.selector);
+      if (!selector) throw new OpencodeSilverControlError('selector is required for browser.inspect', 400);
+      parameters.selector = selector;
+    }
+
+    if (action === 'browser.type') {
+      const selector = asNonEmptyString(input.selector);
+      if (!selector) throw new OpencodeSilverControlError('selector is required for browser.type', 400);
+      if (typeof input.value !== 'string') {
+        throw new OpencodeSilverControlError('value is required for browser.type', 400);
+      }
+      parameters.selector = selector;
+      parameters.value = input.value;
+      parameters.submit = input.submit === true;
+    }
+
+    if (action === 'browser.scroll') {
+      const selector = asNonEmptyString(input.selector);
+      const direction = asNonEmptyString(input.direction);
+      if (!selector && !direction) {
+        throw new OpencodeSilverControlError('browser.scroll requires direction or selector', 400);
+      }
+      if (direction && !['up', 'down', 'top', 'bottom'].includes(direction)) {
+        throw new OpencodeSilverControlError('direction must be up, down, top, or bottom', 400);
+      }
+      if (selector) parameters.selector = selector;
+      if (direction) parameters.direction = direction;
+    }
+
+    // Opening a page waits for the navigation to settle, so its budget has to
+    // exceed the client's own wait; sharing one timeout with the quick actions
+    // made a slow page indistinguishable from an unreachable browser.
+    const timeoutMs = action === 'browser.open' ? 45_000 : 20_000;
+    // Where the call came from, for a provider that keeps one browser per
+    // project or chat. Filled by the tool plugin, never by the model.
+    const context = {
+      directory: asNonEmptyString(contextDirectory),
+      sessionId: asNonEmptyString(contextSessionId),
+    };
+    const result = await browserControl.request(action, parameters, { signal, timeoutMs, context });
+
+    // The image is written here rather than in the renderer: the file belongs
+    // beside the code it documents, and the client that took it may be on a
+    // different machine than the repository.
+    if (action === 'browser.capture') {
+      const directory = asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory);
+      if (!directory) {
+        throw new OpencodeSilverControlError('directory is required to save a screenshot', 400);
+      }
+      const capture = result && typeof result === 'object' ? result : {};
+      const saved = await writeScreenshot({
+        directory,
+        base64: capture.base64,
+        mime: capture.mime,
+        label: input.label,
+      });
+      // The base64 never goes back to the caller: it is large, and the path is
+      // what an answer, a commit, or a review can actually use.
+      return {
+        path: saved.path,
+        // Saving the file is only half of showing it. Chat collects the image
+        // paths written in a finished answer and renders them below it, so the
+        // agent is told the one thing it cannot infer: that writing the path is
+        // what puts the picture in front of the user.
+        hint: `Write ![](${saved.path}) in your reply to show this image to the user; it is rendered under your message.`,
+        url: capture.url ?? null,
+        title: capture.title ?? null,
+        viewport: capture.viewport ?? null,
+        width: capture.width ?? null,
+        height: capture.height ?? null,
+      };
+    }
+
+    return result;
+  };
+
+  const execute = async (action, input = {}, contextDirectory, options = {}) => {
+    try {
+      if (!CONTROL_ACTIONS.has(action)) {
+        throw new OpencodeSilverControlError(`Unsupported OpencodeSilver action: ${action || 'missing'}`, 400);
+      }
+      if (action.startsWith('memory.')) {
+        if (!agentMemoryActions) {
+          throw new OpencodeSilverControlError('Agent memory is not available on this server', 503);
+        }
+        return agentMemoryActions.execute(action, input, contextDirectory);
+      }
+      if (action.startsWith('browser.')) {
+        if (!browserControl) {
+          throw new OpencodeSilverControlError('The in-app browser is not available on this server', 503);
+        }
+        return browserAction(action, input, options.signal, contextDirectory, options.contextSessionId);
+      }
+      if (action === 'notify.send') {
+        if (!notifyUser) {
+          throw new OpencodeSilverControlError('Notifications are not available on this server', 503);
+        }
+        const result = await notifyUser({
+          title: input.title,
+          body: input.body,
+          showWhenFocused: input.showWhenFocused,
+          sessionId: asNonEmptyString(options.contextSessionId) || undefined,
+          directory: asNonEmptyString(contextDirectory) || undefined,
+        });
+        if (result.status !== 200) {
+          throw new OpencodeSilverControlError(result.body.error, result.status);
+        }
+        return result.body;
+      }
+      if (action === 'file.open') {
+        if (!fileOpen) {
+          throw new OpencodeSilverControlError('The file viewer is not available on this server', 503);
+        }
+        return fileOpen.request({
+          path: asNonEmptyString(input.path),
+          directory: asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory),
+          sessionId: asNonEmptyString(options.contextSessionId),
+        });
+      }
+      if (action === 'projects.list') return { projects: await projects() };
+      if (action === 'models.list') return models();
+      if (action === 'schedule.status') return scheduledTaskService.status();
+      if (action.startsWith('schedule.')) {
+        const taskID = asNonEmptyString(input.taskId);
+        if (SCHEDULE_TASK_ID_ACTIONS.has(action) && !taskID) {
+          throw new OpencodeSilverControlError('taskId is required', 400);
+        }
+        const explicitProjectID = asNonEmptyString(input.projectId);
+        const explicitDirectory = asNonEmptyString(input.directory);
+        const contextDirectoryFallback = explicitProjectID
+          ? undefined
+          : asNonEmptyString(contextDirectory) || undefined;
+        const projectID = await scheduledTaskService.resolveProjectID({
+          projectId: explicitProjectID || undefined,
+          directory: explicitDirectory || contextDirectoryFallback,
+        });
+        switch (action) {
+          case 'schedule.list':
+            return { scheduler: await scheduledTaskService.status(), tasks: await scheduledTaskService.list(projectID) };
+          case 'schedule.create': {
+            const result = await scheduledTaskService.upsert(projectID, buildScheduledTask(input));
+            return { task: result.task, created: result.created };
+          }
+          case 'schedule.run':
+            return scheduledTaskService.run(projectID, taskID);
+          case 'schedule.delete':
+            return { deleted: true, tasks: await scheduledTaskService.remove(projectID, taskID) };
+          case 'schedule.toggle': {
+            if (typeof input.disabled !== 'boolean') {
+              throw new OpencodeSilverControlError('disabled is required for schedule.toggle', 400);
+            }
+            const enabled = input.disabled === false;
+            return { task: await scheduledTaskService.setEnabled(projectID, taskID, enabled), enabled };
+          }
+        }
+      }
+      if (action === 'session.create' || action === 'session.send' || action === 'session.fork') {
+        return executeSessionAction(action, input, contextDirectory, options.signal, options.contextSessionId);
+      }
+      if (action === 'session.link') {
+        if (!sessionLinks) throw new OpencodeSilverControlError('Linking is not available on this server', 503);
+        assertSingleScope(input);
+        // An explicit session is linked where it lives; the calling session
+        // uses the directory the tool call came from.
+        const explicitSessionID = asNonEmptyString(input.sessionId);
+        const sessionID = explicitSessionID || asNonEmptyString(options.contextSessionId);
+        const directory = asNonEmptyString(input.directory)
+          || (explicitSessionID ? await resolveSessionDirectory(explicitSessionID) : null)
+          || asNonEmptyString(contextDirectory);
+        // Models put the link's fields beside the action as often as inside
+        // `link`; session.link has no other use for them, so both are read.
+        const link = input.link ?? { url: input.url, title: input.title, kind: input.kind, identifier: input.identifier };
+        return sessionLinks.link({ sessionId: sessionID, directory, link });
+      }
+      if (action.startsWith('session.')) {
+        const sessionID = asNonEmptyString(input.sessionId);
+        if (action !== 'session.list' && !sessionID) throw new OpencodeSilverControlError('sessionId is required', 400);
+        const directory = await resolveReadDirectory(input, contextDirectory);
+        const client = await getClient(directory);
+        if (action === 'session.list') {
+          const limit = positiveInteger(input.limit, 10, 'limit');
+          const response = await client.session.list(directory ? { directory } : {});
+          // Archive is OpencodeSilver state; overlay it so callers keep reading
+          // it off the session the way OpenCode used to report it.
+          let sessions = await Promise.all((Array.isArray(response?.data) ? response.data : []).map(async (session) => {
+            const archived = await archivedAt(session?.id);
+            return archived ? { ...session, time: { ...session.time, archived } } : session;
+          }));
+          if (input.all !== true) sessions = sessions.filter((session) => !session?.time?.archived);
+          sessions = sessions.slice(0, limit);
+          if (input.withStatus === true) {
+            // One global call now: v2 reports active sessions across directories.
+            const statuses = await activeSessions(client).catch(() => null);
+            sessions = sessions.map((session) => ({
+              ...session,
+              status: statuses ? asPublicStatus(statuses[session.id]) : { type: 'unknown' },
+            }));
+          }
+          return { sessions, limit, directory, archived: input.all === true ? 'included' : 'excluded' };
+        }
+        if (!directory) throw new OpencodeSilverControlError('directory is required', 400);
+        if (action === 'session.status') {
+          return { sessionId: sessionID, directory, sessionStatus: await sessionStatus(client, sessionID) };
+        }
+        if (action === 'session.messages') {
+          if (input.timeout !== undefined && input.wait !== true) throw new OpencodeSilverControlError('timeout requires wait', 400);
+          const role = input.lastAssistant === true ? 'assistant' : (asNonEmptyString(input.role) || 'all');
+          if (!['all', 'user', 'assistant'].includes(role)) throw new OpencodeSilverControlError('role must be all, user, or assistant', 400);
+          const last = input.last === true || input.lastAssistant === true;
+          if (input.all === true && (last || input.limit !== undefined)) throw new OpencodeSilverControlError('all cannot be combined with last or limit', 400);
+          if (last && input.limit !== undefined) throw new OpencodeSilverControlError('last cannot be combined with limit', 400);
+          const currentStatus = input.wait === true
+            ? await waitForIdle({ client, sessionID, directory, timeoutMs: normalizeWaitTimeoutMs(input.timeout), requireActivity: false, startedAt: now(), signal: options.signal })
+            : await sessionStatus(client, sessionID);
+          const limit = input.all === true ? undefined : (last ? 1 : positiveInteger(input.limit, 10, 'limit'));
+          return { sessionId: sessionID, directory, role, sessionStatus: currentStatus, messages: await sessionMessages(client, sessionID, role, limit) };
+        }
+      }
+      throw new OpencodeSilverControlError(`Unsupported OpencodeSilver action: ${action || 'missing'}`, 400);
+    } catch (error) {
+      throw asControlError(error, `Failed to execute ${action || 'OpencodeSilver action'}`);
+    }
+  };
+
+  // The managed agent-tool plugin can no longer report the session's directory
+  // (v2 dropped `context.directory` from a tool call), so it sends the session
+  // id and the directory is resolved here, where it is authoritative.
+  return { execute, resolveSessionDirectory };
+};

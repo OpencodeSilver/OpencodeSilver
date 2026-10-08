@@ -1,0 +1,87 @@
+---
+title: Integrations
+description: Connect the services and subscriptions OpencodeSilver works with.
+---
+
+# Integrations
+
+**Settings → Integrations** is where you sign in to the services OpencodeSilver works with. The sign-in is stored on the OpencodeSilver server, so web, desktop, and a paired phone share it.
+
+## GitHub
+
+Expand the **GitHub** card and choose **Connect GitHub** to sign in with a short device code. Once connected, OpencodeSilver can start sessions from issues and pull requests, attach them to messages, and open or update PRs. Everything GitHub can do is on [GitHub Issues & PRs](/github/).
+
+## Linear
+
+### Connect a workspace
+
+1. Expand the **Linear** card and choose **Connect**.
+2. Approve access in the browser tab that opens. The card shows **Waiting for Linear** until you do.
+
+Connect another Linear organization with **Add workspace**. One workspace is current at a time: switch with **Switch to**, and **Disconnect** removes only the current one. Your project mapping stays.
+
+### Browse issues
+
+Once a workspace is connected, the **Linear** panel appears in the right-hand context rail. It lists the current workspace's issues and lets you:
+
+- filter by status (**Backlog**, **To Do**, **In Progress**, **In Review**, **Done**, **Canceled**, **Duplicate**), assignee (**Anyone** or **Assigned to me**), team, and priority
+- search by title, identifier, or a Linear URL
+- open an issue to read its description, comments, labels, and priority
+- change its **Status** or **Close issue**
+- switch the current **Workspace**
+
+### Start a session from an issue
+
+- In the Linear panel, open an issue and choose **Start session**. The button stays in the footer while the issue scrolls.
+- In the chat, choose **New Session From Linear Issue** to pick one from the list, with **Create in worktree** if you want a fresh branch.
+- In the **New Worktree** dialog, pick a Linear issue. The new session opens with the issue attached to the message box, and you write the first message yourself.
+
+From the Linear panel and the chat, the session opens in the project mapped to the issue's team, with the issue as the first prompt. Map teams in the Linear card: **Default project** covers every team, and **Team projects** override it per team. An unmapped team asks you to map it first. The first message is built from the **Issue Review** magic prompt, which you can edit at **Settings → Magic Prompts → Linear**.
+
+### Link an issue to a message
+
+In the chat composer, open the **+** menu and choose **Linear**. The issue rides along with your next message as context, and the session's work status panel keeps a link back to it.
+
+### Session comments
+
+Turn on **Session comments** in the Linear card and a session started from an issue, or whose first message has the issue attached, posts a comment on that issue when it starts, finishes, or fails, each with a link that opens the session. Comments are only posted when this OpencodeSilver server has a public address, so the link works for everyone on the issue; on a local or private address nothing is posted.
+
+## Install an integration
+
+1. Open **Settings → Integrations**.
+2. Find the integration and choose **Install**.
+3. Restart OpenCode when asked — the provider appears after the restart.
+4. Choose **Set up** and sign in. The models then appear in the chat model picker.
+
+Integrations install for your user, so they work in every project. You can update or remove them from the same card at any time.
+
+## Claude Code
+
+Claude Code uses your Claude Pro or Max plan through the Claude Code CLI on your machine — no API keys.
+
+1. Install the integration (above).
+2. Choose **Set up** and sign in. If you don't have the Claude Code CLI yet, setup offers to install it first and then sign you in.
+
+**How your Claude account stays safe:** this integration uses Anthropic's official Claude Agent SDK and your installed Claude Code CLI. It does not hijack OAuth, extract or replay browser tokens, impersonate an unsupported client, or bypass Anthropic's authentication flow. It stays on Anthropic's supported access path, so it does not carry the account-ban risk of token hijacking or unauthorized authentication workarounds.
+
+## Update or remove
+
+- **Update** installs the latest published version of the plugin.
+- **Remove** deletes the plugin from your OpenCode config. The provider stops loading after OpenCode refreshes.
+
+If a card says the entries need manual management, choose **Manage plugins** and clean up the duplicates there.
+
+## Excalidraw
+
+Excalidraw lets you draw in `.excalidraw` files and Obsidian `.excalidraw.md` drawings right in Files. It's an OpencodeSilver extension, listed under **OpencodeSilver extensions** on the same page.
+
+1. Open **Settings → Integrations** and choose **Install** on the Excalidraw card. You can also open a drawing in Files and choose **Install** in the notice above it.
+2. Open the drawing again. The canvas replaces the file's text, and Cmd/Ctrl+S, autosave, the source toggle, and fullscreen work as for any file.
+
+The card updates the extension when a new version is out, turns it back on if you paused it, and removes it. Your drawings stay as they are when you remove it; they just open as text. Web and desktop only.
+
+## Related
+
+- [GitHub Issues & PRs](/github/) — everything GitHub can do in OpencodeSilver
+- [Worktree Sessions](/worktrees/) — where issue sessions can start
+- [Magic Prompts](/magic-prompts/) — edit the prompt a Linear session starts with

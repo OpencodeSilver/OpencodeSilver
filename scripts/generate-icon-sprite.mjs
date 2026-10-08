@@ -1,0 +1,426 @@
+/**
+ * Generates the SVG icon sprite file from @remixicon/react bundle.
+ *
+ * Usage: bun run scripts/generate-icon-sprite.mjs
+ *
+ * Reads the minified @remixicon/react bundle, extracts SVG path data
+ * for all Ri* icons used in packages/ui/src, and writes
+ * packages/ui/src/components/icon/sprite.ts.
+ */
+
+import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs"
+import { resolve, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const repoRoot = resolve(__dirname, "..")
+const remixPath = resolve(repoRoot, "node_modules/@remixicon/react/index.mjs")
+const outPath = resolve(repoRoot, "packages/ui/src/components/icon/sprite.ts")
+
+const customIconData = new Map([
+  [
+    "opencodesilver",
+    `<path d="M12 2.2L3.5 7.1V16.9L12 21.8L20.5 16.9V7.1L12 2.2Z" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 7.1L12 12L20.5 7.1" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12V21.8" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round"/><path d="M7.75 14.45V19.35M16.25 14.45V19.35M3.5 12L12 16.9L20.5 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.45" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.4 7.1C8.5 6.2 7.3 6.2 6.7 6.8C6.1 7.4 6.1 8.4 7 9.1C7.9 9.8 9.3 8.8 12 7.1C14.7 5.4 16.1 4.4 17 5.1C17.9 5.8 17.9 6.8 17.3 7.4C16.7 8 15.5 8 14.6 7.1L12 7.1L9.4 7.1Z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ],
+  [
+    "report-issue",
+    `<path d="M7.86 2.5H16.14L21.5 7.86V16.14L16.14 21.5H7.86L2.5 16.14V7.86L7.86 2.5Z" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="7.5" x2="12" y2="12.8" stroke="currentColor" stroke-width="1.95" stroke-linecap="round"/><circle cx="12" cy="16.3" r="1.15" fill="currentColor"/>`,
+  ],
+  [
+    "idea-spark",
+    `<path d="M9 18H15M10 21H14M8.2 14.6C6.8 13.4 6 11.7 6 9.8C6 6.5 8.7 3.8 12 3.8C15.3 3.8 18 6.5 18 9.8C18 11.7 17.2 13.4 15.8 14.6L15 15.3V18H9V15.3L8.2 14.6Z" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.2L12.7 9.1L14.6 9.8L12.7 10.5L12 12.4L11.3 10.5L9.4 9.8L11.3 9.1L12 7.2Z" fill="currentColor"/>`,
+  ],
+  [
+    "update-sync",
+    `<path d="M4.2 10.2C4.9 6.4 8.1 3.5 12 3.5C15.4 3.5 18.4 5.6 19.5 8.7M19.8 3.8V8.8H14.8" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.8 13.8C19.1 17.6 15.9 20.5 12 20.5C8.6 20.5 5.6 18.4 4.5 15.3M4.2 20.2V15.2H9.2" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 14.8V9.2M12 9.2L9.6 11.6M12 9.2L14.4 11.6" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"/>`,
+  ],
+  // Command Code — corner squares + center square (official logo geometry).
+  [
+    "command-code",
+    `<path fill="currentColor" d="M5.8 5.8h4.8v4.8h-4.8Z M13.4 5.8h4.8v4.8h-4.8Z M10.6 10.6h2.8v2.8h-2.8Z M5.8 13.4h4.8v4.8h-4.8Z M13.4 13.4h4.8v4.8h-4.8Z"/>`,
+  ],
+  // Linear logo, adapted from the supplied 100x100 mark to the 24x24 sprite viewBox.
+  [
+    "linear",
+    `<g transform="translate(1.5 1.5) scale(0.21)"><path fill="currentColor" d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.857L39.3342 97.1782c.6889.6889.0915 1.8189-.857 1.5964C20.0515 94.4522 5.54779 79.9485 1.22541 61.5228ZM.00189135 46.8891c-.01764375.2833.08887215.5599.28957165.7606L52.3503 99.7085c.2007.2007.4773.3075.7606.2896 2.3692-.1476 4.6938-.46 6.9624-.9259.7645-.157 1.0301-1.0963.4782-1.6481L2.57595 39.4485c-.55186-.5519-1.49117-.2863-1.648174.4782-.465915 2.2686-.77832 4.5932-.92588465 6.9624ZM4.21093 29.7054c-.16649.3738-.08169.8106.20765 1.1l64.77602 64.776c.2894.2894.7262.3742 1.1.2077 1.7861-.7956 3.5171-1.6927 5.1855-2.684.5521-.328.6373-1.0867.1832-1.5407L8.43566 24.3367c-.45409-.4541-1.21271-.3689-1.54074.1832-.99132 1.6686-1.88843 3.3994-2.68399 5.1855ZM12.6587 18.074c-.3701-.3701-.393-.9637-.0443-1.3541C21.7795 6.45931 35.1114 0 49.9519 0 77.5927 0 100 22.4073 100 50.0481c0 14.8405-6.4593 28.1724-16.7199 37.3375-.3903.3487-.984.3258-1.3542-.0443L12.6587 18.074Z"/></g>`,
+  ],
+  // Cloudflare logo, reduced to a single currentColor silhouette.
+  [
+    "cloudflare",
+    `<g transform="translate(0.2 0.2) scale(0.18)"><path fill="currentColor" d="M87.295 89.022c.763-2.617.472-5.015-.8-6.796-1.163-1.635-3.125-2.58-5.488-2.689l-44.737-.581c-.291 0-.545-.145-.691-.363s-.182-.509-.109-.8c.145-.436.581-.763 1.054-.8l45.137-.581c5.342-.254 11.157-4.579 13.192-9.885l2.58-6.723c.109-.291.145-.581.073-.872-2.906-13.158-14.644-22.97-28.672-22.97-12.938 0-23.913 8.359-27.838 19.952a13.35 13.35 0 0 0-9.267-2.58c-6.215.618-11.193 5.597-11.811 11.811-.145 1.599-.036 3.162.327 4.615C10.104 70.051 2 78.337 2 88.549c0 .909.073 1.817.182 2.726a.895.895 0 0 0 .872.763h82.57c.472 0 .909-.327 1.054-.8l.617-2.216z"/><path fill="currentColor" d="M101.542 60.275c-.4 0-.836 0-1.236.036-.291 0-.545.218-.654.509l-1.744 6.069c-.763 2.617-.472 5.015.8 6.796 1.163 1.635 3.125 2.58 5.488 2.689l9.522.581c.291 0 .545.145.691.363.145.218.182.545.109.8-.145.436-.581.763-1.054.8l-9.924.582c-5.379.254-11.157 4.579-13.192 9.885l-.727 1.853c-.145.363.109.727.509.727h34.089c.4 0 .763-.254.872-.654.581-2.108.909-4.325.909-6.614 0-13.447-10.975-24.422-24.458-24.422"/></g>`,
+  ],
+])
+
+const source = readFileSync(remixPath, "utf-8")
+
+// --- Step 1: extract variable → path mapping ---
+// Pattern: const VARNAME=({color:...})=>...createElement("path",{d:"PATH_DATA"})...,
+// Each icon is defined as `const X=...` where X is 1-4 chars.
+const varPathMap = new Map()
+const varRegex = /(?:[,;]const |\),)([A-Za-z0-9_$]{1,4})=\([{]color:/g
+// Find all variable definitions and their boundaries
+const varPositions = []
+let m
+while ((m = varRegex.exec(source)) !== null) {
+  varPositions.push({
+    varName: m[1],
+    start: m.index + m[0].length - 1, // first `{` after `=({color:`
+  })
+}
+
+for (let i = 0; i < varPositions.length; i++) {
+  const current = varPositions[i]
+  const next = varPositions[i + 1]
+  // End at the )), just before the next variable definition
+  const end = next
+    ? source.indexOf("))," + next.varName + "=(", current.start)
+    : source.length
+  if (end < 0 || end < current.start) continue
+  const segment = source.slice(current.start, end)
+  const pathRegex = /\w+\.createElement\("path",[{]d:"([^"]*)"/g
+  let pm
+  const paths = []
+  while ((pm = pathRegex.exec(segment)) !== null) {
+    paths.push(pm[1])
+  }
+  if (paths.length > 0) {
+    varPathMap.set(current.varName, paths)
+  }
+}
+
+// --- Step 2: extract export mapping ---
+// The export map is near the end of the file:
+// export{V1 as Ri...Z2 as RiLast};
+const exportRegex = /export[{]([^}]+)[}]/
+const exportMatch = exportRegex.exec(source)
+if (!exportMatch) {
+  console.error("Could not find export mapping in remixicon bundle")
+  process.exit(1)
+}
+
+const nameToVar = new Map()
+const entries = exportMatch[1].split(",")
+for (const entry of entries) {
+  // Pattern: VAR as RiIconName
+  const parts = entry.trim().split(" as ")
+  if (parts.length === 2) {
+    nameToVar.set(parts[1].trim(), parts[0].trim())
+  }
+}
+
+const remixToSpriteName = (name) => {
+  // RiArrowDownSLine → arrow-down-s
+  // RiGithubFill → github-fill (keep Fill for fill variants)
+  return name
+    .replace(/^Ri/, "")
+    .replace(/Line$/, "")
+    .replace(/([a-z])([A-Z0-9])/g, "$1-$2")
+    .replace(/([0-9])([A-Z])/g, "$1-$2")
+    .toLowerCase()
+}
+
+const spriteNameToRi = new Map()
+const hasRemixVariantSuffix = (name) => name.endsWith("Line") || name.endsWith("Fill")
+const shouldPreferSpriteCandidate = (current, candidate) => {
+  if (!current) return true
+  if (!hasRemixVariantSuffix(candidate) && hasRemixVariantSuffix(current)) return true
+  if (!hasRemixVariantSuffix(current)) return false
+  if (candidate.endsWith("Line") && !current.endsWith("Line")) return true
+  return false
+}
+
+for (const iconName of nameToVar.keys()) {
+  const spriteName = remixToSpriteName(iconName)
+  const current = spriteNameToRi.get(spriteName)
+  if (shouldPreferSpriteCandidate(current, iconName)) {
+    spriteNameToRi.set(spriteName, iconName)
+  }
+}
+
+// --- Step 3: find which icons we actually use ---
+const srcDir = resolve(repoRoot, "packages/ui/src")
+
+// Helper: convert kebab-case name back to RiName
+function nameToRi(kebab) {
+  // "arrow-down-sline" → RiArrowDownSline
+  const parts = kebab.split("-")
+  let result = "Ri"
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (i > 0 && /^\d/.test(part)) {
+      result += part[0].toUpperCase() + part.slice(1)
+    } else {
+      result += part.charAt(0).toUpperCase() + part.slice(1)
+    }
+  }
+  return result
+}
+
+// Finish step 3 synchronously with simpler approach
+function findAllSourceFiles(dir) {
+  const results = []
+  for (const entry of readdirSync(dir)) {
+    const full = resolve(dir, entry)
+    try {
+      const st = statSync(full)
+      if (st.isDirectory()) {
+        if (entry === "node_modules") continue
+        results.push(...findAllSourceFiles(full))
+      } else if (/\.(tsx?)$/.test(entry) && full !== outPath) {
+        results.push(full)
+      }
+    } catch { /* skip */ }
+  }
+  return results
+}
+
+const allSrcFiles = findAllSourceFiles(srcDir)
+const usedIcons = new Set()
+const usedCustomIcons = new Set()
+const addKebabIcon = (kebab) => {
+  if (customIconData.has(kebab)) {
+    usedCustomIcons.add(kebab)
+    return true
+  }
+
+  const exactRiName = spriteNameToRi.get(kebab)
+  if (exactRiName && !hasRemixVariantSuffix(exactRiName)) {
+    usedIcons.add(exactRiName)
+    return true
+  }
+
+  for (const suffix of ["Line", "Fill", ""]) {
+    const riName = nameToRi(kebab) + suffix
+    if (nameToVar.has(riName)) {
+      usedIcons.add(riName)
+      return true
+    }
+  }
+
+  if (exactRiName) {
+    usedIcons.add(exactRiName)
+    return true
+  }
+
+  return false
+}
+
+const addIconLiterals = (content) => {
+  const iconLiteralRegex = /["']([a-z][a-z0-9-]*)["']/g
+  let literal
+  while ((literal = iconLiteralRegex.exec(content)) !== null) {
+    addKebabIcon(literal[1])
+  }
+}
+
+function findMatchingBrace(content, openBraceIndex) {
+  let depth = 0
+  let quote = null
+  let escaped = false
+  let lineComment = false
+  let blockComment = false
+
+  for (let i = openBraceIndex; i < content.length; i++) {
+    const char = content[i]
+    const next = content[i + 1]
+
+    if (lineComment) {
+      if (char === "\n") lineComment = false
+      continue
+    }
+
+    if (blockComment) {
+      if (char === "*" && next === "/") {
+        blockComment = false
+        i++
+      }
+      continue
+    }
+
+    if (quote) {
+      if (escaped) {
+        escaped = false
+      } else if (char === "\\") {
+        escaped = true
+      } else if (char === quote) {
+        quote = null
+      }
+      continue
+    }
+
+    if (char === "/" && next === "/") {
+      lineComment = true
+      i++
+      continue
+    }
+
+    if (char === "/" && next === "*") {
+      blockComment = true
+      i++
+      continue
+    }
+
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char
+      continue
+    }
+
+    if (char === "{") {
+      depth++
+    } else if (char === "}") {
+      depth--
+      if (depth === 0) return i
+    }
+  }
+
+  return -1
+}
+
+const addIconNameFunctionReturns = (content) => {
+  const functionRegex = /function\s+\w+\s*\([^)]*\)\s*:\s*IconName(?:\s*\|\s*null)?\s*{/g
+  let match
+  while ((match = functionRegex.exec(content)) !== null) {
+    const openBraceIndex = content.indexOf("{", match.index)
+    if (openBraceIndex === -1) continue
+
+    const closeBraceIndex = findMatchingBrace(content, openBraceIndex)
+    if (closeBraceIndex === -1) continue
+
+    const body = content.slice(openBraceIndex + 1, closeBraceIndex)
+    const returnRegex = /\breturn\s+["']([a-z][a-z0-9-]*)["']/g
+    let returnMatch
+    while ((returnMatch = returnRegex.exec(body)) !== null) {
+      addKebabIcon(returnMatch[1])
+    }
+    functionRegex.lastIndex = closeBraceIndex + 1
+  }
+}
+
+const addTypedIconNameRecords = (content) => {
+  const recordRegex = /:\s*Record<[^>]*IconName[^>]*>\s*=\s*{/g
+  let match
+  while ((match = recordRegex.exec(content)) !== null) {
+    const openBraceIndex = content.indexOf("{", match.index)
+    if (openBraceIndex === -1) continue
+
+    const closeBraceIndex = findMatchingBrace(content, openBraceIndex)
+    if (closeBraceIndex === -1) continue
+
+    addIconLiterals(content.slice(openBraceIndex + 1, closeBraceIndex))
+    recordRegex.lastIndex = closeBraceIndex + 1
+  }
+}
+
+const addIconNameVariableAssignments = (content) => {
+  if (!/<Icon\b/.test(content)) return
+
+  const variableRegex = /\b(?:const|let|var)\s+\w*IconName\b[^=]*=\s*([\s\S]*?);/g
+  let match
+  while ((match = variableRegex.exec(content)) !== null) {
+    const initializer = match[1]
+    const directLiteral = /^\s*["']([a-z][a-z0-9-]*)["']/.exec(initializer)
+    if (directLiteral) {
+      addKebabIcon(directLiteral[1])
+    }
+
+    const branchLiteralRegex = /(?:\?\?|[?:])\s*["']([a-z][a-z0-9-]*)["']/g
+    let branchLiteral
+    while ((branchLiteral = branchLiteralRegex.exec(initializer)) !== null) {
+      addKebabIcon(branchLiteral[1])
+    }
+  }
+}
+
+for (const file of allSrcFiles) {
+  const content = readFileSync(file, "utf-8")
+  // Match RiIcons from @remixicon/react imports
+  const iconRegex = /Ri[A-Z][A-Za-z0-9]+/g
+  let im
+  while ((im = iconRegex.exec(content)) !== null) {
+    if (nameToVar.has(im[0])) {
+      usedIcons.add(im[0])
+    }
+  }
+
+  // Also scan for <Icon name="..." /> patterns (already-migrated icons)
+  const iconNameRegex = /<Icon\b[^>]*\bname=(?:["']([^"']+)["']|{\s*["']([^"']+)["']\s*})/g
+  let nm
+  while ((nm = iconNameRegex.exec(content)) !== null) {
+    addKebabIcon(nm[1] || nm[2])
+  }
+  // And every literal of a conditional name, e.g. name={pending ? "loader-4" : "gift"}.
+  for (const expression of content.matchAll(/<Icon\b[^>]*?\bname=\{([^{}]*)\}/g)) {
+    for (const literal of expression[1].matchAll(/["']([a-z][a-z0-9-]*)["']/g)) addKebabIcon(literal[1])
+  }
+
+  // Also scan for icon: 'kebab-name' / Icon: 'kebab-name' in object literals.
+  const iconPropRegex = /\b[Ii]con:\s*["']([a-z][a-z0-9-]*)["']/g
+  let ip
+  while ((ip = iconPropRegex.exec(content)) !== null) {
+    addKebabIcon(ip[1])
+  }
+
+  // Also scan JSX props named icon/Icon with a string literal value.
+  const iconJsxPropRegex = /\b[Ii]con=(?:["']([^"']+)["']|{\s*["']([^"']+)["']\s*})/g
+  let jp
+  while ((jp = iconJsxPropRegex.exec(content)) !== null) {
+    addKebabIcon(jp[1] || jp[2])
+  }
+
+  addIconNameFunctionReturns(content)
+  addTypedIconNameRecords(content)
+  addIconNameVariableAssignments(content)
+  // Shared constants can live outside JSX files and need no naming suffix.
+  for (const match of content.matchAll(/\b(?:const|let|var)\s+\w+\s*:\s*IconName\s*=\s*["']([a-z][a-z0-9-]*)["']/g)) {
+    addKebabIcon(match[1])
+  }
+}
+
+console.log(`Found ${usedIcons.size} unique remixicon names used in source`)
+
+// --- Step 4: build sprite data ---
+const iconEntries = []
+for (const iconName of [...usedIcons].sort()) {
+  const varName = nameToVar.get(iconName)
+  if (!varName) {
+    console.warn(`  ⚠ Unknown icon: ${iconName}`)
+    continue
+  }
+  const paths = varPathMap.get(varName)
+  if (!paths || paths.length === 0) {
+    console.warn(`  ⚠ No path data for: ${iconName} (var: ${varName})`)
+    continue
+  }
+
+  // Build SVG content from paths
+  const svgContent = paths
+    .map((d) => `<path d="${d}" fill="currentColor"/>`)
+    .join("")
+
+  iconEntries.push({ name: iconName, content: svgContent })
+}
+
+for (const iconName of [...usedCustomIcons].sort()) {
+  iconEntries.push({ name: iconName, content: customIconData.get(iconName) })
+}
+
+// --- Step 5: write sprite.ts ---
+const spriteLines = iconEntries
+  .map(({ name, content }) => ({
+    name: name.startsWith("Ri") ? remixToSpriteName(name) : name,
+    content,
+  }))
+  .sort((left, right) => left.name.localeCompare(right.name))
+  .map(({ name, content }) => `  "${name}": \`${content}\`,`)
+
+const spriteContent = `// This file is auto-generated by scripts/generate-icon-sprite.mjs
+// Do not edit manually. Run the script to update.
+
+export const iconSpriteData = {
+${spriteLines.join("\n")}
+} as const satisfies Record<string, string>;
+`
+
+writeFileSync(outPath, spriteContent, "utf-8")
+console.log(`\n✅ Generated sprite data for ${iconEntries.length} icons → ${outPath}`)
+console.log(`   Total sprite size: ${Buffer.byteLength(spriteContent).toLocaleString()} bytes`)

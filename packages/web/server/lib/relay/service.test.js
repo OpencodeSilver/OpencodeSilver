@@ -1,0 +1,99 @@
+import { describe, it, expect, vi } from 'vitest';
+import crypto from 'node:crypto';
+
+import { createRelayService } from './service.js';
+
+const makeService = (options = {}) => {
+  // In-memory settings store with a pre-seeded relay identity so the service
+  // never regenerates a signing key during the test.
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+  let settings = {
+    relaySigningKey: {
+      privateJwk: privateKey.export({ format: 'jwk' }),
+      publicJwk: publicKey.export({ format: 'jwk' }),
+    },
+    privateRelay: { enabled: true, relayUrl: 'wss://relay.example.test/ws' },
+    ...options.settings,
+  };
+  const hostLock = {
+    tryClaim: vi.fn(() => true),
+    forceClaim: vi.fn(() => true),
+    holdsClaim: vi.fn(() => true),
+    liveClaimantPid: vi.fn(() => null),
+    release: vi.fn(),
+  };
+  const service = createRelayService({
+    crypto,
+    readSettingsFromDiskMigrated: async () => settings,
+    writeSettingsToDisk: async (next) => { settings = next; },
+    readSettingsStrict: async () => settings,
+    getLocalPort: () => 0,
+    hasRelayDemand: options.hasRelayDemand ?? (async () => true),
+    hostLock,
+    allowPassiveHost: options.allowPassiveHost,
+    logger: { warn: () => {} },
+  });
+  return { service, hostLock, getSettings: () => settings };
+};
+
+describe('relay service passive hosting', () => {
+  it('never claims or starts the host passively when passive hosting is disabled', async () => {
+    const { service, hostLock } = makeService({ allowPassiveHost: false });
+    try {
+      await service.startIfEnabled();
+      let status = await service.getStatus();
+      expect(status.state).toBe('standby');
+      expect(hostLock.tryClaim).not.toHaveBeenCalled();
+      expect(hostLock.forceClaim).not.toHaveBeenCalled();
+
+      await service.reconcile();
+      status = await service.getStatus();
+      expect(status.state).toBe('standby');
+      expect(status.lastError).toContain('passive relay hosting is disabled');
+      expect(hostLock.tryClaim).not.toHaveBeenCalled();
+    } finally {
+      service.stop();
+    }
+  });
+
+  it('in enterprise mode runs only on a relay pinned by OPENCODESILVER_RELAY_URL', async () => {
+    process.env.OPENCODESILVER_ENTERPRISE_MODE = '1';
+    delete process.env.OPENCODESILVER_RELAY_URL;
+    const blocked = makeService();
+    try {
+      await blocked.service.startIfEnabled();
+      await blocked.service.reconcile();
+      const status = await blocked.service.getStatus();
+      expect(status).toMatchObject({ state: 'disabled', blockedByEnterprise: true });
+      expect(blocked.hostLock.tryClaim).not.toHaveBeenCalled();
+      expect(await blocked.service.getPairingCandidate()).toBeNull();
+      await expect(blocked.service.ensureEnabledForPairing()).rejects.toMatchObject({ statusCode: 403 });
+      expect(blocked.hostLock.forceClaim).not.toHaveBeenCalled();
+
+      process.env.OPENCODESILVER_RELAY_URL = 'wss://relay.company.test/ws';
+      const own = makeService();
+      try {
+        const candidate = await own.service.ensureEnabledForPairing();
+        expect(candidate).toMatchObject({ type: 'relay', relayUrl: 'wss://relay.company.test/ws' });
+        expect((await own.service.getStatus()).blockedByEnterprise).toBe(false);
+      } finally {
+        own.service.stop();
+      }
+    } finally {
+      blocked.service.stop();
+      delete process.env.OPENCODESILVER_ENTERPRISE_MODE;
+      delete process.env.OPENCODESILVER_RELAY_URL;
+    }
+  });
+
+  it('force-claims for an explicit pairing even when passive hosting is disabled', async () => {
+    const { service, hostLock } = makeService({ allowPassiveHost: false });
+    try {
+      const candidate = await service.ensureEnabledForPairing();
+      expect(candidate?.type).toBe('relay');
+      expect(hostLock.forceClaim).toHaveBeenCalled();
+    } finally {
+      service.stop();
+    }
+  });
+});

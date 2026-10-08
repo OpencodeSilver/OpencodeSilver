@@ -1,0 +1,148 @@
+---
+title: 环境变量
+description: 使用环境变量配置 OpencodeSilver 和 OpenCode 集成。
+---
+
+# 环境变量
+
+OpencodeSilver 会在启动时读取这些变量。对于开机启动服务，`opencodesilver startup enable` 默认会保存当前环境的 snapshot，所以如果要让服务使用新的变量，请重新运行它。
+
+## OpencodeSilver 服务器
+
+### `OPENCODESILVER_HOST`
+
+OpencodeSilver web 服务器监听的地址。使用 `0.0.0.0` 可允许其他机器访问。
+
+### `OPENCODESILVER_UI_PASSWORD`
+
+浏览器 UI 的密码。当你绑定到 localhost 之外、使用隧道或反向代理时，请设置它。
+
+### `OPENCODESILVER_API_ONLY`
+
+设置为 `true` 或 `1` 时，以 headless 模式启动 OpencodeSilver。桌面和移动客户端仍可使用 API 路由，但不会提供浏览器 UI。
+
+### `OPENCODESILVER_FRAME_ANCESTORS`
+
+允许在自己页面的框架中显示 OpencodeSilver 的源，用空格分隔，例如 `https://dash.example.com`。`*` 允许任何站点。默认只有 OpencodeSilver 本身及其桌面和移动应用可以嵌入它，其他站点无法在它的按钮上叠加内容。
+
+### `OPENCODESILVER_DATA_DIR`
+
+覆盖 OpencodeSilver 数据目录。默认是 `~/.config/opencodesilver`。
+
+OpencodeSilver 存储的所有内容都位于此目录下：设置、认证、项目配置、主题、计划和语音模型。在 1.23 之前使用自定义目录的实例会在首次启动时将 `projects`、`themes` 和 `speech-models` 文件夹从 `~/.config/opencodesilver` 复制到此目录；原文件夹保持不变，不会合并任何内容。
+
+### `OPENCODESILVER_CHATS_DIR`
+
+更改 OpencodeSilver 为无项目聊天创建的托管聊天目录的位置。默认是 `~/.config/opencodesilver/chats`。当 OpencodeSilver 和 OpenCode 以不同用户运行时，请设置为 OpenCode 服务器可读取的目录。现有聊天不会被移动。
+
+### `OPENCODESILVER_COMPRESS_API`
+
+控制 API 响应压缩。`true` 或 `1` 强制开启，`false` 或 `0` 强制关闭。
+
+### `OPENCODESILVER_SKIP_API_COMPRESSION`
+
+设置为 `true` 或 `1` 时关闭 API 响应压缩。它优先于 `OPENCODESILVER_COMPRESS_API`。
+
+### `OPENCODESILVER_VERBOSE_REQUEST_LOGS`
+
+设置为 `true` 或 `1` 时启用详细 HTTP request logs。
+
+### `OPENCODESILVER_UPDATE_API_URL`
+
+覆盖更新检查 API endpoint。大多数用户不需要设置它。
+
+### `OPENCODESILVER_PACKAGE_MANAGER`
+
+当自动检测错误时，强制指定更新操作使用的 package manager。
+
+## OpenCode 服务器
+
+### `OPENCODE_HOST`
+
+将 OpencodeSilver 连接到已有的 OpenCode server。值必须是带明确端口、没有 path、query 或 hash 的 `http` 或 `https` origin。`OPENCODE_HOST` 优先于 `OPENCODE_PORT`。
+
+### `OPENCODE_PORT`
+
+设置 OpenCode server 端口。对于 managed OpenCode，它请求使用该端口；配合 `OPENCODE_SKIP_START=true` 时，它连接到该端口上的外部服务器。
+
+### `OPENCODE_SKIP_START`
+
+设置为 `true` 时阻止 OpencodeSilver 启动自己的 OpenCode server。
+
+### `OPENCODESILVER_OPENCODE_HOSTNAME`
+
+OpencodeSilver 管理的 OpenCode server 绑定 hostname。默认是 `127.0.0.1`。
+
+### `OPENCODE_BINARY`
+
+OpencodeSilver 应该运行的 `opencode` executable 路径。
+
+### `OPENCODE_CONFIG`
+
+指定 OpenCode config 文件路径。
+
+### `OPENCODE_CONFIG_DIR`
+
+指定 OpenCode config 目录，用于 agents、skills、snippets 和 config discovery。
+
+### `OPENCODE_DATA_DIR`
+
+managed OpenCode server 的自定义数据目录。
+
+### `OPENCODE_WSL_DISTRO`
+
+选择 Windows 上 OpenCode 集成使用的 WSL distro。
+
+### `OPENCODESILVER_OPENCODE_WSL_DISTRO`
+
+OpencodeSilver 专用的 WSL distro alias。如果两个变量都设置，`OPENCODE_WSL_DISTRO` 优先。
+
+### `OPENCODE_JWT_SECRET`
+
+用于签名 UI auth tokens 的 secret。持久服务部署应使用长的随机值。
+
+## Terminal 和 Git
+
+### `OPENCODESILVER_TERMINAL_SHELL`
+
+OpencodeSilver terminal sessions 使用的 shell executable。
+
+### `OPENCODESILVER_GIT_BINARY`
+
+OpencodeSilver Git 功能使用的 Git executable。
+
+### `GIT_BINARY`
+
+Git executable 的备用 override。OpencodeSilver 专用配置建议使用 `OPENCODESILVER_GIT_BINARY`。
+
+### `OPENCODESILVER_GIT_READ_CACHE_TTL_MS`
+
+Git-backed file reads cache 的 TTL，单位为毫秒。调试时可设置为 `0` 禁用 cache。
+
+## 语音和隧道
+
+### `OPENAI_API_KEY`
+
+OpencodeSilver 语音功能直接调用 OpenAI 时使用的 API key。它不会发送到自定义的 OpenAI 兼容服务器：请在设置中为该服务器单独配置密钥。
+
+### `OPENCODESILVER_ALLOW_REMOTE_OPENAI_COMPAT_URLS`
+
+设置为 `true` 或 `1` 时，允许语音功能使用远程 OpenAI-compatible base URLs。
+
+### `NGROK_AUTHTOKEN`
+
+OpencodeSilver tunnel commands 使用的 ngrok auth token。也可以用 `ngrok config add-authtoken <token>` 配置。
+
+## Runtime helpers
+
+### `BUN_BINARY`
+
+OpencodeSilver 启动 daemon processes 时使用的 Bun executable。
+
+### `BUN_INSTALL`
+
+Bun 安装根目录。OpencodeSilver 使用它查找 `bin/bun` 来启动 daemon 和执行更新。
+
+### `VITE_OPENCODE_URL`
+
+Vite-built web app 的 build-time API base URL。普通 CLI 或 desktop 使用通常不需要设置它。

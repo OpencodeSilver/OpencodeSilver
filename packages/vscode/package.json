@@ -1,0 +1,319 @@
+{
+  "name": "opencodesilver",
+  "displayName": "OpencodeSilver",
+  "description": "%extension.description%",
+  "version": "3.0.0",
+  "publisher": "fedaykindev",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "claude",
+    "gpt",
+    "agent",
+    "coding",
+    "chatgpt",
+    "groq",
+    "assistant",
+    "opencode",
+    "opencodesilver"
+  ],
+  "icon": "assets/app-icon.png",
+  "main": "./dist/extension.js",
+  "l10n": "./l10n",
+  "activationEvents": [
+    "onCommand:opencodesilver.openSidebar",
+    "onCommand:opencodesilver.attachExplorerToChat",
+    "onCommand:opencodesilver.generateCommitMessage",
+    "onView:opencodesilver.chatView"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "opencodesilver",
+          "title": "OpencodeSilver",
+          "icon": "assets/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "opencodesilver": [
+        {
+          "type": "webview",
+          "id": "opencodesilver.chatView",
+          "name": "%views.chat.name%"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "opencodesilver.openSidebar",
+        "category": "OpencodeSilver",
+        "title": "%command.openSidebar.title%",
+        "icon": {
+          "light": "assets/icon.svg",
+          "dark": "assets/icon-titlebar.svg"
+        }
+      },
+      {
+        "command": "opencodesilver.focusChat",
+        "category": "OpencodeSilver",
+        "title": "%command.focusChat.title%"
+      },
+      {
+        "command": "opencodesilver.restartApi",
+        "category": "OpencodeSilver",
+        "title": "%command.restartApi.title%"
+      },
+      {
+        "command": "opencodesilver.showOpenCodeStatus",
+        "category": "OpencodeSilver",
+        "title": "%command.showOpenCodeStatus.title%"
+      },
+      {
+        "command": "opencodesilver.openAgentManager",
+        "category": "OpencodeSilver",
+        "title": "%command.openAgentManager.title%",
+        "icon": "$(repo-forked)"
+      },
+      {
+        "command": "opencodesilver.openActiveSessionInEditor",
+        "category": "OpencodeSilver",
+        "title": "%command.openActiveSessionInEditor.title%",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "opencodesilver.openNewSessionInEditor",
+        "category": "OpencodeSilver",
+        "title": "%command.openNewSessionInEditor.title%",
+        "icon": {
+          "light": "assets/icon.svg",
+          "dark": "assets/icon-titlebar.svg"
+        }
+      },
+      {
+        "command": "opencodesilver.openCurrentOrNewSessionInEditor",
+        "category": "OpencodeSilver",
+        "title": "%command.openCurrentOrNewSessionInEditor.title%",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "opencodesilver.addToContext",
+        "category": "OpencodeSilver",
+        "title": "%command.addToContext.title%"
+      },
+      {
+        "command": "opencodesilver.addLineComment",
+        "category": "OpencodeSilver",
+        "title": "%command.addLineComment.title%"
+      },
+      {
+        "command": "opencodesilver.submitLineComment",
+        "category": "OpencodeSilver",
+        "title": "%command.submitLineComment.title%"
+      },
+      {
+        "command": "opencodesilver.removeLineComment",
+        "category": "OpencodeSilver",
+        "title": "%command.removeLineComment.title%",
+        "icon": "$(close)"
+      },
+      {
+        "command": "opencodesilver.explain",
+        "category": "OpencodeSilver",
+        "title": "%command.explain.title%"
+      },
+      {
+        "command": "opencodesilver.improveCode",
+        "category": "OpencodeSilver",
+        "title": "%command.improveCode.title%"
+      },
+      {
+        "command": "opencodesilver.optimizePrompt",
+        "category": "OpencodeSilver",
+        "title": "%command.optimizePrompt.title%",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "opencodesilver.newSession",
+        "category": "OpencodeSilver",
+        "title": "%command.newSession.title%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "opencodesilver.showSettings",
+        "category": "OpencodeSilver",
+        "title": "%command.showSettings.title%",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "opencodesilver.attachExplorerToChat",
+        "category": "OpencodeSilver",
+        "title": "%command.attachExplorerToChat.title%"
+      },
+      {
+        "command": "opencodesilver.generateCommitMessage",
+        "category": "OpencodeSilver",
+        "title": "%command.generateCommitMessage.title%",
+        "icon": {
+          "light": "assets/icon.svg",
+          "dark": "assets/icon-scm-titlebar.svg"
+        }
+      }
+    ],
+    "submenus": [
+      {
+        "id": "opencodesilver.submenu",
+        "label": "OpencodeSilver"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "opencodesilver.generateCommitMessage",
+          "when": "scmProvider == git",
+          "group": "navigation@0"
+        }
+      ],
+      "comments/commentThread/context": [
+        {
+          "command": "opencodesilver.submitLineComment",
+          "group": "inline",
+          "when": "commentController == opencodesilver.inlineComments"
+        }
+      ],
+      "comments/commentThread/title": [
+        {
+          "command": "opencodesilver.removeLineComment",
+          "group": "navigation",
+          "when": "commentController == opencodesilver.inlineComments && commentThread == opencodesilverAttached"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "opencodesilver.submitLineComment",
+          "when": "false"
+        },
+        {
+          "command": "opencodesilver.removeLineComment",
+          "when": "false"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "opencodesilver.submenu",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "opencodesilver.attachExplorerToChat",
+          "when": "resourceScheme == file && explorerResourceIsFolder == false",
+          "group": "navigation@50"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "opencodesilver.openNewSessionInEditor",
+          "group": "navigation@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "opencodesilver.newSession",
+          "when": "view == opencodesilver.chatView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "opencodesilver.openCurrentOrNewSessionInEditor",
+          "when": "view == opencodesilver.chatView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "opencodesilver.openAgentManager",
+          "when": "view == opencodesilver.chatView",
+          "group": "navigation@3"
+        },
+        {
+          "command": "opencodesilver.showSettings",
+          "when": "view == opencodesilver.chatView",
+          "group": "navigation@4"
+        }
+      ],
+      "opencodesilver.submenu": [
+        {
+          "command": "opencodesilver.optimizePrompt"
+        },
+        {
+          "command": "opencodesilver.explain"
+        },
+        {
+          "command": "opencodesilver.improveCode"
+        },
+        {
+          "command": "opencodesilver.addToContext"
+        },
+        {
+          "command": "opencodesilver.addLineComment"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpencodeSilver",
+      "properties": {
+        "opencodesilver.apiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.apiUrl.description%"
+        },
+        "opencodesilver.opencodeBinary": {
+          "type": "string",
+          "default": "",
+          "description": "%configuration.opencodeBinary.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "node -e \"process.exit(0)\"",
+    "build": "bun run build:extension && bun run build:webview",
+    "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify --main-fields=module,main && node -e \"const fs=require('fs'),path=require('path');const src=path.resolve('../web/server/lib/opencode/default-skills');const dst=path.resolve('dist/default-skills');if(fs.existsSync(src)){fs.rmSync(dst,{recursive:true,force:true});fs.cpSync(src,dst,{recursive:true});}\"",
+    "build:webview": "VITE_OPENCODE_URL=/api vite build",
+    "dev": "concurrently -n \"ext,web\" -c \"cyan,magenta\" \"bun run watch:extension\" \"bun run dev:webview\"",
+    "dev:webview": "vite --host localhost --port 5173 --strictPort",
+    "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap --main-fields=module,main",
+    "watch:webview": "vite build --watch",
+    "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
+    "lint": "bun x eslint --ext .ts,.tsx src webview",
+    "test": "node ../../scripts/run-isolated-tests.mjs src webview",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/vscode": "^1.85.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "@vscode/vsce": "^3.2.1",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.28.0",
+    "typescript": "~5.9.0",
+    "vite": "^7.1.2"
+  },
+  "dependencies": {
+    "@opencodesilver/ui": "workspace:*",
+    "@opencode/client": "2.0.25",
+    "adm-zip": "^0.6.0",
+    "jsonc-parser": "^3.3.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "yaml": "^2.8.1",
+    "zod": "^4.3.6"
+  }
+}

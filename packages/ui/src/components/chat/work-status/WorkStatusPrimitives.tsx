@@ -1,0 +1,302 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { Icon } from '@/components/icon/Icon';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useUIStore } from '@/stores/useUIStore';
+import type { IconName } from '@/components/icon/icons';
+
+/**
+ * Row/section vocabulary for the work-status panel.
+ *
+ * Every readout is a labelled row — icon, name, trailing value — so a glance
+ * answers "what is this number" without hovering. Sections carry a heading and
+ * are separated by a hairline; the panel itself stays chrome-less, since it is
+ * an object inside the chat rather than a docked pane.
+ */
+
+/**
+ * Sections are direct siblings inside the panel (fragments add no DOM nodes),
+ * so the separator is a first-child CSS rule. Passing "am I first?" down as a
+ * prop would mean every group tracking what the groups above it decided to
+ * render.
+ */
+const SECTION_CLASS = cn(
+  'flex flex-col',
+  '[&:not(:first-child)]:mt-3 [&:not(:first-child)]:border-t',
+  '[&:not(:first-child)]:border-[var(--interactive-border)] [&:not(:first-child)]:pt-3',
+);
+
+const HEADING_CLASS = 'text-[12.5px] font-medium text-muted-foreground group-hover/section:text-foreground transition-colors';
+
+export const WorkStatusSection: React.FC<{
+  title: string;
+  /** Aggregate for the whole section; belongs on the heading, not on a row. */
+  summary?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, summary, children }) => (
+  <section className={SECTION_CLASS}>
+    <div data-work-status-heading className="mb-1 flex items-center gap-2 px-1">
+      <h3 className={cn(HEADING_CLASS, 'min-w-0 truncate')}>{title}</h3>
+      {summary !== undefined && summary !== null ? (
+        <span className="inline-flex h-[18px] min-w-[20px] items-center justify-center rounded-full bg-[var(--surface-elevated)] px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+          {summary}
+        </span>
+      ) : null}
+      <span className="flex-1" />
+    </div>
+    {children}
+  </section>
+);
+
+/**
+ * Section whose body folds away. The chevron swaps on expand exactly as the
+ * transcript's tool blocks do, so the two collapsibles read as the same
+ * control rather than two conventions in one window.
+ *
+ * Expanded state lives in the persisted UI store, not in component state: the
+ * panel unmounts whenever the context panel opens, and local state would
+ * silently discard the user's arrangement every time.
+ */
+export const WorkStatusCollapsibleSection: React.FC<{
+  /** Stable key for persisting expanded state. */
+  id: string;
+  title: string;
+  icon?: IconName;
+  /** For glyphs that live outside the sprite, such as the MCP mark. */
+  iconNode?: React.ReactNode;
+  iconColor?: string;
+  /** Shown on the header while collapsed and expanded alike. */
+  summary?: React.ReactNode;
+  /** An independent header action, such as refreshing this section's data. */
+  action?: React.ReactNode;
+  /** Keeps compact actions beside the title; wider action groups sit below it. */
+  actionLayout?: 'inline' | 'below';
+  defaultExpanded?: boolean;
+  /** Optional preview that stays below the heading while the section is folded. */
+  collapsedContent?: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ id, title, icon, iconNode, iconColor, summary, action, actionLayout = 'inline', defaultExpanded = false, collapsedContent, children }) => {
+  const stored = useUIStore(
+    React.useCallback((state) => state.workStatusExpandedSections[id], [id]),
+  );
+  const setExpandedInStore = useUIStore((state) => state.setWorkStatusSectionExpanded);
+  const expanded = stored ?? defaultExpanded;
+  return (
+    <section data-work-status-section={id} className={SECTION_CLASS}>
+      <div data-work-status-heading className={cn('mb-1 flex items-center gap-1', actionLayout === 'inline' && 'h-6')}>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpandedInStore(id, !expanded)}
+          className={cn(
+            'group/section flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left',
+            'transition-colors hover:text-foreground',
+          )}
+        >
+          {iconNode ?? (icon ? (
+            <Icon
+              name={icon}
+              className={cn('size-3.5 shrink-0', !iconColor && 'text-muted-foreground')}
+              style={iconColor ? { color: iconColor } : undefined}
+            />
+          ) : null)}
+          <span className={cn(HEADING_CLASS, 'min-w-0 truncate')}>{title}</span>
+          {summary !== undefined && summary !== null ? (
+            <span className="inline-flex h-[18px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[var(--surface-elevated)] px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+              {summary}
+            </span>
+          ) : null}
+          <span className="flex-1" />
+          <Icon
+            name={expanded ? 'arrow-down-s' : 'arrow-right-s'}
+            className="size-3.5 shrink-0 text-muted-foreground group-hover/section:text-foreground"
+          />
+        </button>
+        {actionLayout === 'inline' ? action : null}
+      </div>
+      {actionLayout === 'below' ? action : null}
+      {expanded ? children : collapsedContent}
+    </section>
+  );
+};
+
+type RowProps = {
+  icon?: IconName;
+  iconColor?: string;
+  leading?: React.ReactNode;
+  label: React.ReactNode;
+  value?: React.ReactNode;
+  muted?: boolean;
+  /** Turns the row into a button; the caller decides what it opens. */
+  onClick?: () => void;
+  ariaLabel?: string;
+  tooltip?: React.ReactNode;
+  className?: string;
+};
+
+/**
+ * A single readout. `value` sits hard right; `label` truncates before it, so a
+ * long branch name never pushes its own ahead/behind counts out of view.
+ */
+export const WorkStatusRow: React.FC<RowProps> = ({
+  icon,
+  iconColor,
+  leading,
+  label,
+  value,
+  muted,
+  onClick,
+  ariaLabel,
+  tooltip,
+  className,
+}) => {
+  const labelId = React.useId();
+  const body = (
+    <>
+      {leading ?? (icon ? (
+        <Icon
+          name={icon}
+          className={cn('size-4 shrink-0', !iconColor && 'text-muted-foreground')}
+          style={iconColor ? { color: iconColor } : undefined}
+        />
+      ) : null)}
+      <span id={labelId} className={cn('min-w-0 flex-1 truncate text-[13px]', muted && 'text-muted-foreground')}>
+        {label}
+      </span>
+      {value !== undefined && value !== null ? (
+        <span className="flex shrink-0 items-center gap-1.5 text-[13px] tabular-nums">{value}</span>
+      ) : null}
+    </>
+  );
+
+  const shared = cn(
+    'flex h-7 w-full items-center gap-2 rounded-md px-1 text-left text-muted-foreground',
+    className,
+  );
+
+  // A button cannot hold another one, and rows often carry their own (unpin,
+  // a row action). The row's button is stretched under the content instead:
+  // the whole row still answers a press, and controls inside it sit above.
+  const row = onClick ? (
+    <div className={cn(shared, 'relative transition-colors hover:text-foreground')}>
+      <button
+        type="button"
+        onClick={onClick}
+        // The label no longer sits inside the button, so it names it here.
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabel ? undefined : labelId}
+        className="absolute inset-0 rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--interactive-focus-ring)]"
+      />
+      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center gap-2 [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
+        {body}
+      </div>
+    </div>
+  ) : <div className={shared} tabIndex={tooltip ? 0 : undefined}>{body}</div>;
+
+  if (!tooltip) return row;
+
+  return (
+    <Tooltip delayDuration={750}>
+      <TooltipTrigger asChild>{row}</TooltipTrigger>
+      <TooltipContent side="left" sideOffset={8} className="max-w-[min(320px,calc(100vw-24px))] whitespace-normal break-words text-left">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
+type WorkStatusTone = 'default' | 'muted' | 'success' | 'error' | 'warning' | 'info';
+
+const TONE_COLOR: Record<Exclude<WorkStatusTone, 'default' | 'muted'>, string> = {
+  success: 'var(--status-success)',
+  error: 'var(--status-error)',
+  warning: 'var(--status-warning)',
+  info: 'var(--status-info)',
+};
+
+export const WorkStatusValue: React.FC<{
+  children: React.ReactNode;
+  tone?: WorkStatusTone;
+}> = ({ children, tone = 'default' }) => (
+  <span
+    className={tone === 'muted' ? 'text-muted-foreground' : undefined}
+    style={tone === 'default' || tone === 'muted' ? undefined : { color: TONE_COLOR[tone] }}
+  >
+    {children}
+  </span>
+);
+
+/**
+ * Trailing control shaped like the PR badge: a status that is also the thing
+ * you press. Used where the state itself is the affordance — an MCP server
+ * asking for sign-in, a goal waiting to be resumed.
+ */
+export const WorkStatusRowAction: React.FC<{
+  children: React.ReactNode;
+  onClick: () => void;
+  tone?: 'default' | 'warning' | 'error' | 'info';
+  disabled?: boolean;
+  ariaLabel?: string;
+}> = ({ children, onClick, tone = 'default', disabled, ariaLabel }) => {
+  const color = tone === 'default' ? undefined : TONE_COLOR[tone];
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={(event) => {
+        // The row underneath is often a button of its own with a different
+        // destination.
+        event.stopPropagation();
+        onClick();
+      }}
+      className={cn(
+        'shrink-0 rounded-full px-1.5 py-px text-[11px] font-medium leading-4 transition-opacity',
+        'hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50',
+        !color && 'bg-[var(--interactive-hover)] text-muted-foreground',
+      )}
+      style={color
+        ? { color, backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)` }
+        : undefined}
+    >
+      {children}
+    </button>
+  );
+};
+
+export const WorkStatusPill: React.FC<{
+  children: React.ReactNode;
+  color?: string;
+  background?: string;
+}> = ({ children, color, background }) => (
+  <span
+    className={cn(
+      'rounded-full px-1.5 py-px text-[11px] font-medium leading-4',
+      !color && 'bg-[var(--interactive-hover)] text-muted-foreground',
+    )}
+    style={color ? { color, backgroundColor: background } : undefined}
+  >
+    {children}
+  </span>
+);
+
+/** Full-width callout for states that block the branch (merge, rebase, …). */
+export const WorkStatusCallout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div
+    className="mx-1 mb-1 flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium"
+    style={{ backgroundColor: 'var(--status-warning-background)', color: 'var(--status-warning)' }}
+  >
+    <Icon name="alert" className="size-4 shrink-0" />
+    <span className="min-w-0 truncate">{children}</span>
+  </div>
+);
+
+/** Context-window fill, drawn under its row rather than inside it. */
+export const WorkStatusMeter: React.FC<{ percent: number; color: string }> = ({ percent, color }) => (
+  <div className="mx-1 mb-1 h-1 overflow-hidden rounded-full bg-[var(--chat-divider)]">
+    <div
+      className="h-full rounded-full"
+      style={{ width: `${Math.max(0, Math.min(100, percent))}%`, backgroundColor: color }}
+    />
+  </div>
+);

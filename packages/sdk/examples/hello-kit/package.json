@@ -1,0 +1,24 @@
+{
+  "name": "@opencodesilver/example-hello-kit",
+  "version": "1.1.0",
+  "private": true,
+  "opencodesilver": {
+    "apiVersion": 1,
+    "contributes": {
+      "panel": {
+        "id": "hello-kit",
+        "name": "SDK Playground",
+        "icon": "palette",
+        "entry": "panel/index.html"
+      },
+      "page": true,
+      "background": { "entry": "background/index.html" },
+      "actions": [
+        { "id": "message-length", "label": "Show message length", "where": "message", "mode": "background" }
+      ]
+    }
+  },
+  "dependencies": {
+    "@opencodesilver/sdk": "workspace:*"
+  }
+}

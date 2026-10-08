@@ -1,0 +1,130 @@
+/**
+ * The composer's send / queue / stop control.
+ *
+ * Which one is shown depends on whether a turn is running: idle sends, a busy
+ * session with content offers both queue (above) and stop, a busy session
+ * without content offers only stop.
+ */
+
+import React from 'react';
+
+import { Icon } from '@/components/icon/Icon';
+import { StopIcon } from '@/components/icons/StopIcon';
+import { useI18n } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+
+type ComposerActionButtonsProps = {
+    isMobile: boolean;
+    footerIconButtonClass: string;
+    sendIconSizeClass: string;
+    stopIconSizeClass: string;
+    canSend: boolean;
+    canAbort: boolean;
+    hasContent: boolean;
+    currentSessionId: string | null;
+    newSessionDraftOpen: boolean;
+    onPrimaryAction: () => void;
+    onQueueMessage: () => void;
+    onAbort: () => void;
+    /** Replaces "Send message" as the accessible name and tooltip (parallel mode says how many runs start). */
+    sendLabel?: string;
+};
+
+export const ComposerActionButtons = React.memo(function ComposerActionButtons(props: ComposerActionButtonsProps) {
+    const {
+        isMobile,
+        footerIconButtonClass,
+        sendIconSizeClass,
+        stopIconSizeClass,
+        canSend,
+        canAbort,
+        hasContent,
+        currentSessionId,
+        newSessionDraftOpen,
+        onPrimaryAction,
+        onQueueMessage,
+        onAbort,
+        sendLabel,
+    } = props;
+    const { t } = useI18n();
+
+    const sendButton = (
+        <button
+            type={isMobile ? 'button' : 'submit'}
+            disabled={!canSend || (!currentSessionId && !newSessionDraftOpen)}
+            onClick={(event) => {
+                if (!isMobile) {
+                    return;
+                }
+
+                event.preventDefault();
+                onPrimaryAction();
+            }}
+            className={cn(
+                footerIconButtonClass,
+                'h-8 w-8 rounded-full bg-[var(--ag-send-accent)] text-[var(--ag-send-accent-fg)] transition-all',
+                canSend && (currentSessionId || newSessionDraftOpen)
+                    ? 'opacity-100 hover:bg-[var(--ag-send-accent-hover)] hover:text-[var(--ag-send-accent-fg)]'
+                    : 'opacity-35'
+            )}
+            aria-label={sendLabel ?? t('chat.chatInput.actions.sendMessageAria')}
+            title={sendLabel}
+        >
+            <Icon name="arrow-right" className={cn(sendIconSizeClass, 'h-4 w-4')} />
+        </button>
+    );
+
+    if (!canAbort) {
+        return sendButton;
+    }
+
+    return (
+        <div className="relative">
+            {hasContent ? (
+                <button
+                    type="button"
+                    disabled={!currentSessionId}
+                    onClick={(event) => {
+                        if (isMobile) {
+                            event.preventDefault();
+                        }
+                        onQueueMessage();
+                    }}
+                    className={cn(
+                        footerIconButtonClass,
+                        'absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-1',
+                        currentSessionId ? 'text-primary hover:text-primary' : 'opacity-30'
+                    )}
+                    aria-label={t('chat.chatInput.actions.queueMessageAria')}
+                >
+                    <Icon name="send-plane-2" className={cn(sendIconSizeClass, '-rotate-90')} />
+                </button>
+            ) : null}
+            <button
+                type="button"
+                onClick={onAbort}
+                className={cn(
+                    footerIconButtonClass,
+                    'text-[var(--status-error)] hover:text-[var(--status-error)]'
+                )}
+                aria-label={t('chat.chatInput.actions.stopGeneratingAria')}
+            >
+                <StopIcon className={cn(stopIconSizeClass)} />
+            </button>
+        </div>
+    );
+}, (prev, next) => (
+    prev.isMobile === next.isMobile
+    && prev.footerIconButtonClass === next.footerIconButtonClass
+    && prev.sendIconSizeClass === next.sendIconSizeClass
+    && prev.stopIconSizeClass === next.stopIconSizeClass
+    && prev.canSend === next.canSend
+    && prev.canAbort === next.canAbort
+    && prev.hasContent === next.hasContent
+    && prev.currentSessionId === next.currentSessionId
+    && prev.newSessionDraftOpen === next.newSessionDraftOpen
+    && prev.onPrimaryAction === next.onPrimaryAction
+    && prev.onQueueMessage === next.onQueueMessage
+    && prev.onAbort === next.onAbort
+    && prev.sendLabel === next.sendLabel
+));

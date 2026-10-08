@@ -1,0 +1,126 @@
+{
+  "metadata": {
+    "id": "vesper-dark",
+    "name": "Vesper",
+    "variant": "dark",
+    "description": "Vesper",
+    "version": "1.0.0",
+    "tags": [
+      "dark",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#FFC799",
+      "foreground": "#101010",
+      "hover": "#DBAC84",
+      "active": "#FFCFA8",
+      "muted": "#FFC79980"
+    },
+    "surface": {
+      "background": "#151515",
+      "foreground": "#e8e5e5",
+      "muted": "#1c1b1b",
+      "mutedForeground": "#848484",
+      "elevated": "#242121",
+      "elevatedForeground": "#FFFFFF",
+      "overlay": "#FFFFFF20",
+      "subtle": "#1f1f1f"
+    },
+    "interactive": {
+      "border": "#2C2B2B",
+      "selection": "#b1adad33",
+      "selectionForeground": "#FFFFFF",
+      "borderHover": "#202020",
+      "borderFocus": "#383838",
+      "focusRing": "#FFC79940",
+      "hover": "#ffffff1c",
+      "active": "#ffffff33"
+    },
+    "status": {
+      "error": "#FF8080",
+      "errorForeground": "#101010",
+      "warning": "#FFC799",
+      "warningForeground": "#101010",
+      "success": "#99FFE4",
+      "successForeground": "#101010",
+      "info": "#8EAED7",
+      "infoForeground": "#101010"
+    },
+    "syntax": {
+      "base": {
+        "background": "#141414",
+        "foreground": "#FFFFFF",
+        "comment": "#A0A0A0",
+        "keyword": "#FFC799",
+        "string": "#99FFE4",
+        "number": "#FF8080",
+        "function": "#FFC799",
+        "variable": "#FFFFFF",
+        "type": "#FFC799",
+        "operator": "#FF8080"
+      },
+      "tokens": {
+        "commentDoc": "#8A8A8A",
+        "constant": "#A0A0A0",
+        "key": "#FFC799",
+        "macro": "#8B8B8B",
+        "method": "#99FFE4",
+        "storageModifier": "#8B8B8B",
+        "tagAttribute": "#FFC799",
+        "url": "#A0A0A0",
+        "variableGlobal": "#FFC799",
+        "variableLocal": "#0C0C0C",
+        "variableOther": "#99FFE4",
+        "variableProperty": "#A0A0A0"
+      },
+      "highlights": {
+        "diffAddedBackground": "#0D2818",
+        "diffModifiedBackground": "#141414",
+        "diffRemovedBackground": "#281A1A",
+        "lineNumber": "#282828"
+      }
+    },
+    "pr": {
+      "draft": "#A0A0A0",
+      "merged": "#ca99ff"
+    },
+    "chat": {
+      "userMessageBackground": "#2b2a2a",
+      "divider": "#1C1C1C"
+    },
+    "markdown": {
+      "link": "#A0A0A0",
+      "linkHover": "#FFC799",
+      "inlineCode": "#bba2a2",
+      "inlineCodeBackground": "#222222",
+      "blockquote": "#FFFFFF",
+      "blockquoteBorder": "#1C1C1C",
+      "listMarker": "#FFFFFF99"
+    },
+    "tools": {
+      "border": "#48474780",
+      "icon": "#A0A0A0",
+      "title": "#FFFFFF",
+      "description": "#A0A0A0",
+      "edit": {
+        "addedBackground": "#99FFE425",
+        "removedBackground": "#FF808025",
+        "lineNumber": "#615f5f"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

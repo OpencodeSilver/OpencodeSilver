@@ -1,0 +1,2359 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { SortableTabsStrip } from '@/components/ui/sortable-tabs-strip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { generatePullRequestDescription } from '@/lib/gitApi';
+import { openExternalUrl } from '@/lib/url';
+import { useRuntimeAPIs } from '@/hooks/useRuntimeAPIs';
+import { useDeviceInfo } from '@/lib/device';
+import { MobileOverlayPanel } from '@/components/ui/MobileOverlayPanel';
+import { SimpleMarkdownRenderer } from '@/components/chat/MarkdownRenderer';
+import { Icon } from "@/components/icon/Icon";
+import { useUIStore } from '@/stores/useUIStore';
+import { useOpenSourceControlSettings } from '@/hooks/useOpenSourceControlSettings';
+import { useWalkthroughStore } from '@/stores/useWalkthroughStore';
+import { WALKTHROUGH_ACTION_CLASS } from '@/components/views/walkthrough/walkthroughAction';
+import { GitHubAccountControl } from '@/components/github/GitHubAccountControl';
+import { useRepositoryHost } from '@/components/references/referenceSources';
+import { isVSCodeRuntime } from '@/lib/desktop';
+import { formatDateTimeForPreference } from '@/lib/timeFormat';
+import { useSessionUIStore } from '@/sync/session-ui-store';
+import * as sessionActions from '@/sync/session-actions';
+import { buildLinkedIssue } from '@/lib/linkedIssues';
+import { normalizePath } from '@/lib/pathNormalization';
+import { useInlineCommentDraftStore, type InlineCommentDraftTarget } from '@/stores/useInlineCommentDraftStore';
+import { getSourceControlAuthKey, getSourceControlReadContextAuthState, useSourceControlAuthStore } from '@/stores/useSourceControlAuthStore';
+import { getSourceControlStatusKey, useBranchTrackedPulls, useGitHubPrStatusStore, type SourceControlStatus } from '@/stores/useGitHubPrStatusStore';
+import { useTrackedItems } from '@/lib/trackedItems/interest';
+import { getChangeRequestContextKey, useChangeRequestContextStore } from '@/stores/useChangeRequestContextStore';
+import type {
+  CIRun,
+  CreateChangeRequestInput,
+  Project,
+  SourceControlAPI,
+  SourceControlCapabilities,
+  SourceControlExistingMutationTarget,
+  SourceControlReadContext,
+} from '@/lib/api/types';
+import { useI18n, type I18nKey, type I18nParams } from '@/lib/i18n';
+import { changeRequestCopy } from '@/lib/source-control/changeRequestCopy';
+import { formatChangeRequestReference, getSourceControlBaseUrl, getSourceControlProviderLabel } from '@/lib/source-control/identity';
+import { useRepositoryBinding } from '@/lib/source-control/repository-binding';
+import { getRuntimeKey } from '@/lib/runtime-switch';
+import { getDetectedUpstreamContextKey, loadDetectedUpstreamRepo } from './detectedUpstreamRepo';
+import type { SourceControlProvider } from '@/lib/source-control/types';
+import {
+  hasUnknownMutationOutcomeCode,
+  reconcileUnknownMutationOutcome,
+} from './sourceControlMutationOutcome';
+
+type MergeMethod = 'merge' | 'squash' | 'rebase';
+type PrSegment = 'overview' | 'checks' | 'comments';
+type PullRequest = NonNullable<SourceControlStatus['pr']>;
+
+const PR_CHECKS_AUTO_REFRESH_MS = 35_000;
+
+const formatElapsedDuration = (startISO?: string, endISO?: string, now?: number): string | null => {
+  if (!startISO) return null;
+  const start = Date.parse(startISO);
+  if (!Number.isFinite(start)) return null;
+  const end = endISO ? Date.parse(endISO) : (now ?? Date.now());
+  if (!Number.isFinite(end) || end <= start) return null;
+  const totalMinutes = Math.floor((end - start) / 60_000);
+  if (totalMinutes < 1) return '<1m';
+  if (totalMinutes < 60) return `${totalMinutes}m`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+};
+
+const isFailedConclusion = (conclusion?: string | null): boolean => {
+  const normalized = typeof conclusion === 'string' ? conclusion.toLowerCase() : '';
+  return Boolean(normalized) && !['success', 'neutral', 'skipped'].includes(normalized);
+};
+const statusColor = (state: string | undefined | null): string => {
+  switch (state) {
+    case 'success':
+      return 'bg-[color:var(--status-success)]';
+    case 'failure':
+      return 'bg-[color:var(--status-error)]';
+    case 'pending':
+      return 'bg-[color:var(--status-warning)]';
+    default:
+      return 'bg-muted-foreground/40';
+  }
+};
+
+// A change request opened here belongs to the session the user is working in,
+// but only when that session works in this directory: the Git view can show
+// another worktree than the open chat.
+const linkCreatedChangeRequestToCurrentSession = (
+  directory: string,
+  changeRequest: { url: string; number: number; title: string },
+) => {
+  const { currentSessionId, getDirectoryForSession } = useSessionUIStore.getState();
+  const sessionDirectory = currentSessionId ? getDirectoryForSession(currentSessionId) : null;
+  if (!currentSessionId || !sessionDirectory || normalizePath(sessionDirectory) !== normalizePath(directory)) {
+    return;
+  }
+  void sessionActions.setLinkedIssue(
+    currentSessionId,
+    sessionDirectory,
+    buildLinkedIssue({ url: changeRequest.url, number: changeRequest.number, title: changeRequest.title, kind: 'pull', linkedAt: Date.now() }),
+    true,
+  ).catch(() => undefined);
+};
+
+const getPrVisualState = (status: SourceControlStatus | null): 'draft' | 'open' | 'blocked' | 'merged' | 'closed' | null => {
+  const pr = status?.changeRequest ?? status?.pr;
+  if (!pr) {
+    return null;
+  }
+  if (pr.state === 'merged') {
+    return 'merged';
+  }
+  if (pr.state === 'closed') {
+    return 'closed';
+  }
+  if (pr.draft) {
+    return 'draft';
+  }
+  const checksFailed = (status?.ci?.summary ?? status?.checks)?.state === 'failure';
+  const mergeableState = typeof pr.mergeableState === 'string' ? pr.mergeableState : '';
+  // A `blocked` merge state alone (usually a missing review) keeps the open
+  // colour; orange is for failed checks and conflicts.
+  const notMergeable = pr.mergeable === false || mergeableState === 'dirty';
+  if (checksFailed || notMergeable) {
+    return 'blocked';
+  }
+  return 'open';
+};
+
+const PR_ACTION_REFRESH_DELAYS_MS = [2_000, 5_000] as const;
+let fallbackMutationKey = 0;
+
+const createMutationKey = (): string => {
+  const generated = globalThis.crypto?.randomUUID?.();
+  if (generated) return generated;
+  fallbackMutationKey += 1;
+  return `source-control-${Date.now().toString(36)}-${fallbackMutationKey.toString(36)}`;
+};
+
+const createMutationSignature = (
+  operation: 'create' | 'update' | 'merge' | 'ready',
+  runtimeKey: string,
+  context: SourceControlReadContext,
+  details: Array<string | number | boolean | undefined>,
+): string => JSON.stringify([
+  operation,
+  runtimeKey,
+  context.provider,
+  context.instance,
+  context.directory,
+  context.repositoryId,
+  context.accountId,
+  context.bindingRevision,
+  context.primaryRemote,
+  ...details,
+]);
+
+const branchToTitle = (branch: string): string => {
+  return branch
+    .replace(/^refs\/heads\//, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const normalizeBranchRef = (value: string): string => {
+  let normalized = value.trim();
+  if (!normalized) {
+    return '';
+  }
+  if (normalized.startsWith('refs/heads/')) {
+    normalized = normalized.slice('refs/heads/'.length);
+  }
+  if (normalized.startsWith('heads/')) {
+    normalized = normalized.slice('heads/'.length);
+  }
+  if (normalized.startsWith('remotes/')) {
+    normalized = normalized.slice('remotes/'.length);
+  }
+  return normalized;
+};
+
+const remoteBranchToName = (value: string, remoteName: string | null): string => {
+  const normalized = normalizeBranchRef(value);
+  if (!normalized || normalized.includes('->')) {
+    return '';
+  }
+
+  if (remoteName) {
+    const prefix = `${remoteName}/`;
+    if (normalized.startsWith(prefix)) {
+      return normalized.slice(prefix.length).trim();
+    }
+    return '';
+  }
+
+  const slashIndex = normalized.indexOf('/');
+  if (slashIndex > 0) {
+    return normalized.slice(slashIndex + 1).trim();
+  }
+  return normalized;
+};
+
+const getPullRequestSnapshotKey = (directory: string, branch: string): string => `${directory}::${branch}`;
+
+const getExistingPullRequestTarget = (
+  project: Pick<Project, 'owner' | 'name'>,
+  pr: PullRequest,
+): SourceControlExistingMutationTarget => {
+  const target: SourceControlExistingMutationTarget = {
+    project: { owner: project.owner, name: project.name },
+    number: pr.number,
+    head: pr.head,
+    base: pr.base,
+  };
+  if (pr.headSha) target.headSha = pr.headSha;
+  return target;
+};
+
+type PullRequestDraftSnapshot = {
+  title: string;
+  body: string;
+  draft: boolean;
+  additionalContext: string;
+  targetBaseBranch?: string;
+  activeSegment?: PrSegment;
+};
+
+type TimelineCommentItem = {
+  id: string;
+  body: string;
+  authorName: string;
+  authorLogin: string | null;
+  avatarUrl: string | null;
+  createdAt?: string;
+  context: string;
+  path: string | null;
+  line: number | null;
+};
+
+const pullRequestDraftSnapshots = new Map<string, PullRequestDraftSnapshot>();
+
+const openExternal = openExternalUrl;
+
+function useDetectedUpstreamRepo(
+  directory: string,
+  sourceControl: SourceControlAPI,
+  readContext: SourceControlReadContext | null,
+) {
+  const contextKey = readContext ? getDetectedUpstreamContextKey(readContext) : null;
+  const [state, setState] = React.useState<{
+    contextKey: string | null;
+    detectedUpstream: Project | null;
+    upstreamBranches: string[];
+  }>({ contextKey: null, detectedUpstream: null, upstreamBranches: [] });
+
+  React.useEffect(() => {
+    if (!directory || !readContext || !contextKey) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await loadDetectedUpstreamRepo(sourceControl, readContext);
+        if (!cancelled) setState({
+          contextKey,
+          detectedUpstream: result.upstream,
+          upstreamBranches: result.branches,
+        });
+      } catch {
+        // Preserve the last authoritative result for this context.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contextKey, directory, readContext, sourceControl]);
+
+  return state.contextKey === contextKey
+    ? { detectedUpstream: state.detectedUpstream, upstreamBranches: state.upstreamBranches }
+    : { detectedUpstream: null, upstreamBranches: [] };
+}
+
+export const PullRequestSection: React.FC<{
+  directory: string;
+  branch: string;
+  baseBranch: string;
+  trackingBranch?: string;
+  remoteBranches?: string[];
+  onGeneratedDescription?: () => void;
+}> = ({ directory, branch, baseBranch, trackingBranch, remoteBranches = [], onGeneratedDescription }) => {
+  const { t: translate } = useI18n();
+  // Named even when no account there can read the project, so a GitLab
+  // project with a lapsed account asks for GitLab, not GitHub.
+  const repositoryHost = useRepositoryHost(directory);
+  // Every change-request message in this section speaks the host's wording:
+  // merge requests on GitLab, pull requests elsewhere.
+  const t = React.useCallback(
+    (key: I18nKey, params?: I18nParams) => translate(changeRequestCopy(key, repositoryHost?.provider), params),
+    [repositoryHost?.provider, translate],
+  );
+  // How the attached comment or job names its change request: GitLab's `!N`, GitHub's `PR #N`.
+  const changeRequestNumberLabel = React.useCallback(
+    (number: number | undefined) => (repositoryHost?.provider === 'gitlab' ? `!${number ?? ''}` : `PR #${number ?? ''}`),
+    [repositoryHost?.provider],
+  );
+  const timeFormatPreference = useUIStore((state) => state.timeFormatPreference);
+  const openSourceControlSettings = useOpenSourceControlSettings();
+  const { sourceControl } = useRuntimeAPIs();
+  const sourceControlAuthEntries = useSourceControlAuthStore((state) => state.entries);
+  const currentSessionId = useSessionUIStore((state) => state.currentSessionId);
+  const newSessionDraftOpen = useSessionUIStore((state) => Boolean(state.newSessionDraft?.open));
+  const { isMobile, hasTouchInput, screenWidth } = useDeviceInfo();
+  const openContextSurface = useUIStore((state) => state.openContextSurface);
+  const requestWalkthroughTarget = useWalkthroughStore((state) => state.requestTarget);
+  // Mirrors the rail's gating: the surface is not available on mobile widths or
+  // in VS Code, so neither is its entry point.
+  const showWalkthroughAction = !isMobile && screenWidth >= 768 && !isVSCodeRuntime();
+
+  const snapshotKey = React.useMemo(() => getPullRequestSnapshotKey(directory, branch), [directory, branch]);
+  const initialSnapshot = React.useMemo(
+    () => pullRequestDraftSnapshots.get(snapshotKey) ?? null,
+    [snapshotKey]
+  );
+  const ensurePrStatusEntry = useGitHubPrStatusStore((state) => state.ensureEntry);
+  const setPrStatusParams = useGitHubPrStatusStore((state) => state.setParams);
+  const beginActiveSourceControlContextsLoad = useGitHubPrStatusStore((state) => state.beginActiveContextsLoad);
+  const commitActiveSourceControlContexts = useGitHubPrStatusStore((state) => state.commitActiveContexts);
+  const releaseActiveSourceControlContexts = useGitHubPrStatusStore((state) => state.releaseActiveContexts);
+  const sourceControlContextsOwnerId = React.useId();
+  const startPrStatusWatching = useGitHubPrStatusStore((state) => state.startWatching);
+  const stopPrStatusWatching = useGitHubPrStatusStore((state) => state.stopWatching);
+  const refreshPrStatus = useGitHubPrStatusStore((state) => state.refresh);
+  const updatePrStatus = useGitHubPrStatusStore((state) => state.updateStatus);
+
+  const [title, setTitle] = React.useState(() => initialSnapshot?.title ?? branchToTitle(branch));
+  const [body, setBody] = React.useState(() => initialSnapshot?.body ?? '');
+  const [draft, setDraft] = React.useState(() => initialSnapshot?.draft ?? false);
+  const [additionalContext, setAdditionalContext] = React.useState(() => initialSnapshot?.additionalContext ?? '');
+  const [targetBaseBranch, setTargetBaseBranch] = React.useState(() => {
+    const fromSnapshot = typeof initialSnapshot?.targetBaseBranch === 'string'
+      ? normalizeBranchRef(initialSnapshot.targetBaseBranch)
+      : '';
+    if (fromSnapshot) {
+      return fromSnapshot;
+    }
+    return normalizeBranchRef(baseBranch);
+  });
+  const [mergeMethod, setMergeMethod] = React.useState<MergeMethod>('squash');
+
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [isMerging, setIsMerging] = React.useState(false);
+  const [isMarkingReady, setIsMarkingReady] = React.useState(false);
+  const [isEditingPr, setIsEditingPr] = React.useState(false);
+  const [hydratingPrBodyKey, setHydratingPrBodyKey] = React.useState<string | null>(null);
+  const [editTitle, setEditTitle] = React.useState('');
+  const [editBody, setEditBody] = React.useState('');
+
+  const [isContextOpen, setIsContextOpen] = React.useState(false);
+  const [isContextSheetOpen, setIsContextSheetOpen] = React.useState(false);
+  const binding = useRepositoryBinding(directory, sourceControl);
+  const runtimeKey = binding.scope.runtimeKey;
+  React.useEffect(() => {
+    if (!directory) return;
+    const capturedRuntimeKey = binding.scope.runtimeKey;
+    const contextRequestId = beginActiveSourceControlContextsLoad(capturedRuntimeKey, directory, sourceControlContextsOwnerId);
+    const activeContexts = binding.contexts.filter((context) => getSourceControlReadContextAuthState(
+      sourceControlAuthEntries[getSourceControlAuthKey(context)], context,
+    ).connected);
+    commitActiveSourceControlContexts(capturedRuntimeKey, directory, sourceControlContextsOwnerId, contextRequestId, activeContexts);
+    return () => {
+      releaseActiveSourceControlContexts(capturedRuntimeKey, directory, sourceControlContextsOwnerId);
+    };
+  }, [beginActiveSourceControlContextsLoad, binding.contexts, binding.scope.runtimeKey, commitActiveSourceControlContexts, directory, releaseActiveSourceControlContexts, sourceControlAuthEntries, sourceControlContextsOwnerId]);
+  const readContexts = binding.contexts;
+  const readContext = readContexts[0] ?? null;
+  const hostAuthChecked = useSourceControlAuthStore((state) => repositoryHost
+    ? state.entries[getSourceControlAuthKey(repositoryHost)]?.hasChecked === true
+    : false);
+  const selectedRemoteName = readContext?.primaryRemote ?? null;
+  const sourceControlAuthKey = React.useMemo(
+    () => readContext ? getSourceControlAuthKey(readContext) : '',
+    [readContext],
+  );
+  const sourceControlAuthEntry = useSourceControlAuthStore((state) => state.entries[sourceControlAuthKey]);
+  const sourceControlAuthStatus = sourceControlAuthEntry?.status ?? null;
+  const sourceControlAuth = readContext
+    ? getSourceControlReadContextAuthState(sourceControlAuthEntry, readContext)
+    : { authChecked: sourceControlAuthEntry?.hasChecked ?? false, connected: false };
+  const sourceControlAuthChecked = sourceControlAuth.authChecked;
+  const [capabilityReload, setCapabilityReload] = React.useState(0);
+  const [capabilityState, setCapabilityState] = React.useState<
+    | { key: string; status: 'loading' | 'error'; capabilities: null }
+    | { key: string; status: 'ready'; capabilities: SourceControlCapabilities }
+  >({ key: '', status: 'loading', capabilities: null });
+  const [useDetectedUpstream, setUseDetectedUpstream] = React.useState(false);
+  const { detectedUpstream, upstreamBranches } = useDetectedUpstreamRepo(
+    directory,
+    sourceControl,
+    readContext,
+  );
+
+  React.useEffect(() => {
+    if (!readContext) return;
+    let cancelled = false;
+    const key = getSourceControlAuthKey(readContext);
+    setCapabilityState({ key, status: 'loading', capabilities: null });
+    void sourceControl.capabilities(readContext)
+      .then((capabilities) => {
+        if (!cancelled) setCapabilityState({ key, status: 'ready', capabilities });
+      })
+      .catch(() => {
+        if (!cancelled) setCapabilityState({ key, status: 'error', capabilities: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [capabilityReload, readContext, sourceControl]);
+
+  const currentCapabilityState = capabilityState.key === sourceControlAuthKey ? capabilityState : null;
+  const sourceControlCapabilities = currentCapabilityState?.status === 'ready'
+    ? currentCapabilityState.capabilities
+    : null;
+
+  const mergeMethods = React.useMemo<MergeMethod[]>(
+    () => sourceControlCapabilities?.mergeMethods ?? [],
+    [sourceControlCapabilities?.mergeMethods],
+  );
+  React.useEffect(() => {
+    if (mergeMethods.length > 0 && !mergeMethods.includes(mergeMethod)) {
+      setMergeMethod(mergeMethods[0]);
+    }
+  }, [mergeMethod, mergeMethods]);
+
+  React.useEffect(() => {
+    setUseDetectedUpstream(false);
+  }, [directory]);
+
+  const isFork = detectedUpstream !== null;
+  const canShow = Boolean(directory && branch && baseBranch && (branch !== baseBranch || isFork));
+
+  const prStatusKey = React.useMemo(
+    () => readContext ? getSourceControlStatusKey(readContext, branch) : '',
+    [branch, readContext],
+  );
+  const mutationScopeKeyRef = React.useRef(prStatusKey);
+  mutationScopeKeyRef.current = prStatusKey;
+  const isMutationScopeCurrent = React.useCallback((capturedRuntimeKey: string, capturedStatusKey: string) => (
+    capturedRuntimeKey === getRuntimeKey() && capturedStatusKey === mutationScopeKeyRef.current
+  ), []);
+  const statusEntry = useGitHubPrStatusStore((state) => state.entries[prStatusKey]);
+  // The open change request shown here is followed by the server, which pushes
+  // its state and checks; nothing here polls.
+  const followedKeys = React.useMemo(() => (prStatusKey ? [prStatusKey] : []), [prStatusKey]);
+  useTrackedItems(useBranchTrackedPulls(followedKeys));
+
+  const isLoading = statusEntry?.isLoading ?? false;
+  const status = sourceControlAuth.connected ? statusEntry?.status ?? null : null;
+  const error = binding.error ? t('settings.gitlab.status.operationFailed') : statusEntry?.error ?? null;
+  const isInitialStatusResolved = statusEntry?.isInitialStatusResolved ?? false;
+
+  const availableBaseBranches = React.useMemo(() => {
+    const baseRemoteName = useDetectedUpstream ? null : selectedRemoteName;
+    const unique = new Set<string>();
+
+    for (const remoteBranch of remoteBranches) {
+      const branchName = remoteBranchToName(remoteBranch, baseRemoteName);
+      if (!branchName || branchName === 'HEAD') {
+        continue;
+      }
+      unique.add(branchName);
+    }
+
+    // When using detected upstream, include all upstream repo branches
+    if (useDetectedUpstream) {
+      for (const b of upstreamBranches) {
+        if (b && b !== 'HEAD') {
+          unique.add(b);
+        }
+      }
+    }
+
+    const defaultBase = normalizeBranchRef(baseBranch);
+    if (defaultBase && defaultBase !== 'HEAD') {
+      unique.add(defaultBase);
+    }
+
+    const currentTarget = normalizeBranchRef(targetBaseBranch);
+    if (currentTarget && currentTarget !== 'HEAD') {
+      unique.add(currentTarget);
+    }
+
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [baseBranch, remoteBranches, selectedRemoteName, targetBaseBranch, upstreamBranches, useDetectedUpstream]);
+
+  React.useEffect(() => {
+    const normalizedBase = normalizeBranchRef(baseBranch);
+    if (!targetBaseBranch && normalizedBase) {
+      setTargetBaseBranch(normalizedBase);
+      return;
+    }
+
+    if (availableBaseBranches.length === 0) {
+      return;
+    }
+
+    if (!availableBaseBranches.includes(targetBaseBranch)) {
+      const fallback = availableBaseBranches.includes(normalizedBase)
+        ? normalizedBase
+        : availableBaseBranches[0];
+      if (fallback) {
+        setTargetBaseBranch(fallback);
+      }
+    }
+  }, [availableBaseBranches, baseBranch, targetBaseBranch]);
+
+  const [activeSegment, setActiveSegmentState] = React.useState<PrSegment>(() => initialSnapshot?.activeSegment ?? 'overview');
+  const [expandedCheckStepKeys, setExpandedCheckStepKeys] = React.useState<Set<string>>(new Set());
+  const [expandedCheckRunKeys, setExpandedCheckRunKeys] = React.useState<Set<string>>(new Set());
+
+  const attemptedBodyHydrationRef = React.useRef<Set<string>>(new Set());
+  const lastSyncedPrNumberRef = React.useRef<number | null>(null);
+  const pendingActionRefreshTimersRef = React.useRef<number[]>([]);
+  const mutationKeysRef = React.useRef(new Map<string, { key: string; inFlight: boolean }>());
+
+  const beginMutation = React.useCallback((signature: string): string | null => {
+    const existing = mutationKeysRef.current.get(signature);
+    if (existing?.inFlight) return null;
+    if (existing) {
+      existing.inFlight = true;
+      return existing.key;
+    }
+    const key = createMutationKey();
+    mutationKeysRef.current.set(signature, { key, inFlight: true });
+    return key;
+  }, []);
+
+  const finishMutation = React.useCallback((signature: string, key: string, retain: boolean) => {
+    const entry = mutationKeysRef.current.get(signature);
+    if (!entry || entry.key !== key) return;
+    if (retain) {
+      entry.inFlight = false;
+    } else {
+      mutationKeysRef.current.delete(signature);
+    }
+  }, []);
+
+  // Auto-enable detected upstream when there's no explicit upstream remote
+  React.useEffect(() => {
+    if (detectedUpstream) {
+      setUseDetectedUpstream(true);
+    }
+  }, [detectedUpstream]);
+
+  // Set target base branch to upstream's default branch when using detected upstream
+  React.useEffect(() => {
+    if (useDetectedUpstream && detectedUpstream?.defaultBranch) {
+      setTargetBaseBranch(detectedUpstream.defaultBranch);
+    }
+  }, [useDetectedUpstream, detectedUpstream?.defaultBranch]);
+
+  const pr = status?.changeRequest ?? status?.pr ?? null;
+  const statusIdentity = status?.identity ?? readContext;
+  const statusProject = React.useMemo(() => status?.project ?? (status?.repo && statusIdentity
+    ? { ...status.repo, ...statusIdentity, id: `${status.repo.owner}/${status.repo.repo}`, name: status.repo.repo }
+    : null), [status?.project, status?.repo, statusIdentity]);
+  const projectSelector = React.useMemo(() => statusProject
+    ? { owner: statusProject.owner, name: statusProject.name }
+    : undefined, [statusProject]);
+  // A closed/merged PR is the branch's history, not its live status: it still
+  // deserves to be shown (you just merged it), but the branch is free again, so
+  // the panel offers creating the next PR instead of a read-only detail view.
+  const isHistoricalPr = pr?.state === 'merged' || pr?.state === 'closed';
+  const livePr = isHistoricalPr ? null : pr;
+
+  const prContextKey = livePr && readContext ? getChangeRequestContextKey(readContext, livePr.number, projectSelector) : null;
+  const prContextEntry = useChangeRequestContextStore((state) => (prContextKey ? state.entries[prContextKey] : undefined));
+  const ensurePrContext = useChangeRequestContextStore((state) => state.ensure);
+  const prContext = prContextEntry?.result ?? null;
+  const isLoadingPrContext = prContextEntry?.isLoading ?? false;
+
+  const setActiveSegment = React.useCallback((segment: PrSegment) => {
+    setActiveSegmentState(segment);
+    const snapshot = pullRequestDraftSnapshots.get(snapshotKey);
+    if (snapshot) {
+      pullRequestDraftSnapshots.set(snapshotKey, { ...snapshot, activeSegment: segment });
+    }
+  }, [snapshotKey]);
+
+  // Load the context the active segment needs; checks include details.
+  React.useEffect(() => {
+    if (!livePr || !readContext || activeSegment === 'overview') {
+      return;
+    }
+    void ensurePrContext(sourceControl, readContext, livePr.number, {
+      includeCIDetails: activeSegment === 'checks',
+      project: projectSelector,
+    });
+  }, [activeSegment, ensurePrContext, livePr, projectSelector, readContext, sourceControl]);
+
+  const checks = status?.ci?.summary ?? status?.checks ?? null;
+  const checksArePending = (checks?.pending ?? 0) > 0;
+
+  // The detailed run list (pulls/context) and the status aggregate (pr/status)
+  // come from different endpoints with different cache ages. The run list is
+  // the fresher, richer source whenever we have it — derive the aggregate from
+  // it and push it into the status store so every consumer (header, badges,
+  // git-view chip) shows the same numbers as the visible runs.
+  const contextCISummary = prContext?.ci?.summary ?? null;
+  const contextFetchedAt = prContext?.fetchedAt;
+  React.useEffect(() => {
+    if (!contextCISummary) {
+      return;
+    }
+    updatePrStatus(prStatusKey, (previous) => {
+      if (!previous?.changeRequest && !previous?.pr) {
+        return previous;
+      }
+      // Never let older context data regress a fresher status snapshot.
+      if (typeof contextFetchedAt === 'number'
+        && typeof previous.fetchedAt === 'number'
+        && contextFetchedAt < previous.fetchedAt) {
+        return previous;
+      }
+      const current = previous.ci?.summary ?? previous.checks;
+      const unchanged = current
+        && current.state === contextCISummary.state
+        && current.total === contextCISummary.total
+        && current.success === contextCISummary.success
+        && current.failure === contextCISummary.failure
+        && current.pending === contextCISummary.pending
+        && current.inProgress === contextCISummary.inProgress
+        && current.queued === contextCISummary.queued
+        && current.startedAt === contextCISummary.startedAt;
+      if (unchanged) {
+        return previous;
+      }
+      return {
+        ...previous,
+        ci: prContext?.ci ?? { summary: contextCISummary },
+        checks: contextCISummary,
+        // Adopt the context's freshness so a later stale status response
+        // (older server stamp) is rejected by the store's freshness guard.
+        ...(typeof contextFetchedAt === 'number' ? { fetchedAt: contextFetchedAt } : {}),
+      };
+    });
+  }, [contextCISummary, contextFetchedAt, prContext?.ci, prStatusKey, updatePrStatus]);
+
+  // While checks run and the checks segment is visible, keep the detailed
+  // run list fresh; the shared context store dedupes against other callers.
+  React.useEffect(() => {
+    if (activeSegment !== 'checks' || !checksArePending || !pr || !readContext) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      void ensurePrContext(sourceControl, readContext, pr.number, {
+        includeCIDetails: true,
+        project: projectSelector,
+        force: true,
+      });
+    }, PR_CHECKS_AUTO_REFRESH_MS);
+    return () => window.clearInterval(intervalId);
+  }, [activeSegment, checksArePending, ensurePrContext, pr, projectSelector, readContext, sourceControl]);
+
+  // Coarse clock for "running for Nm" labels; only ticks while checks run.
+  const [nowTick, setNowTick] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    if (!checksArePending) {
+      return;
+    }
+    setNowTick(Date.now());
+    const intervalId = window.setInterval(() => setNowTick(Date.now()), 30_000);
+    return () => window.clearInterval(intervalId);
+  }, [checksArePending]);
+
+  const currentPrBodyHydrationKey = pr && readContext
+    ? getChangeRequestContextKey(readContext, pr.number, projectSelector)
+    : null;
+  const isHydratingCurrentPrBody = Boolean(
+    currentPrBodyHydrationKey && hydratingPrBodyKey === currentPrBodyHydrationKey,
+  );
+
+  React.useEffect(() => {
+    if (!pr || !readContext) {
+      return;
+    }
+
+    if (typeof pr.body === 'string' && pr.body.length > 0) {
+      return;
+    }
+
+    const hydrationKey = getChangeRequestContextKey(readContext, pr.number, projectSelector);
+    if (attemptedBodyHydrationRef.current.has(hydrationKey)) {
+      return;
+    }
+    attemptedBodyHydrationRef.current.add(hydrationKey);
+    setHydratingPrBodyKey(hydrationKey);
+
+    let cancelled = false;
+    void ensurePrContext(sourceControl, readContext, pr.number, { project: projectSelector })
+      .then((ctx) => {
+        if (cancelled) {
+          return;
+        }
+        const ctxPr = ctx?.changeRequest;
+        if (!ctxPr) {
+          return;
+        }
+        updatePrStatus(prStatusKey, (prev) => {
+          const previousPr = prev?.changeRequest ?? prev?.pr;
+          if (!prev || !previousPr || previousPr.number !== pr.number) {
+            return prev;
+          }
+          const updatedPr = { ...previousPr, body: ctxPr.body || '' };
+          return {
+            ...prev,
+            changeRequest: prev.changeRequest ? { ...prev.changeRequest, body: ctxPr.body || '' } : prev.changeRequest,
+            pr: updatedPr,
+          };
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (cancelled) {
+          return;
+        }
+        setHydratingPrBodyKey((prev) => (prev === hydrationKey ? null : prev));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [directory, ensurePrContext, pr, prStatusKey, projectSelector, readContext, sourceControl, updatePrStatus]);
+
+  React.useEffect(() => {
+    if (!pr) {
+      setIsEditingPr(false);
+      setEditTitle('');
+      setEditBody('');
+      lastSyncedPrNumberRef.current = null;
+      return;
+    }
+
+    const numberChanged =
+      lastSyncedPrNumberRef.current !== null && lastSyncedPrNumberRef.current !== pr.number;
+
+    if (numberChanged) {
+      setIsEditingPr(false);
+    }
+
+    if (!isEditingPr || numberChanged) {
+      setEditTitle(pr.title || '');
+      setEditBody(pr.body || '');
+    }
+
+    lastSyncedPrNumberRef.current = pr.number;
+  }, [isEditingPr, pr]);
+
+  const formatTimestamp = React.useCallback((value?: string) => {
+    if (!value) return '';
+    const ts = Date.parse(value);
+    if (!Number.isFinite(ts)) {
+      return value;
+    }
+    return formatDateTimeForPreference(ts, timeFormatPreference, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }, [timeFormatPreference]);
+
+  const connectedSourceControlLogin = readContext && sourceControlAuthStatus?.connected
+    ? sourceControlAuthStatus.accounts.find((account) => account.id === readContext.accountId)?.user.username.trim() ?? ''
+    : '';
+
+  const selfMentionHighlightClass = React.useMemo(() => {
+    return "[&_a[href*='oc-self-mention=1']]:!text-[var(--primary-base)] [&_a[href*='oc-self-mention=1']]:font-semibold [&_a[href*='oc-self-mention=1']]:!no-underline [&_a[href*='oc-self-mention=1']:hover]:!text-[var(--primary-hover)]";
+  }, []);
+
+  const linkifyMentionsMarkdown = React.useCallback((content: string) => {
+    if (!statusIdentity) return content;
+    const selfLoginLower = connectedSourceControlLogin.toLowerCase();
+    const providerBaseUrl = getSourceControlBaseUrl(statusIdentity);
+    const mentionRegex = /(^|[^\w`])@([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,38}))/g;
+    return content.replace(mentionRegex, (_match, prefix: string, username: string) => {
+      const mention = `@${username}`;
+      const usernameLower = username.toLowerCase();
+      const selfTag = selfLoginLower && usernameLower === selfLoginLower ? '?oc-self-mention=1' : '';
+      return `${prefix}[${mention}](${providerBaseUrl}/${usernameLower}${selfTag})`;
+    });
+  }, [connectedSourceControlLogin, statusIdentity]);
+
+  const timelineComments = React.useMemo<TimelineCommentItem[]>(() => {
+    const issue = (prContext?.issueComments ?? []).map((comment) => ({
+      id: `issue-${comment.id}`,
+      body: comment.body || '',
+      authorName: comment.author?.name || comment.author?.username || t('gitView.pr.comments.unknownAuthor'),
+      authorLogin: comment.author?.username || null,
+      avatarUrl: comment.author?.avatarUrl || null,
+      createdAt: comment.createdAt,
+      context: t('gitView.pr.comments.generalContext'),
+      path: null as string | null,
+      line: null as number | null,
+    }));
+
+    const review = (prContext?.reviewComments ?? []).map((comment) => ({
+      id: `review-${comment.id}`,
+      body: comment.body || '',
+      authorName: comment.author?.name || comment.author?.username || t('gitView.pr.comments.unknownAuthor'),
+      authorLogin: comment.author?.username || null,
+      avatarUrl: comment.author?.avatarUrl || null,
+      createdAt: comment.createdAt,
+      context: t('gitView.pr.comments.reviewContext'),
+      path: comment.path || null,
+      line: comment.line ?? null,
+    }));
+
+    const all = [...issue, ...review];
+    all.sort((a, b) => {
+      const aTs = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bTs = b.createdAt ? Date.parse(b.createdAt) : 0;
+      const aVal = Number.isFinite(aTs) ? aTs : 0;
+      const bVal = Number.isFinite(bTs) ? bTs : 0;
+      return aVal - bVal;
+    });
+    return all;
+  }, [prContext, t]);
+
+  // PR comments/checks are pinned as inline-comment drafts above the chat
+  // input (like terminal selections), not sent as an immediate message — the
+  // user decides how to prompt and when to send.
+  const resolveDraftTarget = React.useCallback((): InlineCommentDraftTarget | null => {
+    // Same convention as diff/file comments: a new-session draft pins context
+    // under the 'draft' key, which the composer adopts when the session is
+    // created — starting a fresh session from a PR comment is a valid flow.
+    const sessionKey = currentSessionId ?? (newSessionDraftOpen ? 'draft' : null);
+    if (!sessionKey) {
+      toast.error(t('gitView.pr.toast.noActiveSession'), { description: t('gitView.pr.toast.noActiveSessionDescription') });
+      return null;
+    }
+    return { directory, sessionKey };
+  }, [currentSessionId, directory, newSessionDraftOpen, t]);
+
+  const attachCommentDraft = React.useCallback((target: InlineCommentDraftTarget, comment: TimelineCommentItem) => {
+    const authorLabel = comment.authorLogin ? `@${comment.authorLogin}` : comment.authorName;
+    const location = comment.path ? ` · ${comment.path}${comment.line ? `:${comment.line}` : ''}` : '';
+    useInlineCommentDraftStore.getState().addDraft(target, {
+      source: 'pr-comment',
+      fileLabel: `${changeRequestNumberLabel(pr?.number)} ${authorLabel}${location}`,
+      ...(repositoryHost?.provider ? { provider: repositoryHost.provider } : {}),
+      startLine: comment.line ?? 0,
+      endLine: comment.line ?? 0,
+      code: comment.body,
+      language: 'markdown',
+      text: '',
+    });
+  }, [changeRequestNumberLabel, pr?.number, repositoryHost?.provider]);
+
+  const renderCheckRunSummary = React.useCallback((run: CIRun, options?: { hideHeader?: boolean }) => {
+    const status = run.status || 'unknown';
+    const conclusion = run.conclusion ?? undefined;
+    const statusText = conclusion ? `${status} / ${conclusion}` : status;
+    const appName = run.application?.name || run.application?.slug;
+    return (
+      <div className="space-y-2">
+        <div className={options?.hideHeader ? 'flex items-start justify-end gap-3' : 'flex items-start justify-between gap-3'}>
+          {!options?.hideHeader ? (
+            <div className="min-w-0">
+              <div className="typography-ui-label text-foreground truncate">{run.name}</div>
+              <div className="typography-micro text-muted-foreground truncate">
+                {appName ? `${appName} · ${statusText}` : statusText}
+              </div>
+            </div>
+          ) : null}
+
+          {run.detailsUrl ? (
+            <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+              <a href={run.detailsUrl} target="_blank" rel="noopener noreferrer">
+                <Icon name="external-link" className="size-4" />
+                Open
+              </a>
+            </Button>
+          ) : null}
+        </div>
+
+        {run.output?.title ? (
+          <div className="typography-micro text-foreground">{run.output.title}</div>
+        ) : null}
+        {run.output?.summary ? (
+          <div className="typography-micro text-muted-foreground whitespace-pre-wrap break-words">
+            {run.output.summary}
+          </div>
+        ) : null}
+        {run.output?.text ? (
+          <div className="rounded border border-border/40 bg-transparent px-2 py-2 typography-micro text-muted-foreground whitespace-pre-wrap break-words max-h-48 overflow-y-auto">
+            {run.output.text}
+          </div>
+        ) : null}
+
+        {Array.isArray(run.annotations) && run.annotations.length > 0 ? (
+          <div className="space-y-1">
+            <div className="typography-micro text-muted-foreground">
+              Failed annotations{run.annotations.length > 20 ? ` (showing 20/${run.annotations.length})` : ''}
+            </div>
+            <div className="space-y-1">
+              {run.annotations.slice(0, 20).map((annotation, idx) => (
+                <div key={`${annotation.path || 'file'}:${annotation.startLine || idx}:${idx}`} className="rounded border border-[var(--status-error-border)] bg-[var(--status-error-background)]/40 px-2 py-2">
+                  <div className="typography-micro break-words text-[var(--status-error)]">
+                    {annotation.title || annotation.level || 'Issue'}
+                    {annotation.path ? ` · ${annotation.path}` : ''}
+                    {typeof annotation.startLine === 'number' ? `:${annotation.startLine}` : ''}
+                    {typeof annotation.endLine === 'number' && annotation.endLine !== annotation.startLine ? `-${annotation.endLine}` : ''}
+                  </div>
+                  <div className="typography-micro text-foreground whitespace-pre-wrap break-words mt-1">
+                    {annotation.message}
+                  </div>
+                  {annotation.rawDetails ? (
+                    <div className="typography-micro text-muted-foreground whitespace-pre-wrap break-words mt-1">
+                      {annotation.rawDetails}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {run.job?.steps && run.job.steps.length > 0 ? (
+          <div className="space-y-1">
+            <div className="typography-micro text-muted-foreground">{t('gitView.pr.checks.steps')}</div>
+            <div className="space-y-1">
+              {run.job.steps.map((step, idx) => {
+                const c = (step.conclusion || '').toLowerCase();
+                const isFail = c && !['success', 'neutral', 'skipped'].includes(c);
+                const stepKey = `${run.id ?? 'run'}:${run.job?.jobId ?? 'job'}:${step.number ?? idx}:${step.name}`;
+                const stepExpanded = expandedCheckStepKeys.has(stepKey);
+                if (!isFail) {
+                  return (
+                    <div
+                      key={stepKey}
+                      className="typography-micro flex w-full items-center gap-2 rounded px-2 py-1 text-muted-foreground"
+                    >
+                      <span className="truncate">{step.name}</span>
+                      {step.conclusion ? <span className="ml-auto flex-shrink-0">{step.conclusion}</span> : null}
+                    </div>
+                  );
+                }
+                return (
+                  <Collapsible key={stepKey} open={stepExpanded}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExpandedCheckStepKeys((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(stepKey)) {
+                            next.delete(stepKey);
+                          } else {
+                            next.add(stepKey);
+                          }
+                          return next;
+                        });
+                      }}
+                      className={
+                        'typography-micro flex w-full items-center gap-2 rounded px-2 py-1 text-left ' +
+                        (isFail ? 'bg-destructive/10 text-destructive' : 'text-muted-foreground')
+                      }
+                    >
+                      {stepExpanded ? <Icon name="arrow-down-s" className="size-4" /> : <Icon name="arrow-right-s" className="size-4" />}
+                      <span className="truncate">{step.name}</span>
+                      {step.conclusion ? <span className="ml-auto flex-shrink-0">{step.conclusion}</span> : null}
+                    </button>
+                    <CollapsibleContent>
+                      <div className="ml-6 mt-1 rounded border border-border/40 bg-transparent px-2 py-2 typography-micro text-muted-foreground space-y-1">
+                        {typeof step.number === 'number' ? <div>{t('gitView.pr.checks.stepLabel')}: {step.number}</div> : null}
+                        {step.status ? <div>{t('gitView.pr.checks.statusLabel')}: {step.status}</div> : null}
+                        {step.conclusion ? <div>{t('gitView.pr.checks.conclusionLabel')}: {step.conclusion}</div> : null}
+                        {step.startedAt ? <div>{t('gitView.pr.checks.startedLabel')}: {formatTimestamp(step.startedAt)}</div> : null}
+                        {step.completedAt ? <div>{t('gitView.pr.checks.completedLabel')}: {formatTimestamp(step.completedAt)}</div> : null}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }, [expandedCheckStepKeys, formatTimestamp, t]);
+
+  const [isAttachingChecks, setIsAttachingChecks] = React.useState(false);
+  const [isAttachingComments, setIsAttachingComments] = React.useState(false);
+
+  const sendFailedChecksToChat = React.useCallback(async () => {
+    if (!directory || !pr || !readContext) return;
+    const target = resolveDraftTarget();
+    if (!target) {
+      return;
+    }
+
+    setIsAttachingChecks(true);
+    try {
+      const context = await ensurePrContext(sourceControl, readContext, pr.number, {
+        includeCIDetails: true,
+        project: projectSelector,
+      });
+      if (!context) {
+        toast.error(t('gitView.pr.toast.loadChecksFailed'));
+        return;
+      }
+      const runs = context.ci?.runs ?? [];
+      const failed = runs.filter((r) => isFailedConclusion(r.conclusion));
+
+      if (failed.length === 0) {
+        toast.message(t('gitView.pr.toast.noFailedChecks'));
+        return;
+      }
+
+      const draftStore = useInlineCommentDraftStore.getState();
+      for (const run of failed) {
+        const annotations = (run.annotations ?? []).map((annotation) => [
+          [annotation.level, annotation.title].filter(Boolean).join(' '),
+          annotation.path ? `${annotation.path}${typeof annotation.startLine === 'number' ? `:${annotation.startLine}` : ''}` : null,
+          annotation.message,
+          annotation.rawDetails,
+        ].filter(Boolean).join('\n'));
+        const failedSteps = (run.job?.steps ?? [])
+          .filter((step) => isFailedConclusion(step.conclusion))
+          .map((step) => `step ${step.number ?? '?'}: ${step.name} → ${step.conclusion}`);
+        const payload = [
+          `check: ${run.job?.workflowName ? `${run.job.workflowName} / ${run.name}` : run.name}`,
+          `status: ${run.status ?? 'unknown'} / ${run.conclusion ?? 'unknown'}`,
+          run.detailsUrl ? `url: ${run.detailsUrl}` : null,
+          run.output?.title ? `title: ${run.output.title}` : null,
+          run.output?.summary ? `summary:\n${run.output.summary}` : null,
+          failedSteps.length > 0 ? `failed steps:\n${failedSteps.join('\n')}` : null,
+          annotations.length > 0 ? `annotations:\n${annotations.join('\n---\n')}` : null,
+        ].filter(Boolean).join('\n\n');
+        draftStore.addDraft(target, {
+          source: 'pr-check',
+          fileLabel: `${changeRequestNumberLabel(pr.number)} · ${run.name}`,
+          ...(repositoryHost?.provider ? { provider: repositoryHost.provider } : {}),
+          startLine: 0,
+          endLine: 0,
+          code: payload,
+          language: 'text',
+          text: '',
+        });
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast.error(t('gitView.pr.toast.loadChecksFailed'), { description: message });
+    } finally {
+      setIsAttachingChecks(false);
+    }
+  }, [changeRequestNumberLabel, directory, ensurePrContext, pr, projectSelector, readContext, repositoryHost?.provider, resolveDraftTarget, sourceControl, t]);
+
+  const sendCommentsToChat = React.useCallback(async () => {
+    if (!directory || !pr || !readContext) return;
+    const target = resolveDraftTarget();
+    if (!target) {
+      return;
+    }
+
+    setIsAttachingComments(true);
+    try {
+      const context = await ensurePrContext(sourceControl, readContext, pr.number, { project: projectSelector });
+      if (!context) {
+        toast.error(t('gitView.pr.toast.loadPrCommentsFailed'));
+        return;
+      }
+      if (timelineComments.length === 0) {
+        toast.message(t('gitView.pr.toast.noPrComments'));
+        return;
+      }
+
+      for (const comment of timelineComments) {
+        attachCommentDraft(target, comment);
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast.error(t('gitView.pr.toast.loadPrCommentsFailed'), { description: message });
+    } finally {
+      setIsAttachingComments(false);
+    }
+  }, [attachCommentDraft, directory, ensurePrContext, pr, projectSelector, readContext, resolveDraftTarget, sourceControl, t, timelineComments]);
+
+  const sendSingleCommentToChat = React.useCallback(async (comment: TimelineCommentItem) => {
+    const target = resolveDraftTarget();
+    if (!target) {
+      return;
+    }
+
+    attachCommentDraft(target, comment);
+  }, [attachCommentDraft, resolveDraftTarget]);
+
+  const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
+  const manualRefreshMountedRef = React.useRef(true);
+  React.useEffect(() => {
+    manualRefreshMountedRef.current = true;
+    return () => { manualRefreshMountedRef.current = false; };
+  }, []);
+  const refresh = React.useCallback(async (options?: { force?: boolean; onlyExistingPr?: boolean; silent?: boolean; markInitialResolved?: boolean }) => {
+    await refreshPrStatus(prStatusKey, options);
+  }, [prStatusKey, refreshPrStatus]);
+
+  const scheduleActionRefresh = React.useCallback((capturedRuntimeKey: string, capturedStatusKey: string) => {
+    pendingActionRefreshTimersRef.current.forEach((timerId) => {
+      window.clearTimeout(timerId);
+    });
+    pendingActionRefreshTimersRef.current = PR_ACTION_REFRESH_DELAYS_MS.map((delayMs) => window.setTimeout(() => {
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      void refreshPrStatus(capturedStatusKey, { force: true, silent: true, markInitialResolved: true });
+    }, delayMs));
+  }, [isMutationScopeCurrent, refreshPrStatus]);
+
+  const reconcileUnknownOutcome = React.useCallback(async (
+    error: Error,
+    capturedRuntimeKey: string,
+    capturedStatusKey: string,
+  ): Promise<void> => {
+    await reconcileUnknownMutationOutcome({
+      error,
+      isCurrent: () => isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey),
+      refresh: () => refreshPrStatus(capturedStatusKey, { force: true, silent: true, markInitialResolved: true }),
+      scheduleRefresh: () => scheduleActionRefresh(capturedRuntimeKey, capturedStatusKey),
+    });
+  }, [isMutationScopeCurrent, refreshPrStatus, scheduleActionRefresh]);
+
+  React.useEffect(() => {
+    if (!readContext || !prStatusKey) return;
+    ensurePrStatusEntry(prStatusKey);
+    setPrStatusParams(prStatusKey, {
+      directory,
+      branch,
+      remoteName: readContext.primaryRemote,
+      canShow,
+      identity: readContext,
+      readContext,
+      sourceControl,
+      authChecked: sourceControlAuth.authChecked,
+      connected: sourceControlAuth.connected,
+    });
+  }, [
+    branch,
+    canShow,
+    directory,
+    ensurePrStatusEntry,
+    prStatusKey,
+    readContext,
+    sourceControl,
+    sourceControlAuth.authChecked,
+    sourceControlAuth.connected,
+    setPrStatusParams,
+  ]);
+
+  // A refresh often answers from the server cache within milliseconds, and a
+  // spinner that never reaches the screen reads as "the button did nothing".
+  const PR_MANUAL_REFRESH_MIN_SPIN_MS = 600;
+  const refreshManually = React.useCallback(async () => {
+    if (isManualRefreshing) return;
+    setIsManualRefreshing(true);
+    const startedAt = Date.now();
+    try {
+      await refresh({ force: true });
+    } finally {
+      const remaining = PR_MANUAL_REFRESH_MIN_SPIN_MS - (Date.now() - startedAt);
+      if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, remaining));
+      if (manualRefreshMountedRef.current) setIsManualRefreshing(false);
+    }
+  }, [isManualRefreshing, refresh]);
+
+  React.useEffect(() => {
+    if (!readContext || !prStatusKey) return;
+    startPrStatusWatching(prStatusKey);
+    return () => {
+      stopPrStatusWatching(prStatusKey);
+    };
+  }, [prStatusKey, readContext, startPrStatusWatching, stopPrStatusWatching]);
+
+  React.useEffect(() => {
+    const snapshot = pullRequestDraftSnapshots.get(snapshotKey) ?? null;
+    setTitle(snapshot?.title ?? branchToTitle(branch));
+    setBody(snapshot?.body ?? '');
+    setDraft(snapshot?.draft ?? false);
+    setTargetBaseBranch(snapshot?.targetBaseBranch ? normalizeBranchRef(snapshot.targetBaseBranch) : normalizeBranchRef(baseBranch));
+  }, [baseBranch, branch, snapshotKey]);
+
+  React.useEffect(() => {
+    if (!readContext || !prStatusKey || !sourceControlAuth.connected) return;
+    void refresh({ markInitialResolved: true });
+  }, [prStatusKey, readContext, refresh, sourceControlAuth.connected]);
+
+  React.useEffect(() => {
+    if (!canShow || !readContext || !sourceControlAuth.connected) {
+      return;
+    }
+    void refresh({ force: true, silent: true, markInitialResolved: true });
+  }, [canShow, readContext, refresh, sourceControlAuth.connected]);
+
+  React.useEffect(() => {
+    // Coming back to the app is the moment a PR is most likely to have changed
+    // elsewhere — including a merged one being replaced by a newer open PR — so
+    // staleness is read from the store when the event fires, not captured here.
+    const refreshWhenStale = () => {
+      const lastRefreshAt = useGitHubPrStatusStore.getState().entries[prStatusKey]?.lastRefreshAt ?? 0;
+      if (Date.now() - lastRefreshAt > 60_000) {
+        void refresh({ force: true, silent: true });
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      refreshWhenStale();
+    };
+
+    window.addEventListener('focus', refreshWhenStale);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('focus', refreshWhenStale);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [prStatusKey, refresh]);
+
+  React.useEffect(() => {
+    if (sourceControlAuthChecked && !sourceControlAuth.connected) {
+      void refresh({ force: true, silent: true, markInitialResolved: true });
+    }
+  }, [refresh, sourceControlAuth.connected, sourceControlAuthChecked]);
+
+  React.useEffect(() => {
+    if (!directory || !branch) {
+      return;
+    }
+    pullRequestDraftSnapshots.set(snapshotKey, {
+      title,
+      body,
+      draft,
+      additionalContext,
+      targetBaseBranch,
+      activeSegment,
+    });
+  }, [snapshotKey, title, body, draft, additionalContext, targetBaseBranch, directory, branch, activeSegment]);
+
+  React.useEffect(() => {
+    return () => {
+      pendingActionRefreshTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      pendingActionRefreshTimersRef.current = [];
+    };
+  }, [prStatusKey, runtimeKey]);
+
+  React.useEffect(() => () => {
+    mutationKeysRef.current.clear();
+  }, []);
+
+  const generateDescription = React.useCallback(async () => {
+    if (isGenerating) return;
+    if (!directory) return;
+    setIsGenerating(true);
+    try {
+      // For cross-repo PRs, use the upstream's default branch SHA for the commit range.
+      // Using a bare branch name like "main" would resolve to the local ref, making
+      // "git log main..main" a no-op. The SHA points to the actual upstream commit.
+      const baseRef = (useDetectedUpstream && detectedUpstream?.defaultBranchSha)
+        ? detectedUpstream.defaultBranchSha
+        : readContext
+          ? `${readContext.primaryRemote}/${targetBaseBranch}`
+          : targetBaseBranch;
+      const payload: { base: string; head: string; context?: string; files?: string[]; changeRequestProvider?: SourceControlProvider } = {
+        base: baseRef,
+        head: branch,
+        ...(readContext?.provider ? { changeRequestProvider: readContext.provider } : {}),
+      };
+      if (additionalContext) {
+        payload.context = additionalContext;
+      }
+      const generated = await generatePullRequestDescription(directory, payload);
+
+      if (generated.title?.trim()) {
+        setTitle(generated.title.trim());
+      }
+      if (generated.body?.trim()) {
+        setBody(generated.body.trim());
+      }
+      onGeneratedDescription?.();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast.error(t('gitView.pr.toast.generateDescriptionFailed'), { description: message });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [additionalContext, branch, detectedUpstream?.defaultBranchSha, directory, isGenerating, onGeneratedDescription, readContext, targetBaseBranch, t, useDetectedUpstream]);
+
+  const createPr = React.useCallback(async () => {
+    if (sourceControlCapabilities?.changeRequests !== true) {
+      toast.error(t('gitView.pr.toast.createPrFailed'), { description: t('gitView.pr.capabilitiesUnavailable') });
+      return;
+    }
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      toast.error(t('gitView.pr.toast.titleRequired'));
+      return;
+    }
+
+    const trimmedBase = targetBaseBranch.trim();
+    if (!trimmedBase) {
+      toast.error(t('gitView.pr.toast.baseBranchRequired'));
+      return;
+    }
+    if (!useDetectedUpstream && trimmedBase === branch) {
+      toast.error(t('gitView.pr.toast.baseMustDifferFromHead'));
+      return;
+    }
+    const targetProject = useDetectedUpstream ? detectedUpstream : statusProject;
+    if (!readContext || !targetProject) {
+      toast.error(t('gitView.pr.toast.createPrFailed'), { description: t('gitView.pr.statusUnavailable') });
+      return;
+    }
+
+    const capturedRuntimeKey = getRuntimeKey();
+    const capturedStatusKey = prStatusKey;
+    const target = { owner: targetProject.owner, name: targetProject.name };
+    const payloadBody = body.trim() ? body : undefined;
+    const remote = useDetectedUpstream ? undefined : readContext.primaryRemote;
+    const headRemote = useDetectedUpstream ? readContext.primaryRemote : undefined;
+    const signature = createMutationSignature('create', capturedRuntimeKey, readContext, [
+      target.owner, target.name, branch, trimmedBase, trimmedTitle, payloadBody, draft, remote, headRemote,
+    ]);
+    const idempotencyKey = beginMutation(signature);
+    if (!idempotencyKey) return;
+    setIsCreating(true);
+    let retainMutationKey = false;
+    let mutationSettled = false;
+    try {
+      const payload: CreateChangeRequestInput = {
+        ...readContext,
+        idempotencyKey,
+        target: { project: target, head: branch, base: trimmedBase },
+        title: trimmedTitle,
+        draft,
+      };
+      if (payloadBody !== undefined) payload.body = payloadBody;
+      if (remote) payload.remote = remote;
+      if (headRemote) payload.headRemote = headRemote;
+      const receipt = await sourceControl.changeRequestCreate(payload);
+      mutationSettled = true;
+      finishMutation(signature, idempotencyKey, false);
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      toast.success(t('gitView.pr.toast.prCreated'));
+      await refresh({ force: true });
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      // The receipt names the number; the refreshed status has its address.
+      const created = useGitHubPrStatusStore.getState().entries[capturedStatusKey]?.status;
+      const createdChangeRequest = created?.changeRequest ?? created?.pr;
+      if (createdChangeRequest && createdChangeRequest.number === receipt.target.number) {
+        linkCreatedChangeRequestToCurrentSession(directory, createdChangeRequest);
+      }
+      scheduleActionRefresh(capturedRuntimeKey, capturedStatusKey);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      retainMutationKey = hasUnknownMutationOutcomeCode(error);
+      const message = error.message;
+      toast.error(t('gitView.pr.toast.createPrFailed'), { description: message });
+      if (retainMutationKey) await reconcileUnknownOutcome(error, capturedRuntimeKey, capturedStatusKey);
+    } finally {
+      if (!mutationSettled) finishMutation(signature, idempotencyKey, retainMutationKey);
+      setIsCreating(false);
+    }
+  }, [beginMutation, body, branch, detectedUpstream, directory, draft, finishMutation, isMutationScopeCurrent, prStatusKey, readContext, reconcileUnknownOutcome, refresh, scheduleActionRefresh, sourceControl, sourceControlCapabilities?.changeRequests, statusProject, targetBaseBranch, title, useDetectedUpstream, t]);
+
+  const mergePr = React.useCallback(async (pr: PullRequest) => {
+    if (!readContext || !statusProject) {
+      toast.error(t('gitView.pr.toast.mergeFailed'), { description: t('gitView.pr.statusUnavailable') });
+      return;
+    }
+    const capturedRuntimeKey = getRuntimeKey();
+    const capturedStatusKey = prStatusKey;
+    const target = getExistingPullRequestTarget(statusProject, pr);
+    const signature = createMutationSignature('merge', capturedRuntimeKey, readContext, [
+      target.project.owner, target.project.name, target.number, target.head, target.base, target.headSha, mergeMethod,
+    ]);
+    const idempotencyKey = beginMutation(signature);
+    if (!idempotencyKey) return;
+    setIsMerging(true);
+    let retainMutationKey = false;
+    let mutationSettled = false;
+    try {
+      const receipt = await sourceControl.changeRequestMerge({
+        ...readContext,
+        idempotencyKey,
+        target,
+        method: mergeMethod,
+      });
+      mutationSettled = true;
+      finishMutation(signature, idempotencyKey, false);
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      if (receipt.result.merged) {
+        toast.success(t('gitView.pr.toast.prMerged'));
+      } else {
+        toast.message(t('gitView.pr.toast.prNotMerged'), { description: receipt.result.message || t('gitView.pr.notMergeable') });
+      }
+      await refresh({ force: true });
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      scheduleActionRefresh(capturedRuntimeKey, capturedStatusKey);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      retainMutationKey = hasUnknownMutationOutcomeCode(error);
+      const message = error.message;
+      toast.error(t('gitView.pr.toast.mergeFailed'), { description: message });
+      if (retainMutationKey) await reconcileUnknownOutcome(error, capturedRuntimeKey, capturedStatusKey);
+      if (pr.url) {
+        void openExternal(pr.url);
+      }
+    } finally {
+      if (!mutationSettled) finishMutation(signature, idempotencyKey, retainMutationKey);
+      setIsMerging(false);
+    }
+  }, [beginMutation, finishMutation, isMutationScopeCurrent, mergeMethod, prStatusKey, readContext, reconcileUnknownOutcome, refresh, scheduleActionRefresh, sourceControl, statusProject, t]);
+
+  const markReady = React.useCallback(async (pr: PullRequest) => {
+    if (!readContext || !statusProject) {
+      toast.error(t('gitView.pr.toast.markReadyFailed'), { description: t('gitView.pr.statusUnavailable') });
+      return;
+    }
+    const capturedRuntimeKey = getRuntimeKey();
+    const capturedStatusKey = prStatusKey;
+    const target = getExistingPullRequestTarget(statusProject, pr);
+    const signature = createMutationSignature('ready', capturedRuntimeKey, readContext, [
+      target.project.owner, target.project.name, target.number, target.head, target.base, target.headSha,
+    ]);
+    const idempotencyKey = beginMutation(signature);
+    if (!idempotencyKey) return;
+    setIsMarkingReady(true);
+    let retainMutationKey = false;
+    let mutationSettled = false;
+    try {
+      await sourceControl.changeRequestReady({
+        ...readContext,
+        idempotencyKey,
+        target,
+      });
+      mutationSettled = true;
+      finishMutation(signature, idempotencyKey, false);
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      toast.success(t('gitView.pr.toast.markedReady'));
+      await refresh({ force: true });
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      scheduleActionRefresh(capturedRuntimeKey, capturedStatusKey);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      retainMutationKey = hasUnknownMutationOutcomeCode(error);
+      const message = error.message;
+      toast.error(t('gitView.pr.toast.markReadyFailed'), { description: message });
+      if (retainMutationKey) await reconcileUnknownOutcome(error, capturedRuntimeKey, capturedStatusKey);
+      if (pr.url) {
+        void openExternal(pr.url);
+      }
+    } finally {
+      if (!mutationSettled) finishMutation(signature, idempotencyKey, retainMutationKey);
+      setIsMarkingReady(false);
+    }
+  }, [beginMutation, finishMutation, isMutationScopeCurrent, prStatusKey, readContext, reconcileUnknownOutcome, refresh, scheduleActionRefresh, sourceControl, statusProject, t]);
+
+  const updatePr = React.useCallback(async (pr: PullRequest) => {
+    const trimmedTitle = editTitle.trim();
+    if (!trimmedTitle) {
+      toast.error(t('gitView.pr.toast.titleRequired'));
+      return;
+    }
+    if (!readContext || !statusProject) {
+      toast.error(t('gitView.pr.toast.updatePrFailed'), { description: t('gitView.pr.statusUnavailable') });
+      return;
+    }
+
+    const capturedRuntimeKey = getRuntimeKey();
+    const capturedStatusKey = prStatusKey;
+    const target = getExistingPullRequestTarget(statusProject, pr);
+    const signature = createMutationSignature('update', capturedRuntimeKey, readContext, [
+      target.project.owner, target.project.name, target.number, target.head, target.base, target.headSha,
+      trimmedTitle, editBody,
+    ]);
+    const idempotencyKey = beginMutation(signature);
+    if (!idempotencyKey) return;
+    setIsUpdating(true);
+    let retainMutationKey = false;
+    let mutationSettled = false;
+    try {
+      await sourceControl.changeRequestUpdate({
+        ...readContext,
+        idempotencyKey,
+        target,
+        title: trimmedTitle,
+        body: editBody,
+      });
+      mutationSettled = true;
+      finishMutation(signature, idempotencyKey, false);
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      setIsEditingPr(false);
+      toast.success(t('gitView.pr.toast.prUpdated'));
+      await refresh({ force: true });
+      if (!isMutationScopeCurrent(capturedRuntimeKey, capturedStatusKey)) return;
+      scheduleActionRefresh(capturedRuntimeKey, capturedStatusKey);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      retainMutationKey = hasUnknownMutationOutcomeCode(error);
+      const message = error.message;
+      toast.error(t('gitView.pr.toast.updatePrFailed'), { description: message });
+      if (retainMutationKey) await reconcileUnknownOutcome(error, capturedRuntimeKey, capturedStatusKey);
+    } finally {
+      if (!mutationSettled) finishMutation(signature, idempotencyKey, retainMutationKey);
+      setIsUpdating(false);
+    }
+  }, [beginMutation, editBody, editTitle, finishMutation, isMutationScopeCurrent, prStatusKey, readContext, reconcileUnknownOutcome, refresh, scheduleActionRefresh, sourceControl, statusProject, t]);
+
+  if (!canShow) {
+    return (
+      <section className="border-0 bg-transparent rounded-none">
+        <div className="space-y-1 pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="typography-ui-header font-semibold text-foreground">
+              {t('gitView.pullRequest.title')}
+            </div>
+            <GitHubAccountControl identity={repositoryHost ?? undefined} />
+          </div>
+          <div className="typography-micro text-muted-foreground">
+            {t('gitView.pullRequest.availableOnFeatureBranches')}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const originRepoUrl = statusProject?.url || null;
+  const repoUrl = (useDetectedUpstream && detectedUpstream?.url) ? detectedUpstream.url : originRepoUrl;
+  const capabilitiesReady = currentCapabilityState?.status === 'ready';
+  const capabilitiesUnavailable = currentCapabilityState?.status === 'error';
+  const canMerge = Boolean(
+    status?.canMerge
+    && sourceControlCapabilities?.mergeChangeRequests === true
+    && mergeMethods.includes(mergeMethod),
+  );
+  const isConnected = Boolean(status?.connected);
+  // A project on a host where no account can read it gets the same notice as
+  // one whose account dropped mid-way.
+  const hostUnreadable = Boolean(!readContext && repositoryHost && binding.status === 'ready' && hostAuthChecked);
+  const shouldShowConnectionNotice = Boolean(statusIdentity && sourceControlAuthChecked && status?.connected === false) || hostUnreadable;
+  const noticeIdentity = statusIdentity ?? repositoryHost;
+  const providerName = noticeIdentity ? getSourceControlProviderLabel(noticeIdentity.provider) : null;
+  const prVisualState = getPrVisualState(status);
+  const prColorVar = prVisualState ? `var(--pr-${prVisualState})` : 'var(--status-info)';
+  const prStateIconName = prVisualState === 'draft'
+    ? 'git-pr-draft'
+    : prVisualState === 'merged'
+      ? 'git-merge'
+      : prVisualState === 'closed'
+        ? 'git-close-pull-request'
+        : 'git-pull-request';
+  const prStatusText = pr
+    ? [
+        `${pr.state}${pr.draft ? ' (draft)' : ''}`,
+        // Whether it can merge is a question for an open one only: GitLab reports
+        // a merged or closed merge request as not mergeable.
+        pr.state === 'open' && pr.mergeable === false ? t('gitView.pr.notMergeable') : null,
+        pr.state === 'open' && typeof pr.mergeableState === 'string' && pr.mergeableState && pr.mergeableState !== 'unknown'
+          ? pr.mergeableState
+          : null,
+      ].filter(Boolean).join(' · ')
+    : '';
+  const checksText = checks
+    ? checks.total > 0
+      ? `${checks.success}/${checks.total} ${t('gitView.pr.checks.label')}`
+      : `${checks.state} ${t('gitView.pr.checks.label')}`
+    : '';
+  const containerClassName = 'border-0 bg-transparent rounded-none';
+  const headerClassName = 'px-0 py-3 border-b border-border/40 flex flex-col gap-1';
+  const bodyClassName = 'flex flex-col gap-3 py-3';
+
+  return (
+    <section className={containerClassName}>
+      <div className={headerClassName}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {pr ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                className="shrink-0"
+                onClick={() => void openExternal(pr.url)}
+                aria-label={providerName
+                  ? t('gitView.pr.actions.openOnProviderAria', { provider: providerName })
+                  : t('gitView.header.openPullRequest')}
+              >
+                <Icon name={prStateIconName} className="size-4 shrink-0" style={{ color: prColorVar }} />
+                {providerName
+                  ? t('gitView.pr.actions.openOnProvider', { provider: providerName })
+                  : t('gitView.header.openPullRequest')}
+              </Button>
+            ) : (
+              <Icon name={prStateIconName} className="size-4 shrink-0" style={{ color: 'var(--surface-muted-foreground)' }} />
+            )}
+            <h3 className="typography-ui-header font-semibold text-foreground truncate">{t('gitView.pullRequest.title')}</h3>
+            {pr ? (
+              <span className="typography-meta text-muted-foreground truncate">{formatChangeRequestReference(statusIdentity?.provider, pr.number)}</span>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {isLoading || isManualRefreshing ? <Icon name="loader-4" className="size-4 animate-spin text-muted-foreground" /> : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 px-0"
+                  disabled={isLoading || isManualRefreshing}
+                  onClick={() => void refreshManually()}
+                  aria-label={t('gitView.pr.actions.refreshAria')}
+                >
+                  <Icon name="refresh" className="size-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>{t('gitView.pr.actions.refresh')}</p></TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {pr ? (
+          <div className="@container/pr-actions flex min-w-0 items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 typography-micro text-muted-foreground">
+              <span style={{ color: prColorVar }}>{prStatusText}</span>
+              {checks ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${statusColor(checks.state)}`} />
+                  {checksText}
+                </span>
+              ) : null}
+              {trackingBranch && selectedRemoteName && trackingBranch.split('/')[0] !== selectedRemoteName ? (
+                <span className="min-w-0 truncate">
+                  {trackingBranch.split('/')[0]} → {selectedRemoteName}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {showWalkthroughAction && (readContext?.provider === 'github' || readContext?.provider === 'gitlab') ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn('pr-actions__walkthrough-button h-7 shrink-0 gap-1.5 px-2', WALKTHROUGH_ACTION_CLASS)}
+                  onClick={() => {
+                    requestWalkthroughTarget(directory, {
+                      source: {
+                        kind: 'pr',
+                        number: pr.number,
+                        ...(statusProject ? { sourceRepo: { owner: statusProject.owner, repo: statusProject.name } } : {}),
+                      },
+                      context: readContext,
+                    });
+                    openContextSurface(directory, 'walkthrough');
+                  }}
+                  aria-label={t('walkthrough.action.open')}
+                >
+                  <Icon name="route" className="size-4" />
+                  <span className="pr-actions__walkthrough-label typography-ui-label">
+                    {t('walkthrough.action.open')}
+                  </span>
+                </Button>
+              ) : null}
+              {canMerge && sourceControlCapabilities?.draftChangeRequests === true && pr.draft && pr.state === 'open' ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 w-7 px-0"
+                      onClick={() => markReady(pr)}
+                      disabled={isMarkingReady || isMerging || isUpdating || isEditingPr}
+                      aria-label={t('gitView.pr.actions.markReadyAria')}
+                    >
+                      {isMarkingReady ? <Icon name="loader-4" className="size-4 animate-spin" /> : <Icon name="checkbox-circle" className="size-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>{t('gitView.pr.actions.markReady')}</p></TooltipContent>
+                </Tooltip>
+              ) : null}
+              {canMerge ? (
+                <>
+                  <Select
+                    value={mergeMethod}
+                    onValueChange={(value) => setMergeMethod(value as MergeMethod)}
+                    disabled={isMerging || pr.state !== 'open'}
+                  >
+                    <SelectTrigger size="sm" className="h-7 w-auto min-w-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mergeMethods.includes('squash') ? <SelectItem value="squash">{t('gitView.pr.mergeMethod.squash')}</SelectItem> : null}
+                      {mergeMethods.includes('merge') ? <SelectItem value="merge">{t('gitView.pr.mergeMethod.merge')}</SelectItem> : null}
+                      {mergeMethods.includes('rebase') ? <SelectItem value="rebase">{t('gitView.pr.mergeMethod.rebase')}</SelectItem> : null}
+                    </SelectContent>
+                  </Select>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="h-7 w-7 px-0"
+                        onClick={() => mergePr(pr)}
+                        disabled={isMerging || isMarkingReady || pr.state !== 'open' || pr.draft || isUpdating || isEditingPr}
+                        aria-label={t('gitView.pr.actions.mergePrAria')}
+                      >
+                        {isMerging ? <Icon name="loader-4" className="size-4 animate-spin" /> : <Icon name="git-merge" className="size-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>{t('gitView.pr.actions.mergePr')}</p></TooltipContent>
+                  </Tooltip>
+                </>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className={bodyClassName}>
+        {capabilitiesUnavailable ? (
+          <div className="space-y-2 rounded-md border border-[var(--status-error-border)] bg-[var(--status-error-background)] p-3">
+            <div className="typography-ui-label text-[var(--status-error)]">{t('gitView.pr.capabilitiesUnavailable')}</div>
+            <Button variant="outline" size="sm" onClick={() => setCapabilityReload((value) => value + 1)}>
+              {t('settings.sourceControl.transport.retry')}
+            </Button>
+          </div>
+        ) : null}
+        {shouldShowConnectionNotice && providerName ? (
+          <div className="space-y-2">
+              <div className="typography-meta text-muted-foreground">
+              {t('gitView.pr.providerNotConnected', { provider: providerName })}
+            </div>
+                <Button variant="outline" size="sm" onClick={openSourceControlSettings} className="w-fit">
+                  {t('gitView.pr.actions.openSettings')}
+                </Button>
+              </div>
+            ) : null}
+
+            {error ? (
+              <div className="space-y-2">
+                <div className="typography-ui-label text-foreground">{t('gitView.pr.statusUnavailable')}</div>
+                <div className="typography-meta text-muted-foreground break-words">{error}</div>
+                {binding.error ? <Button variant="outline" size="sm" onClick={() => void binding.retry()} disabled={binding.status === 'loading'}>
+                  {t('settings.sourceControl.transport.retry')}
+                </Button> : null}
+                {repoUrl ? (
+                  <Button variant="outline" size="sm" asChild className="w-fit">
+                    <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+                      <Icon name="external-link" className="size-4" />
+                      Open Repo
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {!pr && !isInitialStatusResolved && !error && !shouldShowConnectionNotice && (binding.status === 'loading' || readContext) ? (
+              <div className="flex items-center gap-2 typography-micro text-muted-foreground">
+                <Icon name="loader-4" className="size-4 animate-spin" />
+                {t('gitView.pr.checkingStatus')}
+              </div>
+            ) : pr && !isHistoricalPr ? (
+              <div className="flex flex-col gap-3">
+                <div className="h-8 min-w-0">
+                    <SortableTabsStrip
+                      className="h-full"
+                      items={[
+                        { id: 'overview', label: t('gitView.pr.segment.overview') },
+                        {
+                          id: 'checks',
+                          label: checks && checks.total > 0
+                            ? `${t('gitView.pr.segment.checks')} ${checks.success}/${checks.total}`
+                            : t('gitView.pr.segment.checks'),
+                          icon: checks
+                            ? <span className={`h-1.5 w-1.5 rounded-full ${statusColor(checks.state)}`} />
+                            : undefined,
+                        },
+                        {
+                          id: 'comments',
+                          label: prContext
+                            ? `${t('gitView.pr.segment.comments')} ${(prContext.issueComments?.length ?? 0) + (prContext.reviewComments?.length ?? 0)}`
+                            : t('gitView.pr.segment.comments'),
+                        },
+                      ]}
+                      activeId={activeSegment}
+                      onSelect={(segmentId) => setActiveSegment(segmentId as PrSegment)}
+                      layoutMode="fit"
+                      variant="active-pill"
+                      activePillButtonClassName="h-7"
+                    />
+                  </div>
+
+                {activeSegment === 'overview' ? (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    {canMerge && pr.draft ? (
+                      <div className="typography-micro text-muted-foreground">
+                        {t('gitView.pr.draftMustBeReady')}
+                      </div>
+                    ) : null}
+                    {!canMerge && capabilitiesReady ? (
+                      <div className="typography-micro text-muted-foreground">{t('gitView.pr.noMergePermission')}</div>
+                    ) : null}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        {isEditingPr ? (
+                          <Input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder={t('gitView.pr.placeholder.title')}
+                            autoCorrect={hasTouchInput ? "on" : "off"}
+                            autoCapitalize={hasTouchInput ? "sentences" : "off"}
+                            spellCheck={hasTouchInput}
+                          />
+                        ) : (
+                          <div className="typography-markdown text-xl font-semibold text-foreground break-words leading-snug">{pr.title}</div>
+                        )}
+                      </div>
+                      {pr.state === 'open' ? (
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {isEditingPr ? (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 w-9 px-0"
+                                    onClick={() => {
+                                      setIsEditingPr(false);
+                                      setEditTitle(pr.title || '');
+                                      setEditBody(pr.body || '');
+                                    }}
+                                    disabled={isUpdating}
+                                    aria-label={t('gitView.pr.actions.cancelEditingAria')}
+                                  >
+                                    <Icon name="close" className="size-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{t('gitView.pr.actions.cancelEditing')}</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    className="h-9 w-9 px-0"
+                                    onClick={() => updatePr(pr)}
+                                    disabled={isUpdating || !editTitle.trim()}
+                                    aria-label={t('gitView.pr.actions.savePrAria')}
+                                  >
+                                    {isUpdating ? <Icon name="loader-4" className="size-4 animate-spin" /> : <Icon name="check" className="size-4" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{t('gitView.pr.actions.savePr')}</p></TooltipContent>
+                              </Tooltip>
+                            </>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-7 px-0"
+                                  onClick={() => setIsEditingPr(true)}
+                                  aria-label={t('gitView.pr.actions.editPrAria')}
+                                >
+                                  <Icon name="edit" className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>{t('gitView.pr.actions.editPr')}</p></TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {isEditingPr ? (
+                      <Textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        outerClassName="min-h-[60vh]"
+                        placeholder={t('gitView.pr.placeholder.description')}
+                        autoCorrect={hasTouchInput ? "on" : "off"}
+                        autoCapitalize={hasTouchInput ? "sentences" : "off"}
+                        spellCheck={hasTouchInput}
+                      />
+                    ) : null}
+
+                    {!isEditingPr ? (
+                      pr.body?.trim() ? (
+                        <SimpleMarkdownRenderer
+                          content={pr.body}
+                          className="typography-markdown-body min-w-0 text-muted-foreground break-words [&_img]:h-auto [&_img]:max-w-full"
+                          enableFileReferences={false}
+                          allowRawHtml
+                        />
+                      ) : (
+                        <div className="typography-micro text-muted-foreground whitespace-pre-wrap break-words">
+                          {isHydratingCurrentPrBody ? t('gitView.pr.loadingDescription') : t('gitView.pr.noDescription')}
+                        </div>
+                      )
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {activeSegment === 'checks' ? (
+                  <div className="flex min-w-0 flex-col gap-3">
+                    {checks && checks.total > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted/40">
+                          {checks.success > 0 ? (
+                            <div className="bg-[color:var(--status-success)]" style={{ width: `${(checks.success / checks.total) * 100}%` }} />
+                          ) : null}
+                          {checks.failure > 0 ? (
+                            <div className="bg-[color:var(--status-error)]" style={{ width: `${(checks.failure / checks.total) * 100}%` }} />
+                          ) : null}
+                          {checks.pending > 0 ? (
+                            <div className="bg-[color:var(--status-warning)]" style={{ width: `${(checks.pending / checks.total) * 100}%` }} />
+                          ) : null}
+                        </div>
+                        <span className="shrink-0 typography-micro tabular-nums text-muted-foreground">
+                          {checks.success}/{checks.total} {t('gitView.pr.checks.label')}
+                        </span>
+                        {(checks.inProgress ?? 0) > 0 ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 typography-micro text-[var(--status-warning)]">
+                            <Icon name="loader-4" className="size-3.5 animate-spin" />
+                            {formatElapsedDuration(checks.startedAt, undefined, nowTick)}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {checks?.failure ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-fit gap-1.5 border-[var(--status-success-border)] bg-[var(--status-success-background)] text-[var(--status-success)]"
+                        onClick={sendFailedChecksToChat}
+                        disabled={isAttachingChecks}
+                        aria-label={t('gitView.pr.actions.resolveFailedChecksAria')}
+                      >
+                        {isAttachingChecks
+                          ? <Icon name="loader-4" className="size-4 animate-spin" />
+                          : <Icon name="ai-generate-2" className="size-4" />}
+                        {t('gitView.pr.actions.resolveFailedChecks')}
+                      </Button>
+                    ) : null}
+
+                    {(prContext?.ci?.runs?.length ?? 0) > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        {(prContext?.ci?.runs ?? []).map((run, idx) => {
+                          const runKey = `${run.id ?? 'run'}:${run.name}:${idx}`;
+                          const isRunning = run.status === 'in_progress';
+                          const isQueued = run.status === 'queued';
+                          const failed = isFailedConclusion(run.conclusion);
+                          const expanded = expandedCheckRunKeys.has(runKey);
+                          const hasDetails = Boolean(
+                            run.output?.title || run.output?.summary || run.output?.text
+                            || (run.annotations?.length ?? 0) > 0
+                            || (run.job?.steps?.length ?? 0) > 0
+                            || run.detailsUrl,
+                          );
+                          const workflowName = run.job?.workflowName;
+                          const durationLabel = isRunning
+                            ? formatElapsedDuration(run.startedAt, undefined, nowTick)
+                            : formatElapsedDuration(run.startedAt, run.completedAt);
+                          return (
+                            <div key={runKey} className={cn('rounded-md border border-border/40', failed && 'border-[var(--status-error-border)]')}>
+                              <button
+                                type="button"
+                                disabled={!hasDetails}
+                                onClick={() => {
+                                  setExpandedCheckRunKeys((previous) => {
+                                    const next = new Set(previous);
+                                    if (next.has(runKey)) {
+                                      next.delete(runKey);
+                                    } else {
+                                      next.add(runKey);
+                                    }
+                                    return next;
+                                  });
+                                }}
+                                className="flex w-full items-center gap-2 px-2.5 py-2 text-left disabled:cursor-default"
+                              >
+                                {isRunning ? (
+                                  <Icon name="loader-4" className="size-4 shrink-0 animate-spin text-[var(--status-warning)]" />
+                                ) : isQueued ? (
+                                  <Icon name="time" className="size-4 shrink-0 text-muted-foreground" />
+                                ) : failed ? (
+                                  <Icon name="close-circle" className="size-4 shrink-0 text-[var(--status-error)]" />
+                                ) : (
+                                  <Icon name="checkbox-circle" className="size-4 shrink-0 text-[var(--status-success)]" />
+                                )}
+                                <span className="min-w-0 flex-1 truncate typography-ui-label text-foreground">
+                                  {workflowName && workflowName !== run.name ? `${workflowName} / ${run.name}` : run.name}
+                                </span>
+                                {durationLabel ? (
+                                  <span className="shrink-0 typography-micro tabular-nums text-muted-foreground">{durationLabel}</span>
+                                ) : null}
+                                {hasDetails ? (
+                                  <Icon name="arrow-down-s" className={cn('size-4 shrink-0 text-muted-foreground transition-transform', expanded && 'rotate-180')} />
+                                ) : null}
+                              </button>
+                              {expanded && hasDetails ? (
+                                <div className="min-w-0 overflow-hidden border-t border-border/40 p-2.5">
+                                  {renderCheckRunSummary(run, { hideHeader: true })}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : isLoadingPrContext ? (
+                      <div className="flex items-center justify-center gap-2 py-6 typography-micro text-muted-foreground">
+                        <Icon name="loader-4" className="size-4 animate-spin" />
+                        {t('gitView.loading.loading')}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center typography-micro text-muted-foreground">{t('gitView.pr.checkDetails.empty')}</div>
+                    )}
+                  </div>
+                ) : null}
+
+                {activeSegment === 'comments' ? (
+                  <div className="flex min-w-0 flex-col gap-2">
+                    {timelineComments.length > 0 ? (
+                      <div className="flex items-center justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1.5 text-[var(--status-success)] hover:bg-[var(--status-success-background)] hover:text-[var(--status-success)]"
+                          onClick={sendCommentsToChat}
+                          disabled={isAttachingComments}
+                          aria-label={t('gitView.pr.actions.shareCommentsAria')}
+                        >
+                          {isAttachingComments
+                            ? <Icon name="loader-4" className="size-3.5 animate-spin" />
+                            : <Icon name="ai-generate-2" className="size-3.5" />}
+                          {t('gitView.pr.comments.addAll')}
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {timelineComments.length > 0 ? (
+                      <div className="relative pl-3">
+                        <div>
+                          {timelineComments.map((comment, idx) => {
+                            const initial = (comment.authorName || '?').charAt(0).toUpperCase();
+                            const isLast = idx === timelineComments.length - 1;
+                            return (
+                              <div key={comment.id} className="relative pl-10 pb-5 last:pb-0">
+                                {!isLast ? <div className="absolute left-4 top-[2.375rem] bottom-[0.375rem] w-px bg-border/60" /> : null}
+                                <div className="absolute left-0 top-0 z-10 flex size-8 items-center justify-center overflow-hidden rounded-full border border-border/60 bg-surface-elevated text-xs text-muted-foreground">
+                                  {comment.avatarUrl ? (
+                                    <img src={comment.avatarUrl} alt={comment.authorName} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <span>{initial}</span>
+                                  )}
+                                </div>
+                                <div className="rounded-lg bg-surface-elevated px-3 pt-0 pb-3 space-y-2">
+                                  <div className="flex flex-col items-start gap-1 typography-micro text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-1 sm:gap-y-1">
+                                    <span className="text-foreground whitespace-nowrap">
+                                      {comment.authorName}
+                                      {comment.authorLogin && comment.authorLogin !== comment.authorName ? ` · @${comment.authorLogin}` : ''}
+                                    </span>
+                                    {comment.createdAt ? <span className="whitespace-nowrap">{formatTimestamp(comment.createdAt)}</span> : null}
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 px-0 has-[>svg]:px-0 sm:px-2 sm:has-[>svg]:px-2.5 text-[var(--status-success)] hover:bg-[var(--status-success-background)] hover:text-[var(--status-success)] justify-start"
+                                          onClick={() => {
+                                            void sendSingleCommentToChat(comment);
+                                          }}
+                                          aria-label={t('gitView.pr.actions.sendCommentToAgentAria')}
+                                        >
+                                          <Icon name="ai-generate-2" className="size-3.5" />
+                                          {t('gitView.pr.actions.sendToAgent')}
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>{t('gitView.pr.actions.sendCommentToAgent')}</p></TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <div className="typography-micro text-muted-foreground">
+                                    {comment.context}
+                                    {comment.path ? ` · ${comment.path}` : ''}
+                                    {comment.line ? `:${comment.line}` : ''}
+                                  </div>
+                                  <SimpleMarkdownRenderer
+                                    content={linkifyMentionsMarkdown(comment.body)}
+                                    className={[
+                                      'typography-markdown-body text-foreground break-words [&_a]:no-underline [&_a:hover]:no-underline',
+                                      selfMentionHighlightClass,
+                                    ].filter(Boolean).join(' ')}
+                                    enableFileReferences={false}
+                                    allowRawHtml
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : isLoadingPrContext && !prContext ? (
+                      <div className="flex items-center justify-center gap-2 py-6 typography-micro text-muted-foreground">
+                        <Icon name="loader-4" className="size-4 animate-spin" />
+                        {t('gitView.loading.loading')}
+                      </div>
+                    ) : (
+                      <div className="py-6 text-center typography-micro text-muted-foreground">{t('gitView.pr.comments.empty')}</div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {pr && isHistoricalPr ? (
+                  <div className="flex min-w-0 items-center gap-2 rounded-md border border-border/60 bg-surface-muted/40 px-2.5 py-2">
+                    <Icon
+                      name={pr.state === 'merged' ? 'git-merge' : 'git-close-pull-request'}
+                      className="size-4 shrink-0"
+                      style={{ color: prColorVar }}
+                    />
+                    <div className="min-w-0 flex-1 typography-micro text-muted-foreground">
+                      {pr.state === 'merged'
+                        ? t('gitView.pr.history.merged', { number: pr.number, base: pr.base || targetBaseBranch })
+                        : t('gitView.pr.history.closed', { number: pr.number })}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      className="shrink-0"
+                      onClick={() => void openExternal(pr.url)}
+                      aria-label={t('gitView.pr.actions.openOnProviderAria', { provider: providerName })}
+                    >
+                      <Icon name="external-link" className="size-3.5" />
+                    </Button>
+                  </div>
+                ) : null}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="typography-ui-label text-foreground">{t('gitView.pr.createTitle')}</div>
+                    <div className="typography-micro text-muted-foreground truncate">
+                      {branch} <span className="opacity-60">(local)</span> → {targetBaseBranch} <span className="opacity-60">({useDetectedUpstream && detectedUpstream ? 'upstream' : 'remote'})</span>
+                    </div>
+                  </div>
+                  {repoUrl ? (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={repoUrl} target="_blank" rel="noopener noreferrer">
+                        <Icon name="external-link" className="size-4" />
+                        {t('gitView.pr.actions.repo')}
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
+
+                <label className="space-y-1">
+                  <div className="typography-micro text-muted-foreground">{t('gitView.pr.field.title')}</div>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t('gitView.pr.placeholder.title')}
+                    autoCorrect={hasTouchInput ? "on" : "off"}
+                    autoCapitalize={hasTouchInput ? "sentences" : "off"}
+                    spellCheck={hasTouchInput}
+                  />
+                </label>
+
+                <div className="space-y-1">
+                  <div className="typography-micro text-muted-foreground">{t('gitView.pr.field.baseBranch')}</div>
+                  {availableBaseBranches.length > 0 ? (
+                    <Select value={targetBaseBranch} onValueChange={setTargetBaseBranch}>
+                      <SelectTrigger size="lg" aria-label={t('gitView.pr.field.baseBranch')}>
+                        <SelectValue placeholder={t('gitView.pr.placeholder.selectBaseBranch')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableBaseBranches.map((candidate) => (
+                          <SelectItem key={candidate} value={candidate}>{candidate}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={targetBaseBranch}
+                      onChange={(e) => setTargetBaseBranch(e.target.value)}
+                      placeholder={t('gitView.pr.placeholder.main')}
+                      aria-label={t('gitView.pr.field.baseBranch')}
+                    />
+                  )}
+                </div>
+
+                <label className="space-y-1">
+                  <div className="typography-micro text-muted-foreground">{t('gitView.pr.field.description')}</div>
+                  <Textarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    className="min-h-[110px]"
+                    placeholder={t('gitView.pr.placeholder.whatChanged')}
+                    autoCorrect={hasTouchInput ? "on" : "off"}
+                    autoCapitalize={hasTouchInput ? "sentences" : "off"}
+                    spellCheck={hasTouchInput}
+                  />
+                </label>
+
+                <div
+                  className="flex items-center gap-2 cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={draft}
+                  onClick={() => setDraft((v) => !v)}
+                  onKeyDown={(e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      setDraft((v) => !v);
+                    }
+                  }}
+                >
+                  <Checkbox
+                    size="sm"
+                    checked={draft}
+                    onChange={(next) => setDraft(next)}
+                    ariaLabel={t('gitView.pr.actions.toggleDraftAria')}
+                  />
+                  <span className="typography-ui-label text-foreground select-none">{t('gitView.pr.field.draft')}</span>
+                </div>
+
+                {/* Additional Context Section */}
+                {isMobile ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="typography-micro text-muted-foreground">
+                        {t('gitView.pr.additionalContext.optional')}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsContextSheetOpen(true)}
+                      >
+                        {additionalContext.trim() ? t('gitView.pr.actions.edit') : t('gitView.pr.actions.add')}
+                      </Button>
+                    </div>
+                    {additionalContext.trim() && (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-[var(--interactive-selection)] px-2 py-0.5 text-xs text-[var(--interactive-selection-foreground)]">
+                          {t('gitView.pr.additionalContext.added')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Collapsible open={isContextOpen} onOpenChange={setIsContextOpen}>
+                    <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border border-[var(--interactive-border)] bg-[var(--surface-elevated)] px-3 py-2 hover:bg-[var(--interactive-hover)]">
+                      <span className="typography-micro text-muted-foreground">
+                        {t('gitView.pr.additionalContext.optional')}
+                      </span>
+                      <span className="typography-micro text-[var(--primary-base)]">
+                        {isContextOpen ? t('gitView.pr.actions.hide') : additionalContext.trim() ? t('gitView.pr.actions.edit') : t('gitView.pr.actions.add')}
+                      </span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-2 space-y-2 rounded-lg border border-[var(--interactive-border)] bg-[var(--surface-elevated)] p-3">
+                        <Textarea
+                          value={additionalContext}
+                          onChange={(e) => setAdditionalContext(e.target.value)}
+                          className="min-h-[100px] bg-transparent"
+                          placeholder={t('gitView.pr.placeholder.additionalContext')}
+                        />
+                        <p className="typography-micro text-muted-foreground">
+                          {t('gitView.pr.additionalContext.hint')}
+                        </p>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Mobile Sheet for Context */}
+                <MobileOverlayPanel
+                  open={isContextSheetOpen}
+                  onClose={() => setIsContextSheetOpen(false)}
+                  title={t('gitView.pr.additionalContext.title')}
+                  footer={
+                    <Button
+                      size="sm"
+                      onClick={() => setIsContextSheetOpen(false)}
+                      className="w-full"
+                    >
+                      {t('gitView.common.done')}
+                    </Button>
+                  }
+                >
+                  <div className="space-y-3">
+                    <Textarea
+                      value={additionalContext}
+                      onChange={(e) => setAdditionalContext(e.target.value)}
+                      className="min-h-[200px] bg-transparent"
+                      placeholder={t('gitView.pr.placeholder.additionalContext')}
+                      autoFocus
+                    />
+                    <p className="typography-micro text-muted-foreground">
+                      {t('gitView.pr.additionalContext.hint')}
+                    </p>
+                  </div>
+                </MobileOverlayPanel>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={generateDescription}
+                    disabled={isGenerating || isCreating}
+                  >
+                    {isGenerating ? <Icon name="loader-4" className="size-4 animate-spin" /> : <Icon name="ai-generate-2" className="size-4 text-primary" />}
+                    {t('gitView.commit.generate')}
+                  </Button>
+                  <div className="flex-1" />
+                  <Button
+                    size="sm"
+                    className="min-w-[7.5rem] justify-center gap-2"
+                    onClick={createPr}
+                    disabled={isCreating || !isConnected || sourceControlCapabilities?.changeRequests !== true || !targetBaseBranch.trim() || (!useDetectedUpstream && targetBaseBranch.trim() === branch)}
+                  >
+                    <span className="inline-flex size-4 items-center justify-center">
+                      {isCreating ? <Icon name="loader-4" className="size-4 animate-spin" /> : <Icon name="git-pull-request" className="size-4" />}
+                    </span>
+                    <span>{t('gitView.pr.actions.createPr')}</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+      </div>
+
+    </section>
+  );
+};

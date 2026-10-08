@@ -1,0 +1,120 @@
+---
+title: Tüneller
+description: Uzak ve mobil erişim için OpencodeSilver'ı güvenli biçimde açığa çıkarın.
+---
+
+# Tüneller
+
+Bir tünel, OpencodeSilver'ınıza giden genel bir bağlantıdır. Böylece başka bir ağdaki normal bir tarayıcıdan erişebilirsiniz. Çalışan bir örnek için bir tane oluşturmak üzere `opencodesilver tunnel` kullanın.
+
+> **Kendi cihazlarınızı** bağlamak, yani mobil uygulama ya da başka bir masaüstü, genelde tünel gerektirmez. Bunun yerine [eşleştirin](/connect-devices/) ve ev dışı erişimi sıfır kurulumla uçtan uca şifreli [Private Relay](/private-relay/) üzerinden bırakın.
+
+## Ön koşullar
+
+OpencodeSilver, tünel sağlayıcısının CLI'sını sizin makinenizde başlatır. Önce kullanmak istediğiniz sağlayıcıyı kurun:
+
+```bash
+brew install cloudflared
+brew install ngrok
+```
+
+Cloudflare quick tüneller `cloudflared` ile çalışabilir. Ngrok için bir ngrok hesabı ve ngrok panelinden alınmış bir authtoken gerekir:
+
+```bash
+ngrok config add-authtoken <your-ngrok-token>
+```
+
+## Hızlı başlangıç
+
+1. OpencodeSilver'ı başlatın:
+
+```bash
+opencodesilver
+```
+
+Bu adımı atlarsanız `opencodesilver tunnel start` bir CLI sunucusunu otomatik başlatabilir. Otomatik başlatırken `--port`, `--host`, `--lan`, `--ui-password` ve `--api-only` gibi sunucu seçeneklerini verebilirsiniz.
+
+2. Cloudflare tüneli başlatın:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode quick
+```
+
+Ya da bir Ngrok tüneli başlatın:
+
+```bash
+opencodesilver tunnel start --provider ngrok --mode quick
+```
+
+3. Durumu kontrol edin:
+
+```bash
+opencodesilver tunnel status
+```
+
+Tünel ayaktayken `status` bir genel URL gösterir. Onu açın ya da QR kodunu tarayın, OpencodeSilver'a her yerden ulaşın.
+
+Varsayılan olarak OpencodeSilver, etkileşimli TTY oturumlarında bir QR kodu basar. QR çıktısını zorlamak için `--qr`, kapatmak için `--no-qr` kullanın.
+
+## Sağlayıcılar
+
+- `cloudflare`: quick, managed remote ve managed local modları
+- `ngrok`: quick modu
+
+## Managed modlar
+
+### Managed remote
+
+Cloudflare tarafından yönetilen token + hostname kullanın:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-remote --token-file ~/.secrets/cf-token --hostname app.example.com
+```
+
+### Managed local
+
+Yerel bir `cloudflared` yapılandırması kullanın:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-local --config ~/.cloudflared/config.yml
+```
+
+## Profiller (managed-remote)
+
+Yeniden kullanılabilir bir profil kaydedin:
+
+```bash
+opencodesilver tunnel profile add --provider cloudflare --mode managed-remote --name prod-main --hostname app.example.com --token-file ~/.secrets/cf-token
+```
+
+Kaydedilmiş profili kullanarak başlatın:
+
+```bash
+opencodesilver tunnel start --profile prod-main
+```
+
+## Faydalı komutlar
+
+```bash
+opencodesilver tunnel providers
+opencodesilver tunnel ready --provider cloudflare
+opencodesilver tunnel ready --provider ngrok
+opencodesilver tunnel doctor --provider cloudflare
+opencodesilver tunnel doctor --provider ngrok
+opencodesilver tunnel stop --port 3000
+```
+
+## Davranış notları
+
+- OpencodeSilver örneği başına bir aktif tünel, yani port
+- Aynı örnekte yeni bir mod ya da sağlayıcı başlatmak önceki tüneli değiştirir
+- Yeni bir bağlantı bağlantısı oluşturmak, kullanılmamış önceki bağlantıyı iptal eder
+- Tünel otomatik başlatma, `--ui-password` ve `--api-only` gibi sunucu bayraklarını yeniden başlatma/güncelleme akışlarında kullanılan örnek ayarlarında korur
+
+## İlgili
+
+- [Cihaz bağlama](/connect-devices/) — kendi cihazlarınızı genel URL olmadan eşleştirin
+- [Güvenlik](/security/) — açığa çıkarmadan önce arayüzü koruyun
+- [Desktop Tunnels](/desktop-tunnels/) — CLI başlatmadan masaüstü uygulaması tünel kurulumu
+- [PWA & Mobile](/mobile/) — telefonunuzdan OpencodeSilver'a ulaşın
+- [Sorun giderme](/troubleshooting/) — tünel bağlantısı çalışmıyorsa

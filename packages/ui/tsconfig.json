@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["@types/dom-speech-recognition"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@opencodesilver/sdk": ["../../sdk/src/index.ts"],
+      "@opencodesilver/sdk/schemas": ["../../sdk/src/schemas.ts"],
+      "@/*": ["./*"],
+      "@opencodesilver/ui/*": ["./*"]
+    }
+  },
+  "include": ["src"]
+}

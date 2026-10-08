@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "id": "kanagawa-dark",
+    "name": "Kanagawa",
+    "variant": "dark",
+    "description": "A color scheme inspired by Japanese art and ink painting - dark variant",
+    "version": "1.0.0",
+    "tags": [
+      "dark",
+      "japanese",
+      "ink",
+      "elegant"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#7FB4CA",
+      "foreground": "#1F1F28",
+      "hover": "#9DC5E0",
+      "active": "#658594",
+      "muted": "#7FB4CA80"
+    },
+    "surface": {
+      "background": "#1F1F28",
+      "foreground": "#DCD7BA",
+      "muted": "#23232d",
+      "mutedForeground": "#8b8b85",
+      "elevated": "#2A2A37",
+      "overlay": "#16161DCC",
+      "subtle": "#2a2a36"
+    },
+    "interactive": {
+      "border": "#333343",
+      "selection": "#729fb333",
+      "borderHover": "#54546D",
+      "focusRing": "#7FB4CA50",
+      "hover": "#363646",
+      "active": "#54546D"
+    },
+    "status": {
+      "error": "#E82424",
+      "errorForeground": "#DCD7BA",
+      "warning": "#FF9E3B",
+      "warningForeground": "#1F1F28",
+      "success": "#98BB6C",
+      "successForeground": "#1F1F28",
+      "info": "#7E9CD8",
+      "infoForeground": "#1F1F28"
+    },
+    "syntax": {
+      "base": {
+        "background": "#18181f",
+        "comment": "#54546D",
+        "keyword": "#7E9CD8",
+        "string": "#98BB6C",
+        "number": "#FF9E3B",
+        "function": "#E6C384",
+        "variable": "#DCD7BA",
+        "type": "#C8C093",
+        "operator": "#C34043"
+      },
+      "tokens": {
+        "commentDoc": "#727169",
+        "keywordImport": "#957FB8",
+        "method": "#76946A",
+        "variableProperty": "#7E9CD8",
+        "variableOther": "#76946A",
+        "variableGlobal": "#D27E99",
+        "variableLocal": "#2A2A37",
+        "constant": "#DCD7BA",
+        "className": "#E6C384",
+        "typeParameter": "#E6C384",
+        "jsxTag": "#D27E99",
+        "tagAttribute": "#C8C093",
+        "boolean": "#C8C093",
+        "decorator": "#C8C093",
+        "label": "#D27E99",
+        "preprocessor": "#D27E99",
+        "url": "#7E9CD8",
+        "key": "#E6C384",
+        "exception": "#D27E99"
+      },
+      "highlights": {
+        "diffAddedBackground": "#76946A20",
+        "diffRemoved": "#C34043",
+        "lineNumber": "#363646"
+      }
+    },
+    "pr": {
+      "draft": "#54546D",
+      "merged": "#957FB8"
+    },
+    "chat": {
+      "userMessageBackground": "#2A2A37",
+      "divider": "#363646"
+    },
+    "markdown": {
+      "link": "#7FB4CA",
+      "linkHover": "#7E9CD8",
+      "inlineCode": "#98BB6C",
+      "inlineCodeBackground": "#2C2C35",
+      "blockquote": "#54546D",
+      "blockquoteBorder": "#363646",
+      "listMarker": "#FF9E3B99"
+    },
+    "tools": {
+      "border": "#4a4a5f80",
+      "icon": "#afad9c",
+      "title": "#DCD7BA",
+      "description": "#818182",
+      "edit": {
+        "addedBackground": "#98BB6C25",
+        "removedBackground": "#C3404325",
+        "lineNumber": "#56566d"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}
