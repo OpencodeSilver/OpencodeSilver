@@ -47,7 +47,7 @@
 ## 🚀 What's New in OpencodeSilver
 
 * **📚 180 Default Skills Bundled (`assets/1.png`):** Fresh installs now ship with 180 default skills instead of an empty workspace. The 68-skill catalog is joined by 112 more covering prompt engineering, browser automation, databases (Prisma, Neon, Supabase), deployment (Vercel, Netlify, Cloudflare), PDF and Office documents, and design workflows. The marketplace still installs anything else on top.
-* **🌌 Google Antigravity v2 Replica:** The full Antigravity interface rebuilt 1:1 inside OpencodeSilver: agent activity tray, live trajectory drawer, and master prompt composer, localized across all 14 languages.
+* **🌌 Modern OpencodeSilver Interface:** The comprehensive OpencodeSilver user interface: agent activity tray, live trajectory drawer, and master prompt composer, localized across all 14 languages.
 * **🧹 Background Tasks Removed:** The background-tasks feature is gone, along with its task panel, trajectory, and completion chime. Long-running work now runs through Session Goals and scheduled tasks, where its state and token budget stay visible in the session.
 
 ---
@@ -88,9 +88,9 @@
 ### 9. 📋 Enhanced Codeblocks with One-Click Copy & Line Counts
 * Dedicated toolbar on code blocks displaying programming language, line count, and instant clipboard copy with toast feedback.
 
-### 10. 🌌 Google Antigravity Interface Replica
+### 10. 🌌 Modern OpencodeSilver UI Experience
 * Live trajectory drawer showing agent steps, touched files, and active skills as they happen.
-* Agent activity tray and master prompt composer matching the Antigravity v2 experience, localized across all 14 languages.
+* Agent activity tray and master prompt composer matching the native OpencodeSilver experience, localized across all 14 languages.
 
 
 ---
