@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/OpencodeSilver/OpencodeSilver">
-    <img src="assets/logo.png" width="130" height="130" alt="OpencodeSilver Logo" />
+    <img src="assets/logo.svg?v=2" width="130" height="130" alt="OpencodeSilver Logo" />
   </a>
 </p>
 
@@ -12,10 +12,15 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/OpencodeSilver/OpencodeSilver/stargazers"><img src="https://img.shields.io/github/stars/OpencodeSilver/OpencodeSilver?style=for-the-badge&logo=star&color=gold" alt="GitHub Stars"></a>
   <a href="https://github.com/OpencodeSilver/OpencodeSilver/releases"><img src="https://img.shields.io/badge/Release-Latest-blue.svg?style=for-the-badge&logo=github" alt="Latest Release"></a>
   <a href="https://github.com/OpencodeSilver/OpencodeSilver/releases/latest"><img src="https://img.shields.io/badge/Download-Windows_x64_.exe-emerald.svg?style=for-the-badge&logo=windows" alt="Download Windows"></a>
   <a href="https://github.com/OpencodeSilver/OpencodeSilver/releases/latest"><img src="https://img.shields.io/badge/Download-VS_Code_.vsix-purple.svg?style=for-the-badge&logo=visualstudiocode" alt="VS Code Extension"></a>
   <a href="https://github.com/OpencodeSilver/OpencodeSilver/discussions"><img src="https://img.shields.io/badge/Community-Discussions-orange.svg?style=for-the-badge&logo=github" alt="Discussions"></a>
+</p>
+
+<p align="center">
+  ⭐ <strong>If you find OpencodeSilver useful, please consider giving it a star on GitHub! It helps the project grow.</strong> ⭐
 </p>
 
 ---
@@ -23,14 +28,14 @@
 ## 🖥️ Desktop & Skills Marketplace Preview
 
 <p align="center">
-  <img src="assets/desktop-app.png" alt="OpencodeSilver Desktop Application Workspace" width="100%" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);" />
+  <img src="assets/desktop-app.png?v=2" alt="OpencodeSilver Desktop Application Workspace" width="100%" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);" />
 </p>
 <p align="center">
   <em>OpencodeSilver Desktop — Unified workspace featuring autonomous agents, interactive prompt composer, productivity toolbar, and integrated right-hand context rail.</em>
 </p>
 
 <p align="center">
-  <img src="assets/1.png" alt="OpencodeSilver Skills Marketplace & Catalog" width="100%" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); margin-top: 16px;" />
+  <img src="assets/1.png?v=2" alt="OpencodeSilver Skills Marketplace & Catalog" width="100%" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.4); margin-top: 16px;" />
 </p>
 <p align="center">
   <em>Skills Marketplace & Catalog — Modernized card grid with dynamic GitHub author avatars, real-time repository search, verified packages, and quick installation.</em>
@@ -102,7 +107,18 @@
 | 💻 **Desktop (Windows / macOS / Linux)** | Native Electron application with multi-window support, mini chat overlay, native notifications, and local OpenCode CLI integration. |
 | 🔌 **VS Code Extension** | Run agent sessions directly alongside your editor tabs, inject context selections, and apply diffs in-place. |
 | 🌐 **Web / PWA** | Access your workspace remotely from any modern browser with installable offline PWA capabilities. |
-| 📱 **Mobile (iOS / Android)** | Monitor background jobs on the go, receive completion push notifications, and interact with the terminal. |
+---
+
+## 📊 Feature Comparison
+
+| Feature | **OpencodeSilver** | Traditional AI Extensions | Proprietary AI Editors |
+| :--- | :---: | :---: | :---: |
+| **Open Source & Self-Hostable** | ✅ **100% MIT** | ⚠️ Partial | ❌ Proprietary |
+| **Bundled Specialized Skills** | ✅ **180 Built-in** | ❌ None | ❌ Limited |
+| **Multi-Model Parallel Run & Fusion** | ✅ **Native** | ❌ No | ❌ Single Model |
+| **Cross-Platform (Desktop / Web / VS Code)** | ✅ **All Platforms** | ⚠️ VS Code only | ⚠️ Custom fork only |
+| **Local Autonomous Execution** | ✅ **Full Control** | ⚠️ Cloud dependent | ⚠️ Cloud dependent |
+| **Interactive Step-by-Step Walkthrough** | ✅ **Built-in** | ❌ No | ❌ No |
 
 ---
 
@@ -161,12 +177,15 @@ bun run --cwd packages/vscode package
 
 ---
 
-## 🤝 Contributing & Community
+## 🌟 Support & Community
 
-* 🐛 **Found a bug or issue?** [Open an issue on GitHub](https://github.com/OpencodeSilver/OpencodeSilver/issues/new)
-* 💡 **Have a feature idea or feedback?** [Join the discussion on GitHub Discussions](https://github.com/OpencodeSilver/OpencodeSilver/discussions)
+If you find OpencodeSilver helpful, please consider **starring the repository** ⭐ to help more developers discover it!
 
 ---
+
+<p align="center">
+  <sub><strong>Keywords:</strong> opencode, ai coding agent, autonomous ai workspace, ai pair programmer, vs code ai assistant, claude code alternative, gemini cli, multi-agent ide, desktop ai developer tool, llm code generation, hermes, acp, agent-team, cowork, clawdbot, openclaw.</sub>
+</p>
 
 <p align="center">
   Licensed under the <strong>MIT License</strong> • Maintained and engineered by <strong>OpencodeSilver</strong>
