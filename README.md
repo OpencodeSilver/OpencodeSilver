@@ -141,7 +141,7 @@
 3. Open the Extensions sidebar (`Ctrl + Shift + X` or `Cmd + Shift + X`).
 4. Click the three dots menu icon (`...`) at the top right of the Extensions panel.
 5. Select **Install from VSIX...** and choose the downloaded file.
-
+   
 ---
 
 ## 📱 Mobile Previews
