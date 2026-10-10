@@ -142,17 +142,6 @@
 4. Click the three dots menu icon (`...`) at the top right of the Extensions panel.
 5. Select **Install from VSIX...** and choose the downloaded file.
    
----
-
-## 📱 Mobile Previews
-
-<p align="center">
-  <img src="docs/references/pwa_chat_example.png" width="45%" alt="OpencodeSilver Mobile Chat" />
-  &nbsp;&nbsp;
-  <img src="docs/references/pwa_diff_example.png" width="45%" alt="OpencodeSilver Mobile Diff Review" />
-</p>
-
----
 
 ## 🛠️ Build from Source
 
