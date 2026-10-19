@@ -1,0 +1,23 @@
+{
+  "name": "@opencodesilver/example-config-editor",
+  "version": "1.1.0",
+  "private": true,
+  "opencodesilver": {
+    "apiVersion": 1,
+    "contributes": {
+      "panel": {
+        "id": "config-editor",
+        "name": "Config Studio",
+        "icon": "file-edit",
+        "entry": "panel/index.html"
+      },
+      "page": true,
+      "filesystem": [
+        "~/.config/opencode/opencode.json"
+      ]
+    }
+  },
+  "dependencies": {
+    "@opencodesilver/sdk": "workspace:*"
+  }
+}

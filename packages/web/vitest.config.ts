@@ -1,0 +1,51 @@
+import path from 'node:path';
+import { availableParallelism } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { configDefaults, defineConfig } from 'vitest/config';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const maxWorkers = Math.max(1, Math.min(4, availableParallelism() - 1));
+
+export default defineConfig({
+  resolve: {
+    alias: [
+      { find: 'bun:test', replacement: path.resolve(here, './test/bun-test-shim.ts') },
+      // The same shared-UI aliases the app build uses. Without them a test can
+      // reference `@opencodesilver/ui/...` in a mock factory but not resolve the
+      // real module behind it, which is what forced mocks to hand-copy export
+      // lists that then fell behind the source.
+      { find: '@opencodesilver/sdk/schemas', replacement: path.resolve(here, '../sdk/src/schemas.ts') },
+      { find: '@opencodesilver/sdk', replacement: path.resolve(here, '../sdk/src/index.ts') },
+      { find: '@opencodesilver/ui', replacement: path.resolve(here, '../ui/src') },
+      { find: '@web', replacement: path.resolve(here, './src') },
+      // Anchored to `@/` on purpose: a bare `@` prefix would also swallow
+      // scoped dependencies the server tests rely on, such as `@octokit/rest`.
+      { find: /^@\//, replacement: `${path.resolve(here, '../ui/src')}/` },
+    ],
+  },
+  test: {
+    // Loopback integration tests and real Git subprocesses need event-loop and
+    // CPU capacity outside Vitest's workers. Saturating every logical CPU made
+    // short deadline tests and socket handshakes fail at random.
+    maxWorkers,
+    // UI integration fixtures with Vite asset imports cannot execute in Bun's
+    // raw TS loader. Keep them beside their UI owner and run them here.
+    include: [...configDefaults.include, '../ui/src/**/*.vitest.tsx'],
+    // The Git suites drive a real `git` binary against temporary repositories.
+    // Those subprocess round-trips routinely pass the 5s default, and which
+    // cases exceed it shifts with machine load, so the default made a valid
+    // suite fail differently on every run.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    // A developer who turned on enterprise mode or pinned endpoints for their
+    // own app (often in ~/.zshrc) must not flip what the suites assert; tests
+    // that need them set them themselves.
+    env: {
+      OPENCODESILVER_ENTERPRISE_MODE: '',
+      OPENCODESILVER_RELAY_URL: '',
+      OPENCODESILVER_JEV_URL: '',
+      OPENCODESILVER_JEV_MODEL: '',
+      OPENCODESILVER_JEV_API_KEY: '',
+    },
+  },
+});

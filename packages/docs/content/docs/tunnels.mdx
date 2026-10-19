@@ -1,0 +1,120 @@
+---
+title: Tunnels
+description: Expose OpencodeSilver safely for remote and mobile access.
+---
+
+# Tunnels
+
+A tunnel is a public link to your OpencodeSilver, so you can reach it from an ordinary browser on another network. Use `opencodesilver tunnel` to create one for a running instance.
+
+> Connecting your **own devices** (the mobile app, another desktop) usually doesn't need a tunnel — [pair them](/connect-devices/) instead and let the end-to-end encrypted [Private Relay](/private-relay/) handle away-from-home access with zero setup.
+
+## Prerequisites
+
+OpencodeSilver starts the tunnel provider CLI on your machine. Install the provider you want to use first:
+
+```bash
+brew install cloudflared
+brew install ngrok
+```
+
+Cloudflare quick tunnels can run with `cloudflared`. Ngrok requires an ngrok account and an authtoken from the ngrok dashboard:
+
+```bash
+ngrok config add-authtoken <your-ngrok-token>
+```
+
+## Quick start
+
+1. Start OpencodeSilver:
+
+```bash
+opencodesilver
+```
+
+If you skip this step, `opencodesilver tunnel start` can auto-start a CLI server. When auto-starting, you can pass server options such as `--port`, `--host`, `--lan`, `--ui-password`, and `--api-only`.
+
+2. Start a Cloudflare tunnel:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode quick
+```
+
+Or start an Ngrok tunnel:
+
+```bash
+opencodesilver tunnel start --provider ngrok --mode quick
+```
+
+3. Check status:
+
+```bash
+opencodesilver tunnel status
+```
+
+When the tunnel is up, `status` shows a public URL. Open it, or scan the QR code, to reach OpencodeSilver from anywhere.
+
+By default, OpencodeSilver prints a QR code in interactive TTY sessions. Use `--qr` to force QR output, or `--no-qr` to disable it.
+
+## Providers
+
+- `cloudflare`: quick, managed remote, and managed local modes
+- `ngrok`: quick mode
+
+## Managed modes
+
+### Managed remote
+
+Use a token + hostname managed by Cloudflare:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-remote --token-file ~/.secrets/cf-token --hostname app.example.com
+```
+
+### Managed local
+
+Use a local `cloudflared` config:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-local --config ~/.cloudflared/config.yml
+```
+
+## Profiles (managed-remote)
+
+Save a reusable profile:
+
+```bash
+opencodesilver tunnel profile add --provider cloudflare --mode managed-remote --name prod-main --hostname app.example.com --token-file ~/.secrets/cf-token
+```
+
+Start using the saved profile:
+
+```bash
+opencodesilver tunnel start --profile prod-main
+```
+
+## Useful commands
+
+```bash
+opencodesilver tunnel providers
+opencodesilver tunnel ready --provider cloudflare
+opencodesilver tunnel ready --provider ngrok
+opencodesilver tunnel doctor --provider cloudflare
+opencodesilver tunnel doctor --provider ngrok
+opencodesilver tunnel stop --port 3000
+```
+
+## Behavior notes
+
+- one active tunnel per OpencodeSilver instance (port)
+- starting a new mode/provider on same instance replaces previous tunnel
+- generating a new connect link revokes previous unused one
+- tunnel auto-start preserves server flags like `--ui-password` and `--api-only` in the instance settings used by restart/update flows
+
+## Related
+
+- [Connect a Device](/connect-devices/) — pair your own devices without a public URL
+- [Security](/security/) — protect the UI before exposing it
+- [Desktop Tunnels](/desktop-tunnels/) — desktop app tunnel setup without CLI startup
+- [PWA & Mobile](/mobile/) — reach OpencodeSilver from your phone
+- [Troubleshooting](/troubleshooting/) — if the tunnel link doesn't work

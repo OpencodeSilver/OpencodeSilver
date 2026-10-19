@@ -1,0 +1,30 @@
+{
+  "name": "@opencodesilver/example-service-echo",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "opencodesilver": {
+    "apiVersion": 1,
+    "contributes": {
+      "panel": {
+        "id": "service-echo",
+        "name": "Local Service Lab",
+        "icon": "robot-2",
+        "entry": "panel/index.html"
+      },
+      "page": true,
+      "service": {
+        "entry": "service/main.js",
+        "runtime": "host",
+        "permissions": {
+          "exec": [
+            "uname"
+          ]
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@opencodesilver/sdk": "workspace:*"
+  }
+}

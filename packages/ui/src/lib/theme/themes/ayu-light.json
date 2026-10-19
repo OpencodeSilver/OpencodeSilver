@@ -1,0 +1,133 @@
+{
+  "metadata": {
+    "id": "ayu-light",
+    "name": "Ayu",
+    "variant": "light",
+    "description": "Ayu",
+    "version": "1.0.0",
+    "tags": [
+      "light",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#4AA8C8",
+      "foreground": "#FDFAF4",
+      "hover": "#6EB8D1",
+      "active": "#4394B0",
+      "muted": "#4AA8C880"
+    },
+    "surface": {
+      "background": "#FDFAF4",
+      "foreground": "#394049",
+      "muted": "#f7f3eb",
+      "mutedForeground": "#777e87",
+      "elevated": "#faf6ed",
+      "elevatedForeground": "#4F5964",
+      "overlay": "#1B232B20",
+      "subtle": "#FFF7E5"
+    },
+    "interactive": {
+      "border": "#ece5d9",
+      "selection": "#9fb2c43e",
+      "selectionForeground": "#171e25",
+      "borderHover": "#DCD3C5",
+      "borderFocus": "#B09F8F",
+      "focusRing": "#4AA8C840",
+      "cursor": "#1B232B",
+      "hover": "#9fb2c42c",
+      "active": "#9fb2c43e"
+    },
+    "status": {
+      "error": "#E6656A",
+      "errorForeground": "#FDFAF4",
+      "warning": "#EA9F41",
+      "warningForeground": "#FDFAF4",
+      "success": "#5FB978",
+      "successForeground": "#FDFAF4",
+      "info": "#2F9BCE",
+      "infoForeground": "#FDFAF4"
+    },
+    "syntax": {
+      "base": {
+        "background": "#FCF9F3",
+        "foreground": "#4F5964",
+        "comment": "#77818D",
+        "keyword": "#4AA8C8",
+        "string": "#7FAD00",
+        "number": "#EF7D71",
+        "function": "#4AA8C8",
+        "variable": "#4F5964",
+        "type": "#ED982E",
+        "operator": "#EF7D71"
+      },
+      "tokens": {
+        "boolean": "#ED982E",
+        "className": "#4AA8C8",
+        "commentDoc": "#BABEC1",
+        "constant": "#2F9BCE",
+        "decorator": "#ED982E",
+        "key": "#4AA8C8",
+        "macro": "#2F9BCE",
+        "method": "#5FB978",
+        "parameter": "#4F5964",
+        "storageModifier": "#2F9BCE",
+        "stringEscape": "#1B232B",
+        "tagAttribute": "#ED982E",
+        "url": "#2F9BCE",
+        "variableGlobal": "#4AA8C8",
+        "variableLocal": "#FBF8F2",
+        "variableOther": "#5FB978",
+        "variableProperty": "#2F9BCE"
+      },
+      "highlights": {
+        "diffAddedBackground": "#EEF5E4",
+        "diffModifiedBackground": "#E3EDF3",
+        "diffRemovedBackground": "#FDE5E5",
+        "lineNumber": "#C6BFAF",
+        "lineNumberActive": "#1B232B"
+      }
+    },
+    "pr": {
+      "draft": "#77818D",
+      "merged": "#7b3cda"
+    },
+    "chat": {
+      "userMessageBackground": "#fff7e5",
+      "divider": "#E6DDCF"
+    },
+    "markdown": {
+      "link": "#2F9BCE",
+      "linkHover": "#4AA8C8",
+      "inlineCode": "#497700",
+      "inlineCodeBackground": "#F0EDE7",
+      "blockquote": "#ED982E",
+      "blockquoteBorder": "#E6DDCF",
+      "listMarker": "#4AA8C899"
+    },
+    "tools": {
+      "border": "#cec6b980",
+      "icon": "#77818D",
+      "title": "#4F5964",
+      "description": "#77818D",
+      "edit": {
+        "addedBackground": "#5FB97825",
+        "removedBackground": "#E6656A25",
+        "lineNumber": "#C6BFAF"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

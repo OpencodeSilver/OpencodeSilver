@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "id": "flexoki-light",
+    "name": "Flexoki",
+    "variant": "light",
+    "description": "An inky color scheme for prose and code - light variant",
+    "version": "1.0.0",
+    "tags": [
+      "light",
+      "warm",
+      "natural",
+      "paper"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#BC5215",
+      "foreground": "#fffdf4",
+      "hover": "#F9AE77",
+      "active": "#DA702C",
+      "muted": "#BC521580"
+    },
+    "surface": {
+      "background": "#fffdf4",
+      "foreground": "#100F0F",
+      "muted": "#f6f5ee",
+      "mutedForeground": "#686663",
+      "elevated": "#fbfaf2",
+      "overlay": "#100F0F20",
+      "subtle": "#f7f4ec"
+    },
+    "interactive": {
+      "border": "#e6e4db",
+      "selection": "#76736f30",
+      "borderHover": "#CECDC3",
+      "focusRing": "#BC521540",
+      "hover": "#76736f20",
+      "active": "#76736f20"
+    },
+    "status": {
+      "error": "#AF3029",
+      "errorForeground": "#fffdf4",
+      "errorBackground": "#D14D4120",
+      "errorBorder": "#D14D4150",
+      "warning": "#BC5215",
+      "warningForeground": "#fffdf4",
+      "warningBackground": "#DA702C20",
+      "warningBorder": "#DA702C50",
+      "success": "#66800B",
+      "successForeground": "#fffdf4",
+      "successBackground": "#879A3920",
+      "successBorder": "#879A3950",
+      "info": "#205EA6",
+      "infoForeground": "#fffdf4",
+      "infoBackground": "#4385BE20",
+      "infoBorder": "#4385BE50"
+    },
+    "syntax": {
+      "base": {
+        "background": "#f6f5ee",
+        "comment": "#6F6E69",
+        "keyword": "#205EA6",
+        "string": "#24837B",
+        "number": "#5E409D",
+        "function": "#BC5215",
+        "variable": "#100F0F",
+        "type": "#AD8301",
+        "operator": "#AF3029"
+      },
+      "tokens": {
+        "commentDoc": "#B7B5AC",
+        "method": "#66800B",
+        "variableProperty": "#205EA6",
+        "variableOther": "#66800B",
+        "variableGlobal": "#A02F6F",
+        "variableLocal": "#E6E4D9",
+        "constant": "#100F0F",
+        "className": "#BC5215",
+        "typeParameter": "#BC5215",
+        "jsxTag": "#A02F6F",
+        "tagAttribute": "#AD8301",
+        "boolean": "#AD8301",
+        "decorator": "#AD8301",
+        "label": "#A02F6F",
+        "preprocessor": "#A02F6F",
+        "url": "#205EA6",
+        "key": "#BC5215",
+        "exception": "#A02F6F"
+      },
+      "highlights": {
+        "lineNumber": "#CECDC3"
+      }
+    },
+    "pr": {
+      "draft": "#6F6E69",
+      "merged": "#5E409D"
+    },
+    "chat": {
+      "userMessageBackground": "#f7f4ec",
+      "divider": "#DAD8CE"
+    },
+    "markdown": {
+      "link": "#205EA6",
+      "linkHover": "#4385BE",
+      "inlineCode": "#0A6961",
+      "inlineCodeBackground": "#F2F0E7",
+      "blockquote": "#6F6E69",
+      "blockquoteBorder": "#DAD8CE",
+      "listMarker": "#AD830199"
+    },
+    "tools": {
+      "border": "#b4b2a980",
+      "icon": "#6F6E69",
+      "title": "#100F0F",
+      "description": "#6F6E69",
+      "edit": {
+        "addedBackground": "#66800B25",
+        "removedBackground": "#AF302925",
+        "lineNumber": "#CECDC3"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

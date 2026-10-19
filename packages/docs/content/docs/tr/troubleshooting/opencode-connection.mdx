@@ -1,0 +1,34 @@
+---
+title: OpenCode Bağlantısı
+description: OpencodeSilver'ın OpenCode sunucusuna bağlanmamasını düzeltin.
+---
+
+# OpenCode Bağlantısı
+
+OpencodeSilver açılıyor ama "OpenCode is restarting" aşamasını geçmiyorsa ya da sohbet yanıt vermiyorsa, konuştuğu sunucuya ulaşılamıyordur. Şunları sırayla deneyin.
+
+## "OpenCode is restarting" ekranında takılı kalıyorsa
+
+- başlatmadan hemen sonra biraz bekleyin. Sunucu açılırken bu durum normaldir
+- `opencodesilver status` ile sunucunun canlı olup olmadığını kontrol edin
+- `opencodesilver restart` ile yeniden başlatın
+- `opencodesilver logs` ile başlangıç ayrıntılarını görün
+
+## Kendi sunucunuza bağlanıyorsanız
+
+OpencodeSilver'ı var olan bir sunucu kullanacak şekilde ayarladıysanız, [OpenCode Server](/opencode-server/) bölümündeki kurulumu yeniden kontrol edin:
+
+- `OPENCODE_HOST`, portu içermeli ve yol içermemeli. Örneğin `http://localhost:4096`
+- OpencodeSilver'ın kendi sunucusunu da başlatmaması için `OPENCODE_SKIP_START=true` ayarlayın
+- adres geçersizse OpencodeSilver onu yok sayar ve onun yerine kendi sunucusunu başlatır. Loglarda bir `[config]` uyarısı arayın
+
+## Hâlâ olmuyorsa
+
+- Node.js sürümünün `20` veya daha yeni olduğunu doğrulayın
+- en son CLI'yi yeniden yükleyin
+- herhangi bir tunnel veya uzak bağlantıyı denemeden önce `http://localhost:3000` adresini doğrudan açın
+
+## İlgili
+
+- [OpenCode Server](/opencode-server/) — OpencodeSilver'ın sunucuyu nasıl bulup yönettiği
+- [Troubleshooting](/troubleshooting/) — diğer yaygın sorunlar

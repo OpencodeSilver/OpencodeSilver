@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "id": "nightowl-dark",
+    "name": "Night Owl",
+    "variant": "dark",
+    "description": "Night Owl",
+    "version": "1.0.0",
+    "tags": [
+      "dark",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#82AAFF",
+      "foreground": "#011627",
+      "hover": "#6F94DF",
+      "active": "#95B7FF",
+      "muted": "#82AAFF80"
+    },
+    "surface": {
+      "background": "#011627",
+      "foreground": "#D6DEEB",
+      "muted": "#0B253A",
+      "mutedForeground": "#7d8892",
+      "elevated": "#001122",
+      "overlay": "#FFFFFF20",
+      "subtle": "#162431"
+    },
+    "interactive": {
+      "border": "#222D36",
+      "selection": "#555d6d94",
+      "selectionForeground": "#FFFFFF",
+      "borderHover": "#234561",
+      "focusRing": "#82AAFF40",
+      "cursor": "#FFFFFF",
+      "hover": "#555d6d68",
+      "active": "#555d6d94"
+    },
+    "status": {
+      "error": "#EF5350",
+      "errorForeground": "#011627",
+      "warning": "#ECC48D",
+      "warningForeground": "#011627",
+      "success": "#C5E478",
+      "successForeground": "#011627",
+      "info": "#82AAFF",
+      "infoForeground": "#011627"
+    },
+    "syntax": {
+      "base": {
+        "background": "#061e31",
+        "comment": "#5F7E97",
+        "keyword": "#82AAFF",
+        "string": "#ECC48D",
+        "number": "#F78C6C",
+        "function": "#82AAFF",
+        "variable": "#D6DEEB",
+        "type": "#C5E478",
+        "operator": "#F78C6C"
+      },
+      "tokens": {
+        "boolean": "#C5E478",
+        "className": "#82AAFF",
+        "commentDoc": "#516E86",
+        "constant": "#7FDBCA",
+        "decorator": "#C5E478",
+        "key": "#82AAFF",
+        "method": "#C5E478",
+        "parameter": "#D6DEEB",
+        "stringEscape": "#FFFFFF",
+        "tagAttribute": "#C5E478",
+        "url": "#7FDBCA",
+        "variableGlobal": "#82AAFF",
+        "variableLocal": "#001122",
+        "variableOther": "#C5E478",
+        "variableProperty": "#7FDBCA"
+      },
+      "highlights": {
+        "diffAddedBackground": "#0A2E1A",
+        "diffModifiedBackground": "#0B253A",
+        "diffRemovedBackground": "#2D1B1B",
+        "lineNumber": "#82AAFF",
+        "lineNumberActive": "#FFFFFF"
+      }
+    },
+    "pr": {
+      "draft": "#5F7E97",
+      "merged": "#BC82FF"
+    },
+    "chat": {
+      "userMessageBackground": "#0f283f",
+      "divider": "#152F45"
+    },
+    "markdown": {
+      "link": "#7FDBCA",
+      "linkHover": "#82AAFF",
+      "inlineCode": "#C5E478",
+      "inlineCodeBackground": "#0E2334",
+      "blockquote": "#5F7E97",
+      "blockquoteBorder": "#152F45",
+      "listMarker": "#82AAFF99"
+    },
+    "tools": {
+      "border": "#24496780",
+      "icon": "#5F7E97",
+      "title": "#D6DEEB",
+      "description": "#5F7E97",
+      "edit": {
+        "addedBackground": "#C5E47825",
+        "removedBackground": "#EF535025",
+        "lineNumber": "#58698f"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

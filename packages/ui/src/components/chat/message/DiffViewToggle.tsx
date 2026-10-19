@@ -1,0 +1,45 @@
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Icon } from "@/components/icon/Icon";
+import { cn } from '@/lib/utils';
+
+export type DiffViewMode = 'side-by-side' | 'unified';
+
+interface DiffViewToggleProps {
+    mode: DiffViewMode;
+    onModeChange: (mode: DiffViewMode) => void;
+    className?: string;
+}
+
+export const DiffViewToggle: React.FC<DiffViewToggleProps> = ({ mode, onModeChange, className }) => {
+    const handleClick = React.useCallback(
+        (event: React.MouseEvent<HTMLButtonElement>) => {
+            event.stopPropagation();
+            onModeChange(mode === 'side-by-side' ? 'unified' : 'side-by-side');
+        },
+        [mode, onModeChange]
+    );
+
+    return (
+        <Button
+            size="sm"
+            variant="ghost"
+            className={cn('h-6 px-1.5 gap-1 text-[11px] font-mono opacity-70 hover:opacity-100 border border-border/30 rounded', className)}
+            onClick={handleClick}
+            title={mode === 'side-by-side' ? 'Switch to unified view' : 'Switch to side-by-side view'}
+        >
+            {mode === 'side-by-side' ? (
+                <>
+                    <Icon name="layout-column" className="h-3 w-3 text-primary" />
+                    <span>Split</span>
+                </>
+            ) : (
+                <>
+                    <Icon name="align-justify" className="h-3 w-3 text-primary" />
+                    <span>Unified</span>
+                </>
+            )}
+        </Button>
+    );
+};

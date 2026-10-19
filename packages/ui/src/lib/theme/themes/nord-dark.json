@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "id": "nord-dark",
+    "name": "Nord",
+    "variant": "dark",
+    "description": "Nord",
+    "version": "1.0.0",
+    "tags": [
+      "dark",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#88C0D0",
+      "foreground": "#1F2430",
+      "hover": "#78A9B8",
+      "active": "#99C9D7",
+      "muted": "#88C0D080"
+    },
+    "surface": {
+      "background": "#1F2430",
+      "foreground": "#E5E9F0",
+      "muted": "#222938",
+      "mutedForeground": "#7c828e",
+      "elevated": "#1C202A",
+      "overlay": "#F8FAFC20",
+      "subtle": "#252c3c"
+    },
+    "interactive": {
+      "border": "#303641",
+      "selection": "#3e4a56fe",
+      "selectionForeground": "#F8FAFC",
+      "borderHover": "#383F50",
+      "borderFocus": "#545B78",
+      "focusRing": "#88C0D040",
+      "cursor": "#F8FAFC",
+      "hover": "#3e4a5692",
+      "active": "#3e4a56fe"
+    },
+    "status": {
+      "error": "#BF616A",
+      "errorForeground": "#1F2430",
+      "warning": "#D08770",
+      "warningForeground": "#1F2430",
+      "success": "#A3BE8C",
+      "successForeground": "#1F2430",
+      "info": "#81A1C1",
+      "infoForeground": "#1F2430"
+    },
+    "syntax": {
+      "base": {
+        "background": "#222938",
+        "comment": "#A4ADBF",
+        "keyword": "#88C0D0",
+        "string": "#A3BE8C",
+        "number": "#D57780",
+        "function": "#88C0D0",
+        "variable": "#E5E9F0",
+        "type": "#EAC196",
+        "operator": "#D57780"
+      },
+      "tokens": {
+        "boolean": "#EAC196",
+        "className": "#88C0D0",
+        "commentDoc": "#9098AA",
+        "constant": "#81A1C1",
+        "decorator": "#EAC196",
+        "key": "#88C0D0",
+        "macro": "#81A1C1",
+        "method": "#A3BE8C",
+        "parameter": "#E5E9F0",
+        "storageModifier": "#81A1C1",
+        "stringEscape": "#F8FAFC",
+        "tagAttribute": "#EAC196",
+        "url": "#81A1C1",
+        "variableGlobal": "#88C0D0",
+        "variableLocal": "#1C202A",
+        "variableOther": "#A3BE8C",
+        "variableProperty": "#81A1C1"
+      },
+      "highlights": {
+        "diffAddedBackground": "#1F2E33",
+        "diffModifiedBackground": "#222B3A",
+        "diffRemovedBackground": "#2E212A",
+        "lineNumber": "#434A62",
+        "lineNumberActive": "#F8FAFC"
+      }
+    },
+    "pr": {
+      "draft": "#A4ADBF",
+      "merged": "#b788d0"
+    },
+    "chat": {
+      "userMessageBackground": "#272f40",
+      "divider": "#343A47"
+    },
+    "markdown": {
+      "link": "#81A1C1",
+      "linkHover": "#88C0D0",
+      "inlineCode": "#A3BE8C",
+      "inlineCodeBackground": "#2C313D",
+      "blockquote": "#D08770",
+      "blockquoteBorder": "#343A47",
+      "listMarker": "#88C0D099"
+    },
+    "tools": {
+      "border": "#454e5f80",
+      "icon": "#A4ADBF",
+      "title": "#E5E9F0",
+      "description": "#A4ADBF",
+      "edit": {
+        "addedBackground": "#A3BE8C25",
+        "removedBackground": "#BF616A25",
+        "lineNumber": "#4a526b"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

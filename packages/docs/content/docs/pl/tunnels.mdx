@@ -1,0 +1,120 @@
+---
+title: Tunele
+description: Bezpiecznie udostępnij OpencodeSilver do dostępu zdalnego i mobilnego.
+---
+
+# Tunele
+
+Tunel to publiczny link do Twojego OpencodeSilver, dzięki któremu możesz dotrzeć do niego ze zwykłej przeglądarki w innej sieci. Użyj `opencodesilver tunnel`, aby utworzyć go dla działającej instancji.
+
+> Łączenie **własnych urządzeń** (aplikacja mobilna, drugi komputer) zwykle nie wymaga tunelu — zamiast tego [sparuj je](/pl/connect-devices/) i pozwól, by szyfrowany end-to-end [Private Relay](/pl/private-relay/) zajął się dostępem spoza domu bez żadnej konfiguracji.
+
+## Wymagania wstępne
+
+OpencodeSilver uruchamia CLI dostawcy tunelu na Twoim komputerze. Najpierw zainstaluj dostawcę, którego chcesz użyć:
+
+```bash
+brew install cloudflared
+brew install ngrok
+```
+
+Szybkie tunele Cloudflare działają przez `cloudflared`. Ngrok wymaga konta ngrok i authtokena z panelu ngrok:
+
+```bash
+ngrok config add-authtoken <your-ngrok-token>
+```
+
+## Szybki start
+
+1. Uruchom OpencodeSilver:
+
+```bash
+opencodesilver
+```
+
+Jeśli pominiesz ten krok, `opencodesilver tunnel start` może automatycznie uruchomić serwer CLI. Przy auto-starcie możesz przekazać opcje serwera, takie jak `--port`, `--host`, `--lan`, `--ui-password` i `--api-only`.
+
+2. Uruchom tunel Cloudflare:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode quick
+```
+
+Albo uruchom tunel Ngrok:
+
+```bash
+opencodesilver tunnel start --provider ngrok --mode quick
+```
+
+3. Sprawdź status:
+
+```bash
+opencodesilver tunnel status
+```
+
+Gdy tunel działa, `status` pokazuje publiczny adres URL. Otwórz go lub zeskanuj kod QR, aby dotrzeć do OpencodeSilver z dowolnego miejsca.
+
+Domyślnie OpencodeSilver wypisuje kod QR w interaktywnych sesjach TTY. Użyj `--qr`, aby wymusić wyświetlenie kodu QR, lub `--no-qr`, aby je wyłączyć.
+
+## Dostawcy
+
+- `cloudflare`: tryby quick, managed remote i managed local
+- `ngrok`: tryb quick
+
+## Tryby zarządzane
+
+### Zarządzany zdalny
+
+Użyj tokenu + nazwy hosta zarządzanych przez Cloudflare:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-remote --token-file ~/.secrets/cf-token --hostname app.example.com
+```
+
+### Zarządzany lokalny
+
+Użyj lokalnej konfiguracji `cloudflared`:
+
+```bash
+opencodesilver tunnel start --provider cloudflare --mode managed-local --config ~/.cloudflared/config.yml
+```
+
+## Profile (managed-remote)
+
+Zapisz profil wielokrotnego użytku:
+
+```bash
+opencodesilver tunnel profile add --provider cloudflare --mode managed-remote --name prod-main --hostname app.example.com --token-file ~/.secrets/cf-token
+```
+
+Uruchom z zapisanym profilem:
+
+```bash
+opencodesilver tunnel start --profile prod-main
+```
+
+## Przydatne polecenia
+
+```bash
+opencodesilver tunnel providers
+opencodesilver tunnel ready --provider cloudflare
+opencodesilver tunnel ready --provider ngrok
+opencodesilver tunnel doctor --provider cloudflare
+opencodesilver tunnel doctor --provider ngrok
+opencodesilver tunnel stop --port 3000
+```
+
+## Uwagi dotyczące zachowania
+
+- jeden aktywny tunel na instancję OpencodeSilver (port)
+- uruchomienie nowego trybu/dostawcy na tej samej instancji zastępuje poprzedni tunel
+- wygenerowanie nowego linku połączenia unieważnia poprzedni nieużyty
+- auto-start tunelu zapisuje flagi serwera, takie jak `--ui-password` i `--api-only`, w ustawieniach instancji używanych przez restarty i aktualizacje
+
+## Powiązane
+
+- [Połącz urządzenie](/pl/connect-devices/) — sparuj własne urządzenia bez publicznego adresu URL
+- [Bezpieczeństwo](/pl/security/) — zabezpiecz interfejs przed udostępnieniem
+- [Tunele w aplikacji desktopowej](/pl/desktop-tunnels/) — konfiguracja tunelu w aplikacji desktopowej bez startu z CLI
+- [PWA i dostęp z telefonu](/pl/mobile/) — korzystaj z OpencodeSilver z telefonu
+- [Rozwiązywanie problemów](/pl/troubleshooting/) — jeśli link tunelu nie działa

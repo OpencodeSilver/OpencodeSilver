@@ -1,0 +1,16 @@
+node_modules/
+.tmp/
+dist/
+dist-bundle/
+build/
+*.log
+.DS_Store
+Thumbs.db
+packages/*/dist/
+packages/*/dist-bundle/
+packages/*/build/
+packages/electron/resources/web-dist/
+packages/electron/resources/opencode-cli/
+packages/vscode/dist/
+packages/electron/.cache/
+**/.cache/

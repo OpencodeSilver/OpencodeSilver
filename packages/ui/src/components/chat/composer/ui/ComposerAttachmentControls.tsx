@@ -1,0 +1,259 @@
+/**
+ * Attachment and settings controls in the composer footer.
+ *
+ * Rendered twice on mobile — once in the collapsed pill, once in the expanded
+ * footer — so it stays a memoized component with an explicit comparator: a
+ * re-render of the whole composer must not tear down the dropdown while it is
+ * open.
+ */
+
+import type { SourceControlProvider } from '@/lib/api/types';
+import React from 'react';
+
+import { Icon } from '@/components/icon/Icon';
+import { GuestIcon } from '@/components/layout/GuestRailIcon';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import type { GuestAttachItem } from '@/hooks/useGuestSurfaces';
+import { useI18n } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import { useSessionGoalArmStore } from '@/stores/useSessionGoalArmStore';
+
+type ComposerAttachmentControlsProps = {
+    isVSCode: boolean;
+    footerIconButtonClass: string;
+    iconSizeClass: string;
+    handlePickLocalFiles: () => void;
+    openGitHubPicker: () => void;
+    /** The host the project's issues and change requests come from. */
+    repositoryProvider?: SourceControlProvider;
+    showLinearPicker?: boolean;
+    openLinearPicker?: () => void;
+    onOpenSettings?: () => void;
+    onMenuOpenChange?: (open: boolean) => void;
+    /** Mobile: open the attachment bottom sheet instead of the dropdown menu. */
+    onOpenMobileSheet?: () => void;
+    attachGuests?: readonly GuestAttachItem[];
+    onOpenGuestAttach?: (guestId: string) => void;
+    /**
+     * Only offer local files. The `/btw` composer takes files but none of the
+     * linked context (issues, PRs, guests), which stays with the main draft.
+     */
+    filesOnly?: boolean;
+    isExpandedInput?: boolean;
+    onToggleExpandedInput?: () => void;
+    onCyclePermissionMode?: () => void;
+};
+
+export const ComposerAttachmentControls = React.memo(function ComposerAttachmentControls(props: ComposerAttachmentControlsProps) {
+    const { t } = useI18n();
+    const {
+        isVSCode,
+        footerIconButtonClass,
+        iconSizeClass,
+        handlePickLocalFiles,
+        openGitHubPicker,
+        repositoryProvider = 'github',
+        showLinearPicker,
+        openLinearPicker,
+        onOpenSettings,
+        attachGuests,
+        onOpenGuestAttach,
+        filesOnly = false,
+        isExpandedInput = false,
+        onToggleExpandedInput,
+        onCyclePermissionMode,
+    } = props;
+
+    return (
+        <div className="flex items-center gap-x-1.5">
+            <div className="relative inline-flex">
+                {props.onOpenMobileSheet && !filesOnly ? (
+                    <button
+                        type="button"
+                        className={footerIconButtonClass}
+                        onClick={props.onOpenMobileSheet}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onPointerDownCapture={(event) => {
+                            if (event.pointerType === 'touch') {
+                                event.preventDefault();
+                            }
+                        }}
+                        title={t('chat.chatInput.actions.addAttachment')}
+                        aria-label={t('chat.chatInput.actions.addAttachment')}
+                    >
+                        <Icon name="add" className={cn(iconSizeClass, 'text-current')} />
+                    </button>
+                ) : isVSCode || filesOnly ? (
+                    <button
+                        type="button"
+                        className={footerIconButtonClass}
+                        onClick={handlePickLocalFiles}
+                        title={t('chat.chatInput.actions.attachFiles')}
+                        aria-label={t('chat.chatInput.actions.attachFiles')}
+                    >
+                        <Icon name="add" className={cn(iconSizeClass, 'text-current')} />
+                    </button>
+                ) : (
+                    <DropdownMenu onOpenChange={props.onMenuOpenChange}>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                type="button"
+                                className={footerIconButtonClass}
+                                title={t('chat.chatInput.actions.addAttachment')}
+                                aria-label={t('chat.chatInput.actions.addAttachment')}
+                            >
+                                <Icon name="add" className={cn(iconSizeClass, 'text-current')} />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="top" align="start" className="min-w-[210px]">
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    requestAnimationFrame(handlePickLocalFiles);
+                                }}
+                            >
+                                <Icon name="attachment-2" />
+                                {t('chat.chatInput.actions.attachFiles')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    requestAnimationFrame(openGitHubPicker);
+                                }}
+                            >
+                                <Icon name={repositoryProvider === 'gitlab' ? 'gitlab' : 'github'} />
+                                {t(repositoryProvider === 'gitlab' ? 'chat.chatInput.actions.linkGitlab' : 'chat.chatInput.actions.linkGithub')}
+                            </DropdownMenuItem>
+                            {showLinearPicker && openLinearPicker ? (
+                                <DropdownMenuItem
+                                    onSelect={() => {
+                                        requestAnimationFrame(openLinearPicker);
+                                    }}
+                                >
+                                    <Icon name="linear" />
+                                    {t('chat.chatInput.actions.linkLinearIssue')}
+                                </DropdownMenuItem>
+                            ) : null}
+                            {attachGuests?.map((guest) => (
+                                <DropdownMenuItem
+                                    key={guest.id}
+                                    onSelect={() => {
+                                        requestAnimationFrame(() => onOpenGuestAttach?.(guest.id));
+                                    }}
+                                >
+                                    <GuestIcon icon={guest.icon} iconSrc={guest.iconSrc} className="size-4" />
+                                    {guest.name}
+                                </DropdownMenuItem>
+                            ))}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    window.dispatchEvent(new CustomEvent('ag:composer-optimize-prompt'));
+                                }}
+                            >
+                                <Icon name="sparkling" />
+                                <span>{t('chat.tools.optimize.tooltip')}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    const store = useSessionGoalArmStore.getState();
+                                    store.setArmed(!store.armed);
+                                }}
+                            >
+                                <Icon name="target" />
+                                <span>{t('chat.goal.button.armAria')}</span>
+                            </DropdownMenuItem>
+
+                            {onCyclePermissionMode ? (
+                                <DropdownMenuItem
+                                    onSelect={() => {
+                                        onCyclePermissionMode();
+                                    }}
+                                >
+                                    <Icon name="shield-check" />
+                                    <span>{t('chat.chatInput.permissionMode.auto')}</span>
+                                </DropdownMenuItem>
+                            ) : null}
+
+                            {onToggleExpandedInput ? (
+                                <DropdownMenuItem
+                                    onSelect={() => {
+                                        onToggleExpandedInput();
+                                    }}
+                                >
+                                    <Icon name={isExpandedInput ? 'fullscreen-exit' : 'fullscreen'} />
+                                    <span>{t('chat.chatInput.focusMode.label')}</span>
+                                </DropdownMenuItem>
+                            ) : null}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    window.dispatchEvent(new CustomEvent('ag:composer-open-metrics'));
+                                }}
+                            >
+                                <Icon name="bar-chart" />
+                                <span>{t('chat.tools.metrics.tooltip')}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    window.dispatchEvent(new CustomEvent('ag:composer-export-markdown'));
+                                }}
+                            >
+                                <Icon name="download" />
+                                <span>{t('chat.tools.export.tooltip')}</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                                onSelect={() => {
+                                    window.dispatchEvent(new CustomEvent('ag:composer-purge-cache'));
+                                }}
+                            >
+                                <Icon name="delete-bin" />
+                                <span>{t('chat.tools.purgeCache.tooltip')}</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+            </div>
+
+            {onOpenSettings ? (
+                <button
+                    type="button"
+                    onClick={onOpenSettings}
+                    className={footerIconButtonClass}
+                    title={t('chat.chatInput.actions.modelAgentSettings')}
+                    aria-label={t('chat.chatInput.actions.modelAgentSettings')}
+                >
+                    <Icon name="ai-agent" className={cn(iconSizeClass, 'text-current')} />
+                </button>
+            ) : null}
+        </div>
+    );
+}, (prev, next) => (
+    prev.isVSCode === next.isVSCode
+    && prev.footerIconButtonClass === next.footerIconButtonClass
+    && prev.iconSizeClass === next.iconSizeClass
+    && prev.showLinearPicker === next.showLinearPicker
+    && prev.onOpenSettings === next.onOpenSettings
+    && prev.onMenuOpenChange === next.onMenuOpenChange
+    && prev.onOpenMobileSheet === next.onOpenMobileSheet
+    && prev.onOpenGuestAttach === next.onOpenGuestAttach
+    && prev.filesOnly === next.filesOnly
+    && prev.isExpandedInput === next.isExpandedInput
+    && prev.onToggleExpandedInput === next.onToggleExpandedInput
+    && prev.onCyclePermissionMode === next.onCyclePermissionMode
+    && prev.repositoryProvider === next.repositoryProvider
+    && (prev.attachGuests ?? []).map((guest) => `${guest.id}:${guest.name}:${guest.mode}`).join()
+        === (next.attachGuests ?? []).map((guest) => `${guest.id}:${guest.name}:${guest.mode}`).join()
+));
+

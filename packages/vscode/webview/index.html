@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>opencodesilver</title>
+  <style>
+    :root {
+      --vscode-editor-background: #151313;
+      --vscode-sideBar-background: #18181b;
+      --vscode-foreground: #e5e5e5;
+      --vscode-descriptionForeground: #a1a1aa;
+      --vscode-errorForeground: #f87171;
+      --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --vscode-font-size: 13px;
+      --vscode-font-weight: normal;
+      --vscode-input-background: #27272a;
+      --vscode-input-foreground: #f4f4f5;
+      --vscode-input-border: #3f3f46;
+      --vscode-input-placeholderForeground: #71717a;
+      --vscode-button-background: #3b82f6;
+      --vscode-button-foreground: #ffffff;
+      --vscode-button-hoverBackground: #2563eb;
+      --vscode-dropdown-background: #27272a;
+      --vscode-dropdown-foreground: #f4f4f5;
+      --vscode-dropdown-border: #3f3f46;
+      --vscode-list-hoverBackground: #27272a;
+      --vscode-list-activeSelectionBackground: #3f3f46;
+      --vscode-list-activeSelectionForeground: #ffffff;
+      --vscode-focusBorder: #3b82f6;
+      --vscode-badge-background: #3b82f6;
+      --vscode-badge-foreground: #ffffff;
+      --vscode-panel-background: #151313;
+      --vscode-panel-border: #27272a;
+      --vscode-widget-border: #3f3f46;
+    }
+    html, body, #root {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: var(--vscode-editor-background);
+      color: var(--vscode-foreground);
+      font-family: var(--vscode-font-family);
+    }
+  </style>
+  <script>
+    window.process = window.process || { env: { NODE_ENV: 'development' }, platform: 'win32', version: '', browser: true };
+    if (!window.__VSCODE_CONFIG__) {
+      window.__VSCODE_CONFIG__ = {
+        workspaceFolder: "C:/Users/GEMTM/Desktop/101",
+        workspaceFolders: [{ name: "101", path: "C:/Users/GEMTM/Desktop/101" }],
+        theme: "dark",
+        connectionStatus: "connected",
+        cliAvailable: true,
+        extensionVersion: "2.1.1",
+        platform: "win32",
+        arch: "x64",
+        viewMode: "editor",
+        initialSessionId: null,
+        initialComposer: null,
+        apiUrl: "http://127.0.0.1:57123"
+      };
+      window.__OPENCODESILVER_HOME__ = "C:/Users/GEMTM/Desktop/101";
+      window.__OPENCODESILVER_HOST_LANGUAGE__ = "ar";
+    }
+  </script>
+</head>
+<body style="margin: 0; padding: 0; background-color: #151313; color: #e5e5e5; font-family: system-ui, -apple-system, sans-serif; height: 100%; overflow: hidden;">
+  <div id="root" style="height: 100%;"></div>
+  <script type="module" src="./main.tsx"></script>
+</body>
+</html>

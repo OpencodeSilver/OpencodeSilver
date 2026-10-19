@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "id": "tokyonight-light",
+    "name": "Tokyonight",
+    "variant": "light",
+    "description": "Tokyonight",
+    "version": "1.0.0",
+    "tags": [
+      "light",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#2E7DE9",
+      "foreground": "#E1E2E7",
+      "hover": "#5291E9",
+      "active": "#2B70D0",
+      "muted": "#2E7DE980"
+    },
+    "surface": {
+      "background": "#E1E2E7",
+      "foreground": "#273153",
+      "muted": "#DEE0EA",
+      "mutedForeground": "#686e9b",
+      "elevated": "#dee0ee",
+      "overlay": "#1C254420",
+      "subtle": "#dadce6"
+    },
+    "interactive": {
+      "border": "#c7c9d3",
+      "selection": "#939cbf47",
+      "selectionForeground": "#1C2544",
+      "borderHover": "#C3C6D2",
+      "borderFocus": "#9599A8",
+      "focusRing": "#2E7DE940",
+      "cursor": "#1C2544",
+      "hover": "#7b86ad2a",
+      "active": "#7b86ad47"
+    },
+    "status": {
+      "error": "#C94060",
+      "errorForeground": "#E1E2E7",
+      "warning": "#8C6C3E",
+      "warningForeground": "#E1E2E7",
+      "success": "#587539",
+      "successForeground": "#E1E2E7",
+      "info": "#007197",
+      "infoForeground": "#E1E2E7"
+    },
+    "syntax": {
+      "base": {
+        "background": "#DEE0EA",
+        "comment": "#5C6390",
+        "keyword": "#9854F1",
+        "string": "#587539",
+        "number": "#B15C00",
+        "function": "#9854F1",
+        "variable": "#273153",
+        "type": "#3760BF",
+        "operator": "#B15C00"
+      },
+      "tokens": {
+        "boolean": "#3760BF",
+        "className": "#9854F1",
+        "commentDoc": "#9FA3BC",
+        "constant": "#007197",
+        "decorator": "#3760BF",
+        "key": "#9854F1",
+        "macro": "#007197",
+        "method": "#587539",
+        "parameter": "#273153",
+        "storageModifier": "#007197",
+        "stringEscape": "#1C2544",
+        "tagAttribute": "#3760BF",
+        "url": "#007197",
+        "variableGlobal": "#9854F1",
+        "variableLocal": "#E5E6EE",
+        "variableOther": "#587539",
+        "variableProperty": "#007197"
+      },
+      "highlights": {
+        "diffAddedBackground": "#DFE7DA",
+        "diffModifiedBackground": "#CFD1DD",
+        "diffRemovedBackground": "#F4DADD",
+        "lineNumber": "#AEB2BF",
+        "lineNumberActive": "#1C2544"
+      }
+    },
+    "pr": {
+      "draft": "#5C6390",
+      "merged": "#9854F1"
+    },
+    "chat": {
+      "userMessageBackground": "#dcdee9",
+      "divider": "#CDD0DC"
+    },
+    "markdown": {
+      "link": "#007197",
+      "linkHover": "#2E7DE9",
+      "inlineCode": "#3E5B1F",
+      "inlineCodeBackground": "#D4D5DA",
+      "blockquote": "#8C6C3E",
+      "blockquoteBorder": "#CDD0DC",
+      "listMarker": "#2E7DE999"
+    },
+    "tools": {
+      "border": "#a5a8b580",
+      "icon": "#5C6390",
+      "title": "#273153",
+      "description": "#5C6390",
+      "edit": {
+        "addedBackground": "#58753925",
+        "removedBackground": "#C9406025",
+        "lineNumber": "#9b9ea9"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}

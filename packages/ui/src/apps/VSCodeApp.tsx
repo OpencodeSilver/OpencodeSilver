@@ -1,0 +1,129 @@
+import React from 'react';
+import { FireworksProvider } from '@/contexts/FireworksContext';
+import { RuntimeAPIProvider } from '@/contexts/RuntimeAPIProvider';
+import { registerRuntimeAPIs } from '@/contexts/runtimeAPIRegistry';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
+import { ConfigUpdateOverlay } from '@/components/ui/ConfigUpdateOverlay';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { OpenCodeUpdateToast } from '@/components/update/OpenCodeUpdateToast';
+import { AppLinkConfirmDialog } from '@/components/chat/AppLinkConfirmDialog';
+import { SharedTrustConfirmDialog } from '@/components/projects/SharedTrustConfirmDialog';
+import { VSCodeLayout } from '@/components/layout/VSCodeLayout';
+import { useEnterprisePolicySync } from '@/hooks/useEnterprisePolicySync';
+import { usePushVisibilityBeacon } from '@/hooks/usePushVisibilityBeacon';
+import { useGlobalSessionsPolling } from '@/hooks/useGlobalSessionsPolling';
+import { useRouter } from '@/hooks/useRouter';
+import { useWindowTitle } from '@/hooks/useWindowTitle';
+import { useRootScrollLock } from '@/hooks/useRootScrollLock';
+import { opencodeClient } from '@/lib/opencode/client';
+import type { RuntimeAPIs } from '@/lib/api/types';
+import { runtimeFetch } from '@/lib/runtime-fetch';
+import { useFeatureFlagsStore } from '@/stores/useFeatureFlagsStore';
+import { useSourceControlAuthStore } from '@/stores/useSourceControlAuthStore';
+import { useDirectoryStore } from '@/stores/useDirectoryStore';
+import { useUIStore } from '@/stores/useUIStore';
+import { onHostSurfaceSeen } from '@/lib/surfaceAttention';
+import { markSessionViewed } from '@/sync/notification-store';
+import { useSessionUIStore } from '@/sync/session-ui-store';
+import { SyncProvider } from '@/sync/sync-context';
+import { SyncAppEffects } from './AppEffects';
+import { useAppFontEffects } from './useAppFontEffects';
+
+type VSCodeAppProps = {
+  apis: RuntimeAPIs;
+};
+
+export function VSCodeApp({ apis }: VSCodeAppProps) {
+  const currentDirectory = useDirectoryStore((state) => state.currentDirectory);
+  const error = useSessionUIStore((state) => state.error);
+  const clearError = useSessionUIStore((state) => state.clearError);
+  const wideChatLayoutEnabled = useUIStore((state) => state.wideChatLayoutEnabled);
+  const refreshSourceControlAuth = useSourceControlAuthStore((state) => state.refreshAll);
+  const setPlanModeEnabled = useFeatureFlagsStore((state) => state.setPlanModeEnabled);
+
+  React.useEffect(() => {
+    registerRuntimeAPIs(apis);
+    return () => registerRuntimeAPIs(null);
+  }, [apis]);
+
+  useAppFontEffects();
+  usePushVisibilityBeacon({ enabled: true });
+  useWindowTitle();
+  useRootScrollLock();
+  useRouter();
+  useGlobalSessionsPolling(true);
+  useEnterprisePolicySync();
+
+  // Same as the window-focus effect in App.tsx: when the user can see this
+  // webview again, the selected session counts as seen. VS Code learns that from
+  // the extension host, not from a DOM focus event.
+  React.useEffect(() => onHostSurfaceSeen(() => {
+    const sessionId = useSessionUIStore.getState().currentSessionId;
+    if (sessionId) markSessionViewed(sessionId);
+  }), []);
+
+  React.useEffect(() => {
+    document.documentElement.classList.toggle('wide-chat-layout', wideChatLayoutEnabled);
+    return () => {
+      document.documentElement.classList.remove('wide-chat-layout');
+    };
+  }, [wideChatLayoutEnabled]);
+
+  React.useEffect(() => {
+    void refreshSourceControlAuth(apis.sourceControl, { force: true });
+  }, [apis.sourceControl, refreshSourceControlAuth]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      const res = await runtimeFetch('/health', { method: 'GET' }).catch(() => null);
+      if (!res || !res.ok || cancelled) return;
+      const data = (await res.json().catch(() => null)) as null | {
+        planModeExperimentalEnabled?: unknown;
+      };
+      if (!data || cancelled) return;
+      const raw = data.planModeExperimentalEnabled;
+      const enabled = raw === true || raw === 1 || raw === '1' || raw === 'true';
+      setPlanModeEnabled(enabled);
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setPlanModeEnabled]);
+
+  React.useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => clearError(), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [clearError, error]);
+
+  return (
+    <ErrorBoundary>
+      <SyncProvider sdk={opencodeClient.getSdkClient()} directory={currentDirectory || ''}>
+        <RuntimeAPIProvider apis={apis}>
+          <FireworksProvider>
+            <TooltipProvider delayDuration={300} skipDelayDuration={150}>
+              <div className="h-full text-foreground bg-background">
+                <SyncAppEffects backgroundWorkEnabled />
+                <VSCodeLayout />
+                <AppLinkConfirmDialog />
+                <SharedTrustConfirmDialog />
+                <OpenCodeUpdateToast />
+                <Toaster position="top-center" />
+                <ConfigUpdateOverlay />
+              </div>
+            </TooltipProvider>
+          </FireworksProvider>
+        </RuntimeAPIProvider>
+      </SyncProvider>
+    </ErrorBoundary>
+  );
+}

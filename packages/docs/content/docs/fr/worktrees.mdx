@@ -1,0 +1,39 @@
+---
+title: Sessions worktree
+description: Donnez à une session sa propre branche et son propre dossier pour garder le travail isolé.
+---
+
+# Sessions worktree
+
+Une session worktree s’exécute dans sa propre copie extraite de votre dépôt, sur sa propre branche (un git worktree). Les sessions parallèles ne se marchent donc pas sur les fichiers — l’une peut refactorer pendant qu’une autre corrige un bug, sans allers-retours constants.
+
+## En créer une
+
+1. Ouvrez la boîte de dialogue nouveau worktree : choisissez **Nouveau worktree…** dans le menu des branches au-dessus du champ de saisie quand vous démarrez une session, ou utilisez le bouton worktree sur la ligne d'un projet dans la barre latérale.
+2. Sous **Start from**, choisissez une option :
+   - **new branch** — nommez la branche
+   - **existing branch** — récupérez une branche que vous avez déjà
+   - **PR or issue** — choisissez-en un depuis GitHub, Linear ou une extension ; la branche prend son nom (une PR récupère sa propre branche) et l'élément est joint à votre premier message
+3. Vérifiez **Based on** (la branche de départ d'une nouvelle branche, par défaut la branche actuelle du projet) et **Folder name** ; ne les modifiez que si nécessaire.
+4. Créez-le. Si le projet a des commandes de configuration, elles s'exécutent juste après.
+
+OpencodeSilver crée la branche, prépare le dossier et y ouvre une nouvelle session, prête pour votre premier message. Vous pouvez aussi en lancer une directement depuis une [todo](/notes-todos-plans/) ou une [issue ou PR GitHub](/github/).
+
+Pour éviter les questions, choisissez **Worktree rapide** dans le même menu : OpencodeSilver nomme la branche pour vous et y place la nouvelle session.
+
+## Ramener le travail
+
+Quand le travail est bon, utilisez **Integrate** dans la vue Git pour ramener les commits du worktree sur une autre branche (comme `main`). Si un changement entre en conflit, vous pouvez confier la résolution du conflit à l’agent.
+
+## Nettoyer
+
+Supprimer ou archiver la session peut retirer le worktree. Vous choisissez aussi si la branche doit être supprimée — locale, et distante s’il y en a une. Rien n’est supprimé sans votre demande.
+
+## Si quelque chose semble étrange
+
+Un worktree peut demander votre attention si son dossier a disparu, si sa branche est détachée, ou si un merge ou rebase est à moitié terminé. OpencodeSilver signale ces cas pour que vous puissiez les corriger — voir [Worktrees et Git](/troubleshooting/worktrees-git/).
+
+## Pages liées
+
+- [Multi-run](/multi-run/) — lancer plusieurs sessions worktree à la fois
+- [Workflows Git et GitHub](/git/) — commiter et intégrer depuis OpencodeSilver

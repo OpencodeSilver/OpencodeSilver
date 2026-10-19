@@ -1,0 +1,84 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig(({ mode }) => ({
+  root: path.resolve(__dirname, 'webview'),
+  base: './',  // Use relative paths for VS Code webview
+  plugins: [
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler'],
+      },
+    }),
+  ],
+  resolve: {
+    alias: [
+      { find: '@opencodesilver/sdk/schemas', replacement: path.resolve(__dirname, '../sdk/src/schemas.ts') },
+      { find: '@opencodesilver/sdk', replacement: path.resolve(__dirname, '../sdk/src/index.ts') },
+      { find: '@opencodesilver/ui', replacement: path.resolve(__dirname, '../ui/src') },
+      { find: '@vscode', replacement: path.resolve(__dirname, './webview') },
+      { find: '@', replacement: path.resolve(__dirname, '../ui/src') },
+    ],
+  },
+  worker: {
+    format: 'es',
+    // VS Code webviews cannot load module imports from inside a web worker.
+    // Keep the Shiki worker self-contained instead of emitting grammar chunks.
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+      },
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
+    'global': 'globalThis',
+    '__OPENCODESILVER_WEBVIEW_BUILD_TIME__': JSON.stringify(new Date().toISOString()),
+  },
+  envPrefix: ['VITE_'],
+  server: {
+    host: 'localhost',
+    port: 5173,
+    strictPort: true,
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:57123',
+        changeOrigin: true,
+        ws: true,
+      },
+      '/auth': {
+        target: 'http://127.0.0.1:57123',
+        changeOrigin: true,
+      },
+    },
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws',
+      port: 5173,
+    },
+  },
+  optimizeDeps: {
+    include: ['@opencode/client'],
+  },
+  build: {
+    outDir: path.resolve(__dirname, 'dist/webview'),
+    emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'webview/index.html'),
+      external: ['node:child_process', 'node:fs', 'node:path', 'node:url'],
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]',
+      },
+    },
+  },
+}));

@@ -1,0 +1,38 @@
+---
+title: Issues y PRs de GitHub
+description: Conecta GitHub e inicia sesiones desde issues y pull requests.
+---
+
+# Issues y PRs de GitHub
+
+Conecta tu cuenta de GitHub y OpencodeSilver podrá traer issues y pull requests, iniciar una sesión directamente desde uno, y abrir o actualizar PRs por ti.
+
+## Conecta GitHub
+
+1. Abre **Settings → Integrations** y despliega la tarjeta **GitHub**.
+2. Elige **Connect GitHub**. OpencodeSilver muestra un enlace y un código corto.
+3. Abre el enlace, introduce el código y aprueba.
+
+Cuando esté conectado, tu cuenta aparece en la tarjeta. Puedes conectar más de una cuenta y cambiar entre ellas, o desconectar en cualquier momento. Si la CLI `gh` tiene sesión iniciada en la misma máquina, OpencodeSilver puede usarla como respaldo.
+
+## Empieza a trabajar desde una issue o PR
+
+Cuando creas una [sesión de worktree](/es/worktrees/) con GitHub conectado, puedes empezarla desde una issue o un pull request:
+
+- elige una **issue** y OpencodeSilver nombra la rama según ella
+- elige un **pull request** y hace checkout de la rama del PR; puedes incluir el diff del PR para que el agente tenga el cambio completo
+
+La nueva sesión se abre con la issue o el PR ya adjunto en el cuadro de mensaje. No se envía nada por ti: elige el modelo y el agente, di qué quieres que se haga y envía.
+
+## Abre y gestiona pull requests
+
+Desde la pestaña **PR** en la [vista de git](/es/git/), puedes crear un pull request, actualizarlo, marcar un borrador como listo o fusionarlo. OpencodeSilver puede generar el título y la descripción del PR a partir de tus cambios.
+
+## Vincula una issue o PR a un mensaje
+
+En el compositor del chat, abre el menú **+** y elige **GitHub**. Elige una o varias issues o pull requests: cada uno acompaña tu siguiente mensaje como contexto (un PR puede traer su diff), y el panel de estado de trabajo de la sesión conserva un enlace. Adjuntar solo añade contexto; tu mensaje dice qué hacer con él.
+
+## Relacionado
+
+- [Flujos de trabajo de Git y GitHub](/es/git/) — haz commit y gestiona ramas
+- [Sesiones de worktree](/es/worktrees/) — donde empiezan las sesiones de issue y PR

@@ -1,0 +1,32 @@
+---
+title: Projektaktionen
+description: Speichere Befehle, die du oft ausführst, und starte sie mit einem Klick.
+---
+
+# Projektaktionen
+
+Eine Projektaktion ist ein Shell-Befehl, den du einmal speicherst und dann mit einem Klick ausführst — dein Entwicklungsserver, ein Build, ein Testlauf. Jedes Projekt hat seine eigene Liste. Richte sie unter **Einstellungen → Projekte → Projektaktionen** ein.
+
+## Eine Aktion hinzufügen
+
+1. Öffne **Einstellungen → Projekte** und suche den Bereich **Projektaktionen**.
+2. Füge eine Aktion hinzu, gib ihr einen Namen, wähle ein Symbol und gib den auszuführenden Befehl ein.
+3. Speichern.
+
+Du kannst eine Aktion auf bestimmte Betriebssysteme beschränken, wenn ein Befehl nur auf einem davon sinnvoll ist.
+
+## Eine Aktion ausführen
+
+Aktionen liegen in einem Menü im App-Header. Klicke auf eine und OpencodeSilver führt sie in einem Terminal in deinem Projektordner aus und wechselt dich in die Terminalansicht, damit du die Ausgabe verfolgen kannst. Stoppe sie über dasselbe Menü.
+
+## Einen Entwicklungsserver automatisch öffnen
+
+Aktiviere **auto-open URL** für eine Aktion, die einen Server startet. OpencodeSilver überwacht die Ausgabe auf eine lokale Adresse und bietet an, sie zu öffnen — siehe [Vorschau & Entwicklungsserver](/preview/). Auf dem Desktop kannst du sie außerdem über einen SSH-Port-Forward leiten.
+
+Hat der Server eine feste Adresse, trag sie im URL-Feld der Aktion ein. `{worktree}` und `{branch}` setzen den Checkout ein, in dem die Aktion läuft, also funktioniert eine Aktion in jedem Worktree. Mit [portless](https://github.com/vercel-labs/portless) öffnet `https://{worktree}.myapp.localhost` in einem Worktree auf `feature/auth` die Adresse `https://auth.myapp.localhost` und im Haupt-Checkout `https://myapp.localhost`. Oft brauchst du das Feld gar nicht: Wenn portless seine Adresse ausgibt, öffnet OpencodeSilver diese statt des Ports dahinter. Auf einem Desktop, der mit einer entfernten Instanz verbunden ist, öffnet es stattdessen den Port, weil nur Loopback-Ports durch den Tunnel zur entfernten Maschine gelangen.
+
+## Verwandt
+
+- [Repository-Konfiguration](/repository-config/) — Aktionen und Setup-Befehle im Repository für das ganze Team ablegen
+
+- [Vorschau & Entwicklungsserver](/preview/) — einen laufenden Entwicklungsserver in OpencodeSilver öffnen

@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "id": "onedarkpro-dark",
+    "name": "One Dark Pro",
+    "variant": "dark",
+    "description": "One Dark Pro",
+    "version": "1.0.0",
+    "tags": [
+      "dark",
+      "palette"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "base": "#61AFEF",
+      "foreground": "#1E222A",
+      "hover": "#579AD1",
+      "active": "#77BAF1",
+      "muted": "#61AFEF80"
+    },
+    "surface": {
+      "background": "#1E222A",
+      "foreground": "#ABB2BF",
+      "muted": "#212631",
+      "mutedForeground": "#737a89",
+      "elevated": "#232832",
+      "overlay": "#F6F7FB20",
+      "subtle": "#272c37"
+    },
+    "interactive": {
+      "border": "#313848",
+      "selection": "#a8aec533",
+      "selectionForeground": "#F6F7FB",
+      "borderHover": "#363D52",
+      "borderFocus": "#555C79",
+      "focusRing": "#61AFEF40",
+      "cursor": "#F6F7FB",
+      "hover": "#a8aec525",
+      "active": "#a8aec533"
+    },
+    "status": {
+      "error": "#E06C75",
+      "errorForeground": "#1E222A",
+      "warning": "#E5C07B",
+      "warningForeground": "#1E222A",
+      "success": "#98C379",
+      "successForeground": "#1E222A",
+      "info": "#56B6C2",
+      "infoForeground": "#1E222A"
+    },
+    "syntax": {
+      "base": {
+        "background": "#212631",
+        "comment": "#818899",
+        "keyword": "#61AFEF",
+        "string": "#98C379",
+        "number": "#E06C75",
+        "function": "#61AFEF",
+        "variable": "#ABB2BF",
+        "type": "#E5C07B",
+        "operator": "#E06C75"
+      },
+      "tokens": {
+        "boolean": "#E5C07B",
+        "className": "#61AFEF",
+        "commentDoc": "#727988",
+        "constant": "#56B6C2",
+        "decorator": "#E5C07B",
+        "key": "#61AFEF",
+        "macro": "#56B6C2",
+        "method": "#98C379",
+        "parameter": "#ABB2BF",
+        "storageModifier": "#56B6C2",
+        "stringEscape": "#F6F7FB",
+        "tagAttribute": "#E5C07B",
+        "url": "#56B6C2",
+        "variableGlobal": "#61AFEF",
+        "variableLocal": "#1B1F27",
+        "variableOther": "#98C379",
+        "variableProperty": "#56B6C2"
+      },
+      "highlights": {
+        "diffAddedBackground": "#1C2A26",
+        "diffModifiedBackground": "#232836",
+        "diffRemovedBackground": "#2A1C22",
+        "lineNumber": "#424967",
+        "lineNumberActive": "#F6F7FB"
+      }
+    },
+    "pr": {
+      "draft": "#818899",
+      "merged": "#bb61ef"
+    },
+    "chat": {
+      "userMessageBackground": "#2e3442",
+      "divider": "#323848"
+    },
+    "markdown": {
+      "link": "#56B6C2",
+      "linkHover": "#61AFEF",
+      "inlineCode": "#a0c288",
+      "inlineCodeBackground": "#2B2F37",
+      "blockquote": "#E5C07B",
+      "blockquoteBorder": "#323848",
+      "listMarker": "#61AFEF99"
+    },
+    "tools": {
+      "border": "#41495e80",
+      "icon": "#818899",
+      "title": "#ABB2BF",
+      "description": "#818899",
+      "edit": {
+        "addedBackground": "#98C37925",
+        "removedBackground": "#E06C7525",
+        "lineNumber": "#545c81"
+      }
+    }
+  },
+  "config": {
+    "fonts": {
+      "sans": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "mono": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace",
+      "heading": "ui-monospace, \"SFMono-Regular\", \"Menlo\", \"Cascadia Mono\", \"Segoe UI Mono\", monospace"
+    },
+    "transitions": {
+      "fast": "150ms ease",
+      "normal": "250ms ease",
+      "slow": "350ms ease"
+    }
+  }
+}
