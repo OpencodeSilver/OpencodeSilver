@@ -20,7 +20,7 @@
     "cli"
   ],
   "author": "Ahmed (GEMTM)",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "dev": "node ./scripts/dev-web-hmr.mjs",
     "dev:fresh": "node ./scripts/dev-web-hmr.mjs --fresh",

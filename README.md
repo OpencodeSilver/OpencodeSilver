@@ -136,8 +136,8 @@ bun run type-check
 # Run unit tests
 bun run test
 
-# Anti-slop and style validation
-bun run lint:anti-slop
+# Code linting
+bun run lint
 ```
 
 ---
@@ -162,6 +162,9 @@ OpencodeSilver supports configuration through environment variables or local fil
 
 ---
 
-## Authorship & Ownership
+## License & Intellectual Property
 
-Created, programmed, and exclusively maintained by **Ahmed (GEMTM)**. All rights reserved.
+OpencodeSilver is licensed under the **OpencodeSilver Proprietary Software License (OSSL-1.0)**.  
+Copyright (c) 2026 **Ahmed (GEMTM)**. All rights reserved.
+
+See the [LICENSE](file:///c:/Users/GEMTM/Desktop/OpencodeSilver-main/LICENSE) file for complete terms, conditions, and commercial licensing guidelines.

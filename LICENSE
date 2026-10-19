@@ -1,0 +1,93 @@
+OPENCODESILVER PROPRIETARY SOFTWARE LICENSE (OSSL-1.0)
+======================================================
+Copyright (c) 2026 Ahmed (GEMTM). All Rights Reserved.
+Repository: https://github.com/OpencodeSilver/OpencodeSilver
+Author & Licensor: Ahmed (GEMTM) <gemtm@users.noreply.github.com>
+
+IMPORTANT — READ CAREFULLY:
+This Software License Agreement ("Agreement") is a legal agreement between you
+(either an individual or a single legal entity, referred to herein as "Licensee"
+or "You") and Ahmed (GEMTM) ("Licensor"), the creator, exclusive author, and sole
+owner of all intellectual property, source code, designs, and assets embodied in
+or associated with the software project known as "OpencodeSilver" ("Software").
+
+BY CLONING, DOWNLOADING, COMPILING, RUNNING, ACCESSING, OR OTHERWISE USING ANY
+PART OF THIS SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS AGREEMENT.
+IF YOU DO NOT AGREE TO THESE TERMS, DO NOT INSTALL, COPY, OR USE THIS SOFTWARE.
+
+1. INTELLECTUAL PROPERTY & OWNERSHIP
+-----------------------------------
+The Software—including, but not limited to, its source code, build scripts,
+architecture, documentation, user interfaces, branding, visual assets, and the
+proprietary core intelligence engine (@opencodesilver/core)—is the exclusive
+property of Ahmed (GEMTM). It is protected by international copyright laws,
+trade secret laws, and applicable intellectual property treaties.
+
+All rights, title, and interest in and to the Software not expressly granted to
+You in this Agreement are strictly reserved by Ahmed (GEMTM).
+
+2. GRANT OF PERMITTED USE
+-------------------------
+Subject to the terms and restrictions of this Agreement, Licensor hereby grants
+Licensee a personal, revocable, non-exclusive, non-transferable, and royalty-free
+license to:
+(a) Download, compile, and run the Software locally for personal evaluation,
+    private experimentation, and non-commercial development workflows;
+(b) Inspect and modify the source code solely for personal, internal, and
+    non-commercial customization within your private workspace;
+(c) Submit bug reports, suggestions, or contributions back to the official
+    OpencodeSilver repository under the direction of the Licensor.
+
+3. RESTRICTIONS & PROHIBITIONS
+------------------------------
+You expressly agree NOT to:
+(a) Sell, rent, lease, sublicense, distribute, assign, host as a paid cloud
+    Software-as-a-Service (SaaS), or commercially monetize the Software, or any
+    derivative work thereof, without prior express written authorization signed
+    by Ahmed (GEMTM);
+(b) Remove, alter, obscure, or disguise any copyright notices, author watermarks,
+    trademarks, or proprietary attributions (including "Ahmed (GEMTM)" and
+    "OpencodeSilver") appearing in or on the Software;
+(c) Relicense, re-distribute, or republish the Software or any substantial portion
+    thereof under any open-source license (including, but not limited to, MIT,
+    Apache 2.0, GPL, AGPL, BSD, or MPL) without express written permission;
+(d) Claim authorship, creation, or originality of the Software or its core
+    architectural innovations, including the @opencodesilver/core intelligence
+    suite;
+(e) Create misleading "white-label" distributions that misrepresent the origin
+    or author of the Software.
+
+4. COMMERCIAL & ENTERPRISE LICENSING
+------------------------------------
+Any commercial deployment, enterprise deployment beyond personal evaluation,
+managed hosting service, or inclusion in commercial software bundles requires
+a separate Commercial License Agreement executed with Ahmed (GEMTM).
+For commercial licensing inquiries, contact the author via the official repository:
+https://github.com/OpencodeSilver/OpencodeSilver
+
+5. TERMINATION
+--------------
+This Agreement and the license granted hereunder shall automatically terminate
+with immediate effect, without notice from the Licensor, if Licensee fails to
+comply with any term or condition of this Agreement. Upon termination, Licensee
+shall immediately cease all use of the Software and destroy all copies of the
+Software in Licensee's possession or control.
+
+6. DISCLAIMER OF WARRANTIES
+---------------------------
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, ACCURACY, AND NON-INFRINGEMENT.
+IN NO EVENT SHALL AHMED (GEMTM) OR ANY CONTRIBUTORS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+7. GOVERNING LAW & JURISDICTION
+-------------------------------
+This Agreement shall be governed by, construed, and enforced in accordance with
+applicable intellectual property laws, without regard to its conflict of law
+provisions.
+
+======================================================
+OpencodeSilver — Created, engineered, and maintained by Ahmed (GEMTM).

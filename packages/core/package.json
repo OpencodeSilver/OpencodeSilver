@@ -4,7 +4,7 @@
   "private": true,
   "description": "Core intelligence engine, mission orchestrator, and multi-model consensus matrix for OpencodeSilver",
   "author": "Ahmed (GEMTM)",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN ../../LICENSE",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
