@@ -7,9 +7,12 @@
  * an optimal unified patch.
  */
 
+import { inferProvider, inferTier, TIER_WEIGHT, type ModelProvider, type ModelTier } from './model-catalog';
+
 export interface ModelCandidateRun {
   modelId: string;
-  provider: string; // 'anthropic' | 'openai' | 'google' | 'deepseek' | 'local'
+  /** Provider id as OpenCode reports it; inferred from `modelId` when omitted or unrecognised. */
+  provider?: ModelProvider | string;
   durationMs: number;
   tokensUsed: number;
   patch: string;
@@ -26,7 +29,13 @@ export interface ConsensusResult {
   winnerModelId: string;
   winningPatch: string;
   synthesisSummary: string;
-  rankedScores: Array<{ modelId: string; compositeScore: number; rationale: string }>;
+  rankedScores: Array<{
+    modelId: string;
+    provider: ModelProvider;
+    tier: ModelTier;
+    compositeScore: number;
+    rationale: string;
+  }>;
   mergeConflictsEncountered: boolean;
 }
 
@@ -51,14 +60,11 @@ export class SilverConsensusMatrix {
       // Penalize for lint warnings
       score -= Math.min(20, cand.lintWarningsCount * 2);
 
-      // Model domain weighting
-      if (cand.modelId.includes('claude-3-7') || cand.modelId.includes('claude-3-5')) {
-        score += 15; // proven superior architectural reasoning
-      } else if (cand.modelId.includes('o3') || cand.modelId.includes('r1')) {
-        score += 12; // deep algorithmic reasoning
-      } else if (cand.modelId.includes('gpt-4o')) {
-        score += 10;
-      }
+      // Model capability weighting. Classified by family, not pinned versions,
+      // so newly released models are scored without a code change.
+      const provider = inferProvider(cand.modelId, cand.provider);
+      const tier = inferTier(cand.modelId);
+      score += TIER_WEIGHT[tier];
 
       // Efficiency bonus
       if (cand.durationMs < 8000) score += 5;
@@ -67,10 +73,12 @@ export class SilverConsensusMatrix {
 
       let rationale = `Base confidence ${Math.round(cand.confidenceScore * 100)}%, `;
       rationale += cand.syntaxValid ? 'clean syntax, ' : 'syntax issues detected, ';
-      rationale += `${cand.lintWarningsCount} lint warnings.`;
+      rationale += `${cand.lintWarningsCount} lint warnings, ${tier} tier (${provider}).`;
 
       return {
         modelId: cand.modelId,
+        provider,
+        tier,
         compositeScore: normalizedScore,
         rationale,
         candidate: cand,
@@ -93,6 +101,8 @@ export class SilverConsensusMatrix {
       synthesisSummary,
       rankedScores: scored.map((s) => ({
         modelId: s.modelId,
+        provider: s.provider,
+        tier: s.tier,
         compositeScore: s.compositeScore,
         rationale: s.rationale,
       })),

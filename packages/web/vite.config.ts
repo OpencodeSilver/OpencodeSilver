@@ -41,14 +41,21 @@ const themeJsonHmrPlugin = () => ({
   },
 });
 
-export default defineConfig({
+// The React Compiler is a Babel plugin. With it on, every one of the ~2,500 app
+// modules goes through a full Babel pass in the dev server instead of esbuild
+// alone, which is what made `bun run dev` start and reload slowly. Production
+// builds keep it; set OPENCODESILVER_DEV_REACT_COMPILER=1 to use it in dev too
+// (for example when debugging a compiler-specific issue).
+const devReactCompiler = process.env.OPENCODESILVER_DEV_REACT_COMPILER === '1';
+
+export default defineConfig(({ command }) => ({
   root: path.resolve(__dirname, '.'),
   plugins: [
-    react({
-      babel: {
-        plugins: ['babel-plugin-react-compiler'],
-      },
-    }),
+    react(
+      command === 'build' || devReactCompiler
+        ? { babel: { plugins: ['babel-plugin-react-compiler'] } }
+        : {},
+    ),
     {
       name: 'inject-react-scan-script',
       transformIndexHtml() {
@@ -210,4 +217,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

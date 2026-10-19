@@ -36,12 +36,20 @@ export interface InspectionReport {
 }
 
 export class SilverCodeInspector {
+  // Credential formats of the providers OpencodeSilver connects to. A key that
+  // matches both the current and the legacy rule of one provider is reported once.
   private readonly secretPatterns = [
     { pattern: /(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36}/, name: 'GitHub Personal Access Token', severity: 'critical' as const },
-    { pattern: /sk-ant-api03-[A-Za-z0-9_-]{80,}/, name: 'Anthropic API Key', severity: 'critical' as const },
-    { pattern: /sk-[A-Za-z0-9]{48}/, name: 'OpenAI API Key', severity: 'critical' as const },
-    { pattern: /AIza[0-9A-Za-z-_]{35}/, name: 'Google Gemini API Key', severity: 'critical' as const },
-    { pattern: /-----BEGIN PRIVATE KEY-----/, name: 'Private Cryptographic Key', severity: 'critical' as const },
+    { pattern: /github_pat_[A-Za-z0-9_]{60,}/, name: 'GitHub Fine-grained Token', severity: 'critical' as const },
+    { pattern: /sk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_-]{80,}/, name: 'Anthropic API Key', severity: 'critical' as const },
+    { pattern: /sk-or-v1-[a-f0-9]{64}/, name: 'OpenRouter API Key', severity: 'critical' as const },
+    { pattern: /sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{40,}/, name: 'OpenAI API Key', severity: 'critical' as const },
+    { pattern: /\bsk-[A-Za-z0-9]{48}\b/, name: 'OpenAI API Key (legacy)', severity: 'critical' as const },
+    { pattern: /AIza[0-9A-Za-z_-]{35}/, name: 'Google Gemini API Key', severity: 'critical' as const },
+    { pattern: /\bxai-[A-Za-z0-9]{70,}/, name: 'xAI API Key', severity: 'critical' as const },
+    { pattern: /\bgsk_[A-Za-z0-9]{52}\b/, name: 'Groq API Key', severity: 'critical' as const },
+    { pattern: /\bhf_[A-Za-z0-9]{34,}\b/, name: 'Hugging Face Token', severity: 'high' as const },
+    { pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, name: 'Private Cryptographic Key', severity: 'critical' as const },
   ];
 
   /**
@@ -57,8 +65,11 @@ export class SilverCodeInspector {
       totalLinesDeleted += hunk.linesDeleted;
 
       // Security check: Scan for credential leaks
+      const reported = new Set<string>();
       for (const rule of this.secretPatterns) {
-        if (rule.pattern.test(hunk.hunkContent)) {
+        const family = rule.name.replace(/ \(legacy\)$/, '');
+        if (!reported.has(family) && rule.pattern.test(hunk.hunkContent)) {
+          reported.add(family);
           vulnerabilities.push({
             ruleId: 'SEC-CREDENTIAL-LEAK',
             severity: rule.severity,
