@@ -13,7 +13,19 @@
 
 ## Overview
 
-**OpencodeSilver** is an open-source development workspace built on top of the OpenCode engine. It provides engineers with full visibility and control over autonomous coding agents. Instead of trusting agents blindly, OpencodeSilver allows you to inspect changes line-by-line, run parallel model experiments in isolated worktrees, and supervise background development workflows across all major platforms.
+**OpencodeSilver** is an advanced autonomous AI coding workspace and intelligence platform architected and developed by **Ahmed (GEMTM)**. Powered by the proprietary **Silver Intelligence Engine** (`@opencodesilver/core`), OpencodeSilver provides software engineers and development teams with full visibility, multi-model consensus, automated AST security inspections, and complete governance over autonomous coding agents.
+
+---
+
+## ⚡ The Silver Intelligence Engine (`@opencodesilver/core`)
+
+At the heart of OpencodeSilver lies the **Silver Intelligence Engine**, a proprietary suite of autonomous systems designed by Ahmed (GEMTM) to bring enterprise-grade reasoning, multi-model consensus, and security to modern AI-driven software development:
+
+- 🎯 **Silver Mission Orchestrator:** Autonomously plans and decomposes complex multi-phase software goals into structured milestones with state checkpoints, rollbacks, and risk scoring.
+- ⚖️ **Multi-Model Consensus Matrix:** Executes coding tasks across multiple frontier models (Claude 3.7 Sonnet, GPT-4o, DeepSeek-R1) in parallel, scoring and synthesizing the optimal AST implementation using mathematical consensus.
+- 🛡️ **AST Security & Blast Radius Inspector:** Real-time semantic diff analysis that proactively detects credential leaks (AWS, Anthropic, OpenAI, GitHub), security regressions, and cross-file blast radius impact before changes touch production.
+- 🔌 **Claude Code Headless Bridge:** Native zero-overhead integration connecting the OpencodeSilver terminal with Anthropic's Claude Code Pro/Max CLI without third-party API token billing.
+- 🌐 **Native Arabic NLP & BiDi Engine:** Full Unicode Bidirectional Algorithm (UBA) support, intelligent Alef normalization, and native right-to-left UI alignment for seamless Arabic developer workflows.
 
 ---
 
