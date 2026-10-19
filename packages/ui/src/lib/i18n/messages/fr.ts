@@ -1,4 +1,4 @@
-import { chatToolsI18n } from './chat-tools.i18n';
+﻿import { chatToolsI18n } from './chat-tools.i18n';
 import { settingsDict } from './fr.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { referencePickerI18n } from './reference-picker.i18n';
@@ -1228,6 +1228,8 @@ export const dict = {
   'contextRail.surface.diff.description': 'Passer en revue les modifications',
   'contextPanel.mode.walkthrough': 'Parcours',
   'contextRail.surface.walkthrough.description': 'Un parcours de vos modifications guidé par l’IA',
+  'contextPanel.mode.silver': 'Silver Intelligence',
+  'contextRail.surface.silver.description': 'OpencodeSilver Autonomous Intelligence & Security Hub',
   'walkthrough.scope.all': 'Tout non validé',
   'walkthrough.scope.group.workingTree': 'Copie de travail',
   'walkthrough.scope.staged': 'Indexées',

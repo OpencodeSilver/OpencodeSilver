@@ -13,6 +13,7 @@ import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 // or the walkthrough statically pulls the CodeMirror and @pierre/diffs stacks
 // into the eager startup graph even when no such tab is open.
 const WalkthroughView = lazyWithChunkRecovery(() => import('@/components/views/walkthrough/WalkthroughView').then((m) => ({ default: m.WalkthroughView })));
+const SilverIntelligenceView = lazyWithChunkRecovery(() => import('@/components/views/silver/SilverIntelligenceView').then((m) => ({ default: m.SilverIntelligenceView })));
 const DiffView = lazyWithChunkRecovery(() => import('@/components/views/DiffView').then((m) => ({ default: m.DiffView })));
 const FilesView = lazyWithChunkRecovery(() => import('@/components/views/FilesView').then((m) => ({ default: m.FilesView })));
 const GitView = lazyWithChunkRecovery(() => import('@/components/views/GitView').then((m) => ({ default: m.GitView })));
@@ -164,6 +165,7 @@ const getModeLabel = (
   if (mode === 'chat') return t('contextPanel.mode.chat');
   if (mode === 'file') return t('contextPanel.mode.files');
   if (mode === 'diff') return t('contextPanel.mode.diff');
+  if (mode === 'silver') return t('contextPanel.mode.silver');
   if (mode === 'walkthrough') return t('contextPanel.mode.walkthrough');
   if (mode === 'plan') return t('contextPanel.mode.plan');
   if (mode === 'browser') return t('contextPanel.mode.browser');
@@ -260,6 +262,10 @@ const getTabIcon = (
 
   if (tab.mode === 'diff') {
     return <DiffViewIcon className="h-3.5 w-3.5" />;
+  }
+
+  if (tab.mode === 'silver') {
+    return <Icon name="opencodesilver" className="h-3.5 w-3.5" />;
   }
 
   if (tab.mode === 'walkthrough') {
@@ -978,6 +984,10 @@ export const ContextPanel: React.FC = () => {
     () => tabs.some((tab) => tab.mode === 'walkthrough'),
     [tabs],
   );
+  const hasSilverTab = React.useMemo(
+    () => tabs.some((tab) => tab.mode === 'silver'),
+    [tabs],
+  );
   const pluginTabs = React.useMemo(
     () => tabs.filter((tab) => isPluginContextPanelMode(tab.mode)),
     [tabs],
@@ -1387,6 +1397,13 @@ export const ContextPanel: React.FC = () => {
             </React.Suspense>
           </div>
         ) : null}
+        {hasSilverTab ? (
+          <div className={cn('absolute inset-0', activeTab?.mode === 'silver' ? 'block' : 'hidden')}>
+            <React.Suspense fallback={null}>
+              <SilverIntelligenceView directory={effectiveDirectory} visible={isOpen && activeTab?.mode === 'silver'} />
+            </React.Suspense>
+          </div>
+        ) : null}
         {pluginTabs.map((tab) => {
           if (!isPluginContextPanelMode(tab.mode)) return null;
           // A shared-surface extension's picture is drawn by the host and
@@ -1422,7 +1439,7 @@ export const ContextPanel: React.FC = () => {
             </div>
           );
         })}
-        {activeTab?.mode !== 'chat' && !isFileTabActive && activeTab?.mode !== 'browser' && activeTab?.mode !== 'diff' && activeTab?.mode !== 'terminal' && activeTab?.mode !== 'walkthrough' && !(activeTab && isPluginContextPanelMode(activeTab.mode)) ? activeNonChatContent : null}
+        {activeTab?.mode !== 'chat' && !isFileTabActive && activeTab?.mode !== 'browser' && activeTab?.mode !== 'diff' && activeTab?.mode !== 'terminal' && activeTab?.mode !== 'walkthrough' && activeTab?.mode !== 'silver' && !(activeTab && isPluginContextPanelMode(activeTab.mode)) ? activeNonChatContent : null}
       </div>
       </div>
     </aside>

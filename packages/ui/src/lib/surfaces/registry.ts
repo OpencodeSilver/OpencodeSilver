@@ -18,7 +18,8 @@ export type BuiltInContextSurfaceId =
   | 'context'
   | 'browser'
   | 'chat'
-  | 'skills';
+  | 'skills'
+  | 'silver';
 
 export type ContextSurfaceId = BuiltInContextSurfaceId | `plugin:${string}`;
 
@@ -49,6 +50,15 @@ export type ContextSurfaceDescriptor = {
 };
 
 export const CONTEXT_SURFACES: readonly ContextSurfaceDescriptor[] = [
+  {
+    id: 'silver',
+    descriptionKey: 'contextRail.surface.silver.description',
+    defaultWidthFraction: 0.5,
+    mode: 'silver',
+    icon: 'opencodesilver',
+    labelKey: 'contextPanel.mode.silver',
+    availability: 'always',
+  },
   {
     id: 'context',
     descriptionKey: 'contextRail.surface.context.description',

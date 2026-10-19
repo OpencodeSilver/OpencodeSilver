@@ -1,4 +1,4 @@
-import { chatToolsI18n } from './chat-tools.i18n';
+﻿import { chatToolsI18n } from './chat-tools.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './ja.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -1416,6 +1416,8 @@ export const dict: Record<I18nKey, string> = {
   'contextRail.surface.diff.description': '作業中の変更をレビュー',
   'contextPanel.mode.walkthrough': 'ウォークスルー',
   'contextRail.surface.walkthrough.description': 'AI による変更のガイド付きウォークスルー',
+  'contextPanel.mode.silver': 'Silver Intelligence',
+  'contextRail.surface.silver.description': 'OpencodeSilver Autonomous Intelligence & Security Hub',
   'walkthrough.scope.all': '未コミットすべて',
   'walkthrough.scope.group.workingTree': '作業ツリー',
   'walkthrough.scope.staged': 'ステージ済み',

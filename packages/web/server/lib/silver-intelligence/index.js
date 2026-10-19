@@ -10,7 +10,7 @@ import {
   SilverCodeInspector,
   SilverClaudeBridge,
   SilverArabicEngine,
-} from '@opencodesilver/core';
+} from '../../../../core/src/index.ts';
 
 export function createSilverIntelligenceRouter() {
   const router = Router();

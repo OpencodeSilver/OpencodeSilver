@@ -87,6 +87,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
+      { find: '@opencodesilver/core', replacement: path.resolve(__dirname, '../core/src/index.ts') },
       { find: '@opencodesilver/sdk/schemas', replacement: path.resolve(__dirname, '../sdk/src/schemas.ts') },
       { find: '@opencodesilver/sdk', replacement: path.resolve(__dirname, '../sdk/src/index.ts') },
       { find: '@opencodesilver/ui', replacement: path.resolve(__dirname, '../ui/src') },

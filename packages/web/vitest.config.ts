@@ -10,6 +10,7 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: 'bun:test', replacement: path.resolve(here, './test/bun-test-shim.ts') },
+      { find: '@opencodesilver/core', replacement: path.resolve(here, '../core/src/index.ts') },
       // The same shared-UI aliases the app build uses. Without them a test can
       // reference `@opencodesilver/ui/...` in a mock factory but not resolve the
       // real module behind it, which is what forced mocks to hand-copy export

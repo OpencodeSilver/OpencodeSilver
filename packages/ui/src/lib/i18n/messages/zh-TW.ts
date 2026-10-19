@@ -1,4 +1,4 @@
-import { chatToolsI18n } from './chat-tools.i18n';
+﻿import { chatToolsI18n } from './chat-tools.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './zh-TW.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -1432,6 +1432,8 @@ export const dict: Record<I18nKey, string> = {
   'contextRail.surface.diff.description': '檢視工作區變更',
   'contextPanel.mode.walkthrough': '導讀',
   'contextRail.surface.walkthrough.description': '由 AI 引導的變更導讀',
+  'contextPanel.mode.silver': 'Silver Intelligence',
+  'contextRail.surface.silver.description': 'OpencodeSilver Autonomous Intelligence & Security Hub',
   'walkthrough.scope.all': '全部未提交',
   'walkthrough.scope.group.workingTree': '工作區',
   'walkthrough.scope.staged': '已暫存',

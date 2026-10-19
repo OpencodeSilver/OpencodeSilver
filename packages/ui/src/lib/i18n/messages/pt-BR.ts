@@ -1,4 +1,4 @@
-import { chatToolsI18n } from './chat-tools.i18n';
+﻿import { chatToolsI18n } from './chat-tools.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './pt-BR.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -1408,6 +1408,8 @@ export const dict: Record<I18nKey, string> = {
   "contextRail.surface.diff.description": "Revisar alterações em andamento",
   "contextPanel.mode.walkthrough": "Percurso",
   "contextRail.surface.walkthrough.description": "Um percurso pelas suas mudanças guiado por IA",
+  "contextPanel.mode.silver": "Silver Intelligence",
+  "contextRail.surface.silver.description": "OpencodeSilver Autonomous Intelligence & Security Hub",
   "walkthrough.scope.all": "Tudo sem commit",
   "walkthrough.scope.group.workingTree": "Árvore de trabalho",
   "walkthrough.scope.staged": "No stage",

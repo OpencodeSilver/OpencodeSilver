@@ -15,6 +15,7 @@
     "noEmit": true,
     "baseUrl": "./src",
     "paths": {
+      "@opencodesilver/core": ["../../core/src/index.ts"],
       "@opencodesilver/sdk": ["../../sdk/src/index.ts"],
       "@opencodesilver/sdk/schemas": ["../../sdk/src/schemas.ts"],
       "@/*": ["./*"],

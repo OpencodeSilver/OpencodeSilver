@@ -1,4 +1,4 @@
-import { chatToolsI18n } from './chat-tools.i18n';
+﻿import { chatToolsI18n } from './chat-tools.i18n';
 import { settingsDict } from './nl.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
 import { referencePickerI18n } from './reference-picker.i18n';
@@ -1411,6 +1411,8 @@ export const dict = {
   'contextRail.surface.diff.description': 'Werkwijzigingen beoordelen',
   'contextPanel.mode.walkthrough': 'Rondleiding',
   'contextRail.surface.walkthrough.description': 'Een door AI begeleide rondleiding door uw wijzigingen',
+  'contextPanel.mode.silver': 'Silver Intelligence',
+  'contextRail.surface.silver.description': 'OpencodeSilver Autonomous Intelligence & Security Hub',
   'walkthrough.scope.all': 'Alle niet-gecommitte wijzigingen',
   'walkthrough.scope.group.workingTree': 'Werkboom',
   'walkthrough.scope.staged': 'Gestaged',
