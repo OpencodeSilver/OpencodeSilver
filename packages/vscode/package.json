@@ -6,6 +6,10 @@
   "publisher": "gemtm",
   "author": "Ahmed (gemtm)",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpencodeSilver/OpencodeSilver.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -295,7 +299,7 @@
     "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
     "lint": "bun x eslint --ext .ts,.tsx src webview",
     "test": "node ../../scripts/run-isolated-tests.mjs src webview",
-    "package": "vsce package --no-dependencies"
+    "package": "vsce package --no-dependencies --allow-package-all-secrets"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.7",

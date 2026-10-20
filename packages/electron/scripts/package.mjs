@@ -1,6 +1,7 @@
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { resolveTargetArchitecture } from './target-architecture.mjs';
 
 const env = { ...process.env };
@@ -46,10 +47,48 @@ if (!builderArgs.some((argument) => argument === '--publish' || argument.startsW
   builderArgs.push('--publish', 'never');
 }
 
-const child = spawn(bunBinary, ['x', 'electron-builder', ...builderArgs], {
-  env,
-  stdio: 'inherit',
-});
+// Windows: electron-builder deletes dist/win-unpacked before packing and
+// fails with EBUSY when something still holds it - usually a copy of the app
+// (or its bundled opencode.exe) started from that folder. Close those
+// processes and clear the folder; if it is still locked, build into a fresh
+// output folder instead of failing.
+if (process.platform === 'win32' && !builderArgs.some((argument) => argument.includes('directories.output'))) {
+  const outputDir = path.resolve('dist');
+  const unpackedDir = path.join(outputDir, 'win-unpacked');
+  if (fs.existsSync(unpackedDir)) {
+    const escaped = outputDir.replace(/'/g, "''");
+    try {
+      execFileSync('powershell.exe', [
+        '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command',
+        `Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith('${escaped}\\', [System.StringComparison]::OrdinalIgnoreCase) } | Stop-Process -Force -ErrorAction SilentlyContinue`,
+      ], { stdio: 'ignore', timeout: 20_000 });
+    } catch {
+    }
+    try {
+      fs.rmSync(unpackedDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
+    } catch (error) {
+      const fallbackOutput = `dist-${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)}`;
+      console.warn(`[electron] ${unpackedDir} is locked (${error.code || error.message}); building into ${fallbackOutput} instead.`);
+      builderArgs.push(`-c.directories.output=${fallbackOutput}`);
+    }
+  }
+}
+
+let builderCliPath;
+try {
+  builderCliPath = fileURLToPath(import.meta.resolve('electron-builder/cli.js'));
+} catch {
+  builderCliPath = null;
+}
+
+const child = spawn(
+  bunBinary,
+  builderCliPath ? [builderCliPath, ...builderArgs] : ['x', 'electron-builder', ...builderArgs],
+  {
+    env,
+    stdio: 'inherit',
+  }
+);
 
 child.on('exit', (code, signal) => {
   if (signal) {

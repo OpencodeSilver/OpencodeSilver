@@ -1,0 +1,233 @@
+name: Build and Release All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: 'Publish as GitHub Release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  # -------------------------------------------------------------
+  # 1. VS Code Extension (.vsix)
+  # -------------------------------------------------------------
+  build-vscode:
+    name: Build VS Code Extension (.vsix)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web extension assets
+        run: bun run --cwd packages/vscode build
+
+      - name: Package VSIX
+        run: |
+          npx --yes @vscode/vsce package --no-dependencies --out packages/vscode/
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Upload VS Code Extension Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpencodeSilver-VSCode-Extension
+          path: packages/vscode/*.vsix
+
+  # -------------------------------------------------------------
+  # 2. Desktop Applications (Windows, macOS Silicon/Intel, Linux)
+  # -------------------------------------------------------------
+  build-desktop:
+    name: Build Desktop (${{ matrix.platform-name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform-name: Windows-x64
+            target-arch: x64
+            artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-win-x64.exe*'
+          - os: macos-latest # Apple Silicon (M1/M2/M3)
+            platform-name: macOS-AppleSilicon-arm64
+            target-arch: arm64
+            artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-mac-arm64.*'
+          - os: macos-13 # Intel x64
+            platform-name: macOS-Intel-x64
+            target-arch: x64
+            artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-mac-x64.*'
+          - os: ubuntu-latest
+            platform-name: Linux-x64
+            target-arch: x64
+            artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-linux-x64.*'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prepare OpenCode CLI Sidecar
+        run: bun run --cwd packages/electron prepare:opencode-cli
+        env:
+          OPENCODESILVER_TARGET_ARCH: ${{ matrix.target-arch }}
+
+      - name: Build Web Assets
+        run: bun run --cwd packages/electron build:web-assets
+
+      - name: Bundle Electron Main Process
+        run: bun run --cwd packages/electron bundle:main
+
+      - name: Rebuild Native Modules
+        run: bun run --cwd packages/electron rebuild:native
+        env:
+          OPENCODESILVER_TARGET_ARCH: ${{ matrix.target-arch }}
+
+      - name: Package Desktop Binary
+        run: |
+          cd packages/electron
+          node ./scripts/package.mjs --publish never
+        env:
+          OPENCODESILVER_TARGET_ARCH: ${{ matrix.target-arch }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpencodeSilver-Desktop-${{ matrix.platform-name }}
+          path: ${{ matrix.artifact-pattern }}
+
+  # -------------------------------------------------------------
+  # 3. Android Application (APK)
+  # -------------------------------------------------------------
+  build-android:
+    name: Build Android App (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Web Assets for Mobile
+        run: |
+          bun run --cwd packages/web build
+          node packages/mobile/scripts/prepare-web-assets.mjs
+
+      - name: Sync Capacitor Android
+        run: |
+          cd packages/mobile
+          npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd packages/mobile/android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK with Version
+        run: |
+          mkdir -p dist-apk
+          cp packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk dist-apk/OpencodeSilver-3.0.0-android-debug.apk
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpencodeSilver-Android-APK
+          path: dist-apk/*.apk
+
+  # -------------------------------------------------------------
+  # 4. Publish Release (When tagged or requested)
+  # -------------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: [build-vscode, build-desktop, build-android]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.publish_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all workflow artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Prepare Release Assets
+        run: |
+          mkdir -p final-assets
+          find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.vsix" -o -name "*.apk" -o -name "*.blockmap" -o -name "*.yml" \) -exec cp {} final-assets/ \;
+          ls -la final-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: final-assets/*
+          name: OpencodeSilver ${{ github.ref_name }}
+          body: |
+            ## OpencodeSilver Release ${{ github.ref_name }}
+            
+            Official release distribution for **OpencodeSilver**.
+            
+            ### Included Binaries:
+            - **Windows**: `OpencodeSilver-3.0.0-win-x64.exe` (Installer)
+            - **macOS Apple Silicon**: `OpencodeSilver-3.0.0-mac-arm64.dmg` (M1/M2/M3/M4)
+            - **macOS Intel**: `OpencodeSilver-3.0.0-mac-x64.dmg`
+            - **Linux**: `OpencodeSilver-3.0.0-linux-x64.AppImage`
+            - **VS Code Extension**: `opencodesilver-3.0.0.vsix`
+            - **Android App**: `OpencodeSilver-3.0.0-android-debug.apk`
+            
+            *Authored and developed exclusively by **Ahmed (GEMTM)** under the **OpencodeSilver Proprietary Software License (OSSL-1.0)**.*
+          draft: false
+          prerelease: false

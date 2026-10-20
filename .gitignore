@@ -14,3 +14,7 @@ packages/electron/resources/opencode-cli/
 packages/vscode/dist/
 packages/electron/.cache/
 **/.cache/
+release-builds/
+packages/vscode/*.vsix
+*.blockmap
+dist-*/

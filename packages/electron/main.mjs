@@ -2320,7 +2320,9 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
     }
   };
 
-  browserWindow.webContents.setWindowOpenHandler(({ url }) => {
+  const contents = browserWindow.webContents;
+  const isGone = () => browserWindow.isDestroyed() || contents.isDestroyed();
+  contents.setWindowOpenHandler(({ url }) => {
     // A link to a saved instance opens that instance in the app, on the
     // session it names, not as a bare page of its web UI.
     const host = findConfiguredHostForUrl(url);
@@ -2342,7 +2344,7 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
     return { action: 'deny' };
   });
 
-  browserWindow.webContents.on('will-navigate', (event, url) => {
+  contents.on('will-navigate', (event, url) => {
     if (isAllowedNavigationUrl(url)) return;
     event.preventDefault();
     void shell.openExternal(url).catch(() => {});
@@ -2350,7 +2352,8 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
 
   // An extension frame navigating itself would carry data out in the URL;
   // refused before the request (see guest-frame-navigation.mjs).
-  browserWindow.webContents.on('will-frame-navigate', (details) => {
+  contents.on('will-frame-navigate', (details) => {
+    if (isGone()) return;
     let frameOrigin;
     try {
       frameOrigin = details.frame?.origin;
@@ -2362,7 +2365,7 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
       frameOrigin,
       frame: details.frame,
       initiator: details.initiator,
-      mainFrame: browserWindow.webContents.mainFrame,
+      mainFrame: contents.mainFrame,
       url: details.url,
       isAppOrigin: isAllowedNavigationUrl,
     })) return;
@@ -2377,31 +2380,34 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
     log.warn(`[guests] refused an extension frame navigating to ${host || 'an invalid URL'}`);
   });
 
-  browserWindow.webContents.setZoomFactor(1);
-  browserWindow.webContents.on('zoom-changed', () => {
-    browserWindow.webContents.setZoomFactor(1);
+  contents.setZoomFactor(1);
+  contents.on('zoom-changed', () => {
+    if (isGone()) return;
+    contents.setZoomFactor(1);
   });
   attachRendererRecovery(browserWindow, { log, label: 'window' });
 
-  browserWindow.webContents.on('dom-ready', () => {
+  contents.on('dom-ready', () => {
+    if (isGone()) return;
     if (browserWindow.__ocLabel === 'main') {
       recordElectronStartupPerformance('electron.renderer.dom-ready', {
-        documentClass: classifyStartupDocument(browserWindow.webContents.getURL()),
+        documentClass: classifyStartupDocument(contents.getURL()),
       });
     }
     const initScript = browserWindow.__ocInitScript;
     if (initScript) {
-      void browserWindow.webContents.executeJavaScript(initScript).catch(() => {});
+      void contents.executeJavaScript(initScript).catch(() => {});
     }
   });
 
-  browserWindow.webContents.on('did-finish-load', () => {
+  contents.on('did-finish-load', () => {
+    if (isGone()) return;
     if (browserWindow.__ocLabel === 'main') {
       recordElectronStartupPerformance('electron.renderer.loaded', {
-        documentClass: classifyStartupDocument(browserWindow.webContents.getURL()),
+        documentClass: classifyStartupDocument(contents.getURL()),
       });
     }
-    browserWindow.webContents.setZoomFactor(1);
+    contents.setZoomFactor(1);
     if (state.mainWindow && browserWindow.id === state.mainWindow.id && pendingDeepLinks.length > 0) {
       const timer = setTimeout(() => flushPendingDeepLinks({ includeSessions: false }), 400);
       if (typeof timer?.unref === 'function') timer.unref();
@@ -2412,9 +2418,10 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
 
   if (!adopt) {
     browserWindow.once('ready-to-show', () => {
+      if (isGone()) return;
       if (browserWindow.__ocLabel === 'main') {
         recordElectronStartupPerformance('electron.window.ready-to-show', {
-          documentClass: classifyStartupDocument(browserWindow.webContents.getURL()),
+          documentClass: classifyStartupDocument(contents.getURL()),
         });
       }
       browserWindow.show();
@@ -2779,11 +2786,13 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     browserWindow.focus();
   });
 
-  browserWindow.webContents.setWindowOpenHandler(({ url }) => {
+  const contents = browserWindow.webContents;
+  const isGone = () => browserWindow.isDestroyed() || contents.isDestroyed();
+  contents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url).catch(() => {});
     return { action: 'deny' };
   });
-  browserWindow.webContents.on('will-navigate', (event, url) => {
+  contents.on('will-navigate', (event, url) => {
     try {
       const target = new URL(url);
       const local = new URL(shouldUsePackagedUi() ? packagedUiOrigin() : (state.localOrigin || state.sidecarUrl || ''));
@@ -2793,10 +2802,11 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     event.preventDefault();
     void shell.openExternal(url).catch(() => {});
   });
-  browserWindow.webContents.on('dom-ready', () => {
+  contents.on('dom-ready', () => {
+    if (isGone()) return;
     const initScript = browserWindow.__ocInitScript;
     if (initScript) {
-      void browserWindow.webContents.executeJavaScript(initScript).catch(() => {});
+      void contents.executeJavaScript(initScript).catch(() => {});
     }
   });
 

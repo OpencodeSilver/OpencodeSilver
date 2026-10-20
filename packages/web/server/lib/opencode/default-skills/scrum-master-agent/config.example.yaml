@@ -12,8 +12,8 @@ notifications:
 
   # Slack webhook URL
   # Get webhook URL from: https://api.slack.com/messaging/webhooks
-  # Example: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX
-  slack_webhook: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+  # Example: https://hooks.example.com/services/YOUR/WEBHOOK/URL
+  slack_webhook: https://hooks.example.com/services/YOUR/WEBHOOK/URL
 
   # Microsoft Teams webhook URL
   # Get webhook URL from Teams channel -> Connectors -> Incoming Webhook
