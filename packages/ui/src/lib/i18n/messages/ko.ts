@@ -3797,4 +3797,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "스킬 활성화",
   "agy.tool.generic.action": "{tool} 실행 중",
   "agy.tool.generic.summary": "{tool} 실행",
+  "chat.freeTierError.title": "무료 등급 사용 한도 도달 (FreeTierError)",
+  "chat.freeTierError.description": "OpenCode에서 제공하는 무료 등급 한도에 도달했습니다. 프론티어 모델을 중단 없이 계속 사용하려면 설정에서 자체 API 키를 추가하세요.",
+  "chat.freeTierError.addApiKey": "API 키 추가",
 };

@@ -1,4 +1,4 @@
-﻿import { chatToolsI18n } from './chat-tools.i18n';
+import { chatToolsI18n } from './chat-tools.i18n';
 import type { I18nKey } from './en';
 import { settingsDict } from './pl.settings';
 import { linearIssuePickerI18n } from './linear-issue-picker.i18n';
@@ -3802,4 +3802,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "Aktywacja umiejętności",
   "agy.tool.generic.action": "Uruchamianie {tool}",
   "agy.tool.generic.summary": "Wykonanie {tool}",
+  "chat.freeTierError.title": "Osiągnięto limit darmowego poziomu (FreeTierError)",
+  "chat.freeTierError.description": "Osiągnąłeś limit darmowego poziomu zapewniany przez OpenCode. Aby kontynuować korzystanie z modeli bez zakłóceń, dodaj własny klucz API w Ustawieniach.",
+  "chat.freeTierError.addApiKey": "Dodaj klucz API",
 } as const;

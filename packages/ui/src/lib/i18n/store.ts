@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { dict as enDict, type I18nKey } from './messages/en';
-import { DEFAULT_LOCALE, detectInitialLocale, type Locale, writeStoredLocale } from './runtime';
+import { DEFAULT_LOCALE, detectInitialLocale, isRtlLocale, type Locale, writeStoredLocale } from './runtime';
 
 export type I18nParams = Record<string, string | number | boolean | null | undefined>;
 export type I18nDictionary = Record<I18nKey, string>;
@@ -72,7 +72,7 @@ export const useI18nStore = create<I18nState>()((set, get) => ({
 
     if (typeof document !== 'undefined') {
       document.documentElement.lang = locale;
-      document.documentElement.dir = 'ltr';
+      document.documentElement.dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
     }
 
     set({
@@ -103,7 +103,7 @@ export function initializeLocale(): void {
   const initial = detectInitialLocale();
   if (typeof document !== 'undefined') {
     document.documentElement.lang = initial;
-    document.documentElement.dir = 'ltr';
+    document.documentElement.dir = isRtlLocale(initial) ? 'rtl' : 'ltr';
   }
   useI18nStore.getState().setLocale(initial);
 }

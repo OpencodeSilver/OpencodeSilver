@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import { DEFAULT_LOCALE, type Locale } from './runtime';
-import { resetI18nDictionaryCacheForTests, useI18nStore } from './store';
+import { DEFAULT_LOCALE, isRtlLocale, type Locale } from './runtime';
+import { initializeLocale, resetI18nDictionaryCacheForTests, useI18nStore } from './store';
 
 const defaultDictionary = useI18nStore.getState().dictionary;
 
@@ -79,5 +79,45 @@ describe('i18n store', () => {
     }
 
     expect(missingKeys).toEqual([]);
+  });
+
+  test('isRtlLocale detects RTL and LTR languages correctly', () => {
+    expect(isRtlLocale('ar')).toBe(true);
+    expect(isRtlLocale('fa')).toBe(true);
+    expect(isRtlLocale('he')).toBe(true);
+    expect(isRtlLocale('ur')).toBe(true);
+    expect(isRtlLocale('ar-SA')).toBe(true);
+    expect(isRtlLocale('en')).toBe(false);
+    expect(isRtlLocale('ja')).toBe(false);
+    expect(isRtlLocale('zh-CN')).toBe(false);
+    expect(isRtlLocale('de')).toBe(false);
+  });
+
+  test('sets document.documentElement.dir correctly on locale switch', () => {
+    const originalDoc = globalThis.document;
+    const mockDoc = {
+      documentElement: {
+        lang: 'en',
+        dir: 'ltr',
+      },
+    };
+    (globalThis as unknown as { document: typeof mockDoc }).document = mockDoc;
+
+    try {
+      useI18nStore.getState().setLocale('ar');
+      expect(mockDoc.documentElement.dir).toBe('rtl');
+      expect(mockDoc.documentElement.lang).toBe('ar');
+
+      useI18nStore.getState().setLocale('en');
+      expect(mockDoc.documentElement.dir).toBe('ltr');
+      expect(mockDoc.documentElement.lang).toBe('en');
+
+      useI18nStore.getState().setLocale('ja');
+      expect(mockDoc.documentElement.dir).toBe('ltr');
+      expect(mockDoc.documentElement.lang).toBe('ja');
+    } finally {
+      (globalThis as unknown as { document: typeof originalDoc }).document = originalDoc;
+      resetStore();
+    }
   });
 });

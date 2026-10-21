@@ -3795,4 +3795,7 @@ export const dict = {
   "agy.tool.skill.summary": "Beceri etkinleştirme",
   "agy.tool.generic.action": "{tool} çalıştırılıyor",
   "agy.tool.generic.summary": "{tool} yürütmesi",
+  "chat.freeTierError.title": "Ücretsiz Katman Kullanım Sınırına Ulaşıldı (FreeTierError)",
+  "chat.freeTierError.description": "OpenCode tarafından sağlanan ücretsiz katman sınırına ulaştınız. Gelişmiş modelleri kesintisiz kullanmaya devam etmek için lütfen Ayarlar'a kendi API anahtarınızı ekleyin.",
+  "chat.freeTierError.addApiKey": "API Anahtarı Ekle",
 };

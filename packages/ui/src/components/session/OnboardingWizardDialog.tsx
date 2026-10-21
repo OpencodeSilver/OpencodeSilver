@@ -148,7 +148,7 @@ export const OnboardingWizardDialog: React.FC<{
               }`}
             >
               <div className="mt-0.5 rounded-lg bg-primary/20 p-2 text-primary">
-                <Icon name="sparkles" className="size-5" />
+                <Icon name="ai-generate-2" className="size-5" />
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-foreground">
@@ -226,7 +226,7 @@ export const OnboardingWizardDialog: React.FC<{
 
             <div className="rounded-xl border border-border/80 bg-card p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Icon name="check-circle" className="size-4 text-[var(--status-success)]" />
+                <Icon name="checkbox-circle" className="size-4 text-[var(--status-success)]" />
                 <span>{isRTL ? 'محرك Silver Intelligence جاهز' : 'Silver Intelligence Engine Ready'}</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">

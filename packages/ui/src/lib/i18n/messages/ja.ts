@@ -3797,4 +3797,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "スキル有効化",
   "agy.tool.generic.action": "{tool} を実行中",
   "agy.tool.generic.summary": "{tool} の実行",
+  "chat.freeTierError.title": "無料枠の使用制限に達しました (FreeTierError)",
+  "chat.freeTierError.description": "OpenCode が提供する無料枠の上限に達しました。最先端モデルを引き続き利用するには、設定で独自の API キーを追加してください。",
+  "chat.freeTierError.addApiKey": "API キーを追加",
 };

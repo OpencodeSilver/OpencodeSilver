@@ -3798,4 +3798,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "Активація навички",
   "agy.tool.generic.action": "Виконання {tool}",
   "agy.tool.generic.summary": "Запуск {tool}",
+  "chat.freeTierError.title": "Досягнуто ліміту безкоштовного рівня (FreeTierError)",
+  "chat.freeTierError.description": "Ви досягли ліміту безкоштовного рівня, наданого OpenCode. Щоб продовжити використання моделей без перерв, додайте власний ключ API у Налаштуваннях.",
+  "chat.freeTierError.addApiKey": "Додати ключ API",
 };

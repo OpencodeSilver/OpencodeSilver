@@ -3798,4 +3798,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "技能激活",
   "agy.tool.generic.action": "正在运行 {tool}",
   "agy.tool.generic.summary": "{tool} 执行",
+  "chat.freeTierError.title": "已达到免费层使用限制 (FreeTierError)",
+  "chat.freeTierError.description": "您已达到 OpenCode 提供的免费层限额。若要不间断继续使用前沿模型，请在设置中添加您自己的 API 密钥。",
+  "chat.freeTierError.addApiKey": "添加 API 密钥",
 };

@@ -3798,4 +3798,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "Ativação de habilidade",
   "agy.tool.generic.action": "Executando {tool}",
   "agy.tool.generic.summary": "Execução de {tool}",
+  "chat.freeTierError.title": "Limite de uso do nível gratuito atingido (FreeTierError)",
+  "chat.freeTierError.description": "Você atingiu o limite do nível gratuito fornecido pelo OpenCode. Para continuar usando modelos avançados sem interrupções, adicione sua própria chave de API em Configurações.",
+  "chat.freeTierError.addApiKey": "Adicionar chave de API",
 };
