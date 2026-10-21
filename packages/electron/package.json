@@ -158,11 +158,19 @@
     },
     "nsis": {
       "include": "resources/installer.nsh",
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "runAfterFinish": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "OpencodeSilver",
       "installerIcon": "resources/icons/icon.ico",
       "uninstallerIcon": "resources/icons/icon.ico",
-      "installerHeaderIcon": "resources/icons/icon.ico"
+      "installerHeaderIcon": "resources/icons/icon.ico",
+      "deleteAppDataOnUninstall": false,
+      "uninstallDisplayName": "OpencodeSilver"
     },
     "dmg": {
       "sign": false,
