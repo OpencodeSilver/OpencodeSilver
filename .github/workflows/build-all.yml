@@ -199,7 +199,8 @@ jobs:
       - name: Rename APK with Version
         run: |
           mkdir -p dist-apk
-          cp packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk dist-apk/OpencodeSilver-3.0.0-android-debug.apk
+          VERSION=$(node -p "require('./package.json').version")
+          cp packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk dist-apk/OpencodeSilver-${VERSION}-android-debug.apk
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
@@ -271,11 +272,13 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: Prepare Release Assets
+      - name: Prepare Release Assets and Metadata
         run: |
           mkdir -p final-assets
           find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.vsix" -o -name "*.apk" -o -name "*.blockmap" -o -name "*.yml" \) -exec cp {} final-assets/ \;
           ls -la final-assets/
+          VERSION=$(node -p "require('./package.json').version")
+          echo "RELEASE_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -285,15 +288,15 @@ jobs:
           body: |
             ## OpencodeSilver Release ${{ github.ref_name }}
             
-            Official release distribution for **OpencodeSilver**.
+            Official release distribution for **OpencodeSilver** (v${{ env.RELEASE_VERSION }}).
             
             ### Included Binaries:
-            - **Windows**: `OpencodeSilver-3.0.0-win-x64.exe` (Installer)
-            - **macOS Apple Silicon**: `OpencodeSilver-3.0.0-mac-arm64.dmg` (M1/M2/M3/M4)
-            - **macOS Intel**: `OpencodeSilver-3.0.0-mac-x64.dmg`
-            - **Linux**: `OpencodeSilver-3.0.0-linux-x64.AppImage`
-            - **VS Code Extension**: `opencodesilver-3.0.0.vsix`
-            - **Android App**: `OpencodeSilver-3.0.0-android-debug.apk`
+            - **Windows**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-win-x64.exe` (Installer)
+            - **macOS Apple Silicon**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-mac-arm64.dmg` (M1/M2/M3/M4)
+            - **macOS Intel**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-mac-x64.dmg`
+            - **Linux**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-linux-x64.AppImage`
+            - **VS Code Extension**: `opencodesilver-${{ env.RELEASE_VERSION }}.vsix`
+            - **Android App**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-android-debug.apk`
             
             *Authored and developed exclusively by **Ahmed (GEMTM)** under the **OpencodeSilver Proprietary Software License (OSSL-1.0)**.*
           draft: false

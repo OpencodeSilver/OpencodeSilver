@@ -41,3 +41,28 @@ test('desktop build verifies the core engine landed inside app.asar', () => {
   assert.ok(verify, 'desktop build must verify @opencodesilver/core inside app.asar');
   assert.match(String(verify.run), /@opencodesilver\/core\/dist\/index\.js/);
 });
+
+test('release workflow does not hardcode stale version numbers in release assets', () => {
+  const content = fs.readFileSync(workflowPath, 'utf8');
+  assert.doesNotMatch(content, /OpencodeSilver-3\.0\.0-android-debug\.apk/, 'APK name must not hardcode 3.0.0');
+  assert.doesNotMatch(content, /OpencodeSilver-3\.0\.0-win-x64\.exe/, 'Release body must not hardcode 3.0.0');
+});
+
+test('android apk rename extracts version dynamically from package.json', () => {
+  const steps = workflow.jobs['build-android'].steps || [];
+  const renameStep = steps.find((step) => String(step.name || '').includes('Rename APK'));
+  assert.ok(renameStep, 'build-android must have Rename APK step');
+  assert.match(String(renameStep.run), /package\.json/, 'Must extract version from package.json');
+  assert.match(String(renameStep.run), /\$\{VERSION\}/, 'Must use dynamic ${VERSION} in APK destination');
+});
+
+test('release job sets RELEASE_VERSION and uses it across binary names', () => {
+  const steps = workflow.jobs.release.steps || [];
+  const prepStep = steps.find((step) => String(step.name || '').includes('Prepare Release Assets'));
+  assert.ok(prepStep, 'release must have Prepare Release Assets step');
+  assert.match(String(prepStep.run), /RELEASE_VERSION/, 'Must set RELEASE_VERSION env var');
+
+  const releaseStep = steps.find((step) => String(step.name || '').includes('Create GitHub Release'));
+  assert.ok(releaseStep, 'release must have Create GitHub Release step');
+  assert.match(String(releaseStep.with?.body || ''), /\$\{\{ env\.RELEASE_VERSION \}\}/, 'Release body must use env.RELEASE_VERSION');
+});
