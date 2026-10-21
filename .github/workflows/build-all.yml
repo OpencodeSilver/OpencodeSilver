@@ -208,11 +208,58 @@ jobs:
           path: dist-apk/*.apk
 
   # -------------------------------------------------------------
+  # 3b. iOS App Simulator Build
+  # -------------------------------------------------------------
+  build-ios:
+    name: Build iOS Simulator App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build Core Engine
+        run: bun run --cwd packages/core build
+
+      - name: Build Web Assets for Mobile
+        run: |
+          bun run --cwd packages/web build
+          node packages/mobile/scripts/prepare-web-assets.mjs
+
+      - name: Sync Capacitor iOS
+        run: |
+          cd packages/mobile
+          npx cap sync ios
+
+      - name: Build iOS Simulator App
+        run: |
+          cd packages/mobile/ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload iOS App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpencodeSilver-iOS-App
+          path: packages/mobile/ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+
+  # -------------------------------------------------------------
   # 4. Publish Release (When tagged or requested)
   # -------------------------------------------------------------
   release:
     name: Publish GitHub Release
-    needs: [build-vscode, build-desktop, build-android]
+    needs: [build-vscode, build-desktop, build-android, build-ios]
     if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.publish_release == 'true'
     runs-on: ubuntu-latest
     steps:

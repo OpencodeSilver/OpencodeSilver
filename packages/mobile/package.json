@@ -27,6 +27,7 @@
     "sim:kill": "node scripts/with-mobile-env.mjs \"serve-sim --kill\"",
     "open:ios": "cap open ios",
     "open:android": "cap open android",
+    "test": "bun test",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"./**/*.{ts,tsx,js,mjs}\" --config ../../eslint.config.js --ignore-pattern dist --ignore-pattern ios --ignore-pattern android"
   },

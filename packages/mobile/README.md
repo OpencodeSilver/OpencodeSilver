@@ -54,6 +54,13 @@ bun run open:android    # Opens Android Studio
 
 ---
 
+## Code Quality & Linting Boundaries
+
+- **JavaScript / TypeScript**: ESLint enforces strict code conventions across `capacitor.config.ts`, `test/`, and `scripts/`.
+- **Native iOS & Android Code**: Native projects in `ios/` (Swift/Obj-C) and `android/` (Kotlin/Gradle) are handled via Xcode and Android Studio tools. They are intentionally excluded from JavaScript linters to avoid conflicting platform rules.
+
+---
+
 ## Author & Maintainer
 
 - **Creator & Lead Architect:** [Ahmed (GEMTM)](https://github.com/OpencodeSilver/OpencodeSilver)
