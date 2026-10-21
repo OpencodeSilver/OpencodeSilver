@@ -18,6 +18,8 @@ export const RELEASE_PACKAGE_FILES = [
   'packages/electron/package.json',
   'packages/vscode/package.json',
   'packages/mobile/package.json',
+  'packages/docs/package.json',
+  'packages/extensions/package.json',
 ];
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

@@ -1,6 +1,6 @@
 {
   "name": "@opencodesilver/electron",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "private": true,
   "description": "Electron desktop runtime for OpencodeSilver",
   "author": "Ahmed (gemtm)",
@@ -141,7 +141,9 @@
     },
     "linux": {
       "target": [
-        "AppImage"
+        "AppImage",
+        "tar.gz",
+        "zip"
       ],
       "category": "Development",
       "icon": "resources/icons/app-icon.svg",

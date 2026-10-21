@@ -96,7 +96,7 @@
     },
     "packages/core": {
       "name": "@opencodesilver/core",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "zod": "^4.3.6",
       },
@@ -106,11 +106,11 @@
     },
     "packages/docs": {
       "name": "@opencodesilver/docs",
-      "version": "3.0.1",
+      "version": "3.0.2",
     },
     "packages/electron": {
       "name": "@opencodesilver/electron",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "@opencodesilver/web": "workspace:*",
         "electron-context-menu": "^4.1.2",
@@ -127,11 +127,11 @@
     },
     "packages/extensions": {
       "name": "@opencodesilver/extensions",
-      "version": "3.0.1",
+      "version": "3.0.2",
     },
     "packages/mobile": {
       "name": "@opencodesilver/mobile",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "@aparajita/capacitor-secure-storage": "^8.0.0",
         "@capacitor-mlkit/barcode-scanning": "^8.1.0",
@@ -152,7 +152,7 @@
     },
     "packages/sdk": {
       "name": "@opencodesilver/sdk",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "bin": {
         "opencodesilver-guest-bundle": "./scripts/bundle-guest.ts",
       },
@@ -225,7 +225,7 @@
     },
     "packages/ui": {
       "name": "@opencodesilver/ui",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "@aparajita/capacitor-secure-storage": "^8.0.0",
         "@base-ui/react": "^1.4.0",
@@ -335,7 +335,7 @@
     },
     "packages/vscode": {
       "name": "opencodesilver",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "dependencies": {
         "@opencode/client": "2.0.25",
         "@opencodesilver/ui": "workspace:*",
@@ -359,7 +359,7 @@
     },
     "packages/web": {
       "name": "@opencodesilver/web",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "bin": {
         "opencodesilver": "./bin/cli.js",
       },

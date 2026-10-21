@@ -1,6 +1,6 @@
 {
   "name": "opencodesilver-monorepo",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "OpencodeSilver monorepo workspace for web, ui, and desktop runtimes",
   "private": true,
   "type": "module",
