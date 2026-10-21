@@ -17,7 +17,7 @@ const mock = Object.assign(
   },
 );
 const spyOn = vi.spyOn;
-
+const setSystemTime = (date?: Date | number | string) => vi.setSystemTime(date ?? new Date());
 
 export {
   afterAll,
@@ -28,6 +28,7 @@ export {
   expect,
   it,
   mock,
+  setSystemTime,
   spyOn,
   test,
   vi,
