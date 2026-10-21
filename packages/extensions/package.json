@@ -4,8 +4,8 @@
   "private": true,
   "description": "OpencodeSilver built-in extensions registry and assets",
   "scripts": {
-    "lint": "node ./scripts/validate-registry.mjs",
-    "type-check": "node -e \"process.exit(0)\"",
-    "test": "node ./scripts/validate-registry.mjs"
+    "lint": "bun ./scripts/validate-registry.mjs",
+    "type-check": "bun -e \"process.exit(0)\"",
+    "test": "bun ./scripts/validate-registry.mjs"
   }
 }

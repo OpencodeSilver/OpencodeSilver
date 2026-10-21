@@ -1,4 +1,78 @@
 {
   "version": 1,
-  "extensions": []
+  "extensions": [],
+  "gallery": [
+    {
+      "id": "hello-kit",
+      "name": "@opencodesilver/example-hello-kit",
+      "directory": "packages/sdk/examples/hello-kit",
+      "title": "SDK Playground",
+      "description": "Explore components, live context, host actions, and storage.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "tasks-demo",
+      "name": "@opencodesilver/example-tasks-demo",
+      "directory": "packages/sdk/examples/tasks-demo",
+      "title": "Task Board",
+      "description": "Kanban board and task lifecycle management linked to chat sessions.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "github-token",
+      "name": "@opencodesilver/example-github-token",
+      "directory": "packages/sdk/examples/github-token",
+      "title": "Repository Explorer",
+      "description": "GitHub repository explorer and token integration.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "service-echo",
+      "name": "@opencodesilver/example-service-echo",
+      "directory": "packages/sdk/examples/service-echo",
+      "title": "Local Service Lab",
+      "description": "Loopback HTTP service demonstrating round-trip communication and state.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "config-editor",
+      "name": "@opencodesilver/example-config-editor",
+      "directory": "packages/sdk/examples/config-editor",
+      "title": "Config Studio",
+      "description": "Structured JSON configuration editor with live diff review.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "git-graph-status",
+      "name": "@opencodesilver/example-git-graph-status",
+      "directory": "packages/sdk/examples/git-graph-status",
+      "title": "Git Graph & Status",
+      "description": "Interactive visual git commit graph and working tree status lanes.",
+      "version": "1.0.0"
+    },
+    {
+      "id": "checklist-editor",
+      "name": "@opencodesilver/example-checklist-editor",
+      "directory": "packages/sdk/examples/checklist-editor",
+      "title": "Checklist Editor",
+      "description": "Custom editor for *.checklist.md files with reactive checkboxes.",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tools-only",
+      "name": "@opencodesilver/example-tools-only",
+      "directory": "packages/sdk/examples/tools-only",
+      "title": "Tool Gallery",
+      "description": "Chat review findings and system checks table renderer.",
+      "version": "1.1.0"
+    },
+    {
+      "id": "browser-provider-stub",
+      "name": "@opencodesilver/example-browser-provider-stub",
+      "directory": "packages/sdk/examples/browser-provider-stub",
+      "title": "Browser Provider Stub",
+      "description": "In-memory browser provider stub for testing browser panel navigation.",
+      "version": "1.0.0"
+    }
+  ]
 }
