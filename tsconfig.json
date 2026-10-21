@@ -1,18 +1,28 @@
 {
   "files": [],
   "references": [
+    { "path": "./packages/core/tsconfig.json" },
+    { "path": "./packages/sdk/tsconfig.json" },
     { "path": "./packages/ui/tsconfig.json" },
     { "path": "./packages/web/tsconfig.json" },
-    { "path": "./packages/electron/tsconfig.json" }
+    { "path": "./packages/electron/tsconfig.json" },
+    { "path": "./packages/vscode/tsconfig.json" },
+    { "path": "./packages/mobile/tsconfig.json" }
   ],
   "compilerOptions": {
     "baseUrl": ".",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "paths": {
+      "@opencodesilver/core": ["./packages/core/src/index.ts"],
+      "@opencodesilver/core/*": ["./packages/core/src/*"],
+      "@opencodesilver/sdk": ["./packages/sdk/src/index.ts"],
+      "@opencodesilver/sdk/*": ["./packages/sdk/src/*"],
       "@opencodesilver/ui/*": ["./packages/ui/src/*"],
       "@opencodesilver/web/*": ["./packages/web/src/*"]
     }
