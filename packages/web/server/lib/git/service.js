@@ -17,10 +17,30 @@ import { randomUUID } from 'crypto';
 const fsp = fs.promises;
 const require = createRequire(import.meta.url);
 const execFileAsync = promisify(execFile);
+import {
+  worktreeBootstrapState,
+  activeWorktreeBootstrapTasks,
+  WORKTREE_BOOTSTRAP_PENDING,
+  WORKTREE_BOOTSTRAP_READY,
+  WORKTREE_BOOTSTRAP_FAILED,
+  WORKTREE_BOOTSTRAP_PHASE_DIRECTORY_CREATED,
+  WORKTREE_BOOTSTRAP_PHASE_GIT_READY,
+  WORKTREE_BOOTSTRAP_PHASE_SETUP_READY,
+  WORKTREE_BOOTSTRAP_RECOVERY_ERROR,
+  normalizeDirectoryPath,
+  canonicalPath,
+  toBootstrapStateKey,
+  toCanonicalBootstrapStateKey,
+  createWorktreeBootstrapState,
+  setWorktreeBootstrapState,
+  clearWorktreeBootstrapState,
+  trackWorktreeBootstrapTask,
+  waitForActiveWorktreeBootstrap,
+  hasActiveWorktreeBootstrap,
+} from './worktree-bootstrap-tracker.js';
+
 const gpgconfCandidates = ['gpgconf', '/opt/homebrew/bin/gpgconf', '/usr/local/bin/gpgconf'];
 let resolvedGitBinary = null;
-const worktreeBootstrapState = new Map();
-const activeWorktreeBootstrapTasks = new Map();
 const remoteExistenceCache = new Map();
 const SIMPLE_GIT_SAFE_BINARY_PATTERN = /^([a-z]:)?([a-z0-9/.\\_~-]+)$/i;
 const SIMPLE_GIT_UNSAFE_BINARY_WARNING = 'Invalid value supplied for custom binary, restricted characters must be removed';
@@ -28,150 +48,9 @@ const REMOTE_EXISTENCE_CACHE_TTL_MS = 30_000;
 const gitIndexMutationQueues = new Map();
 const remoteProvisioningQueues = new Map();
 
-const WORKTREE_BOOTSTRAP_PENDING = 'pending';
-const WORKTREE_BOOTSTRAP_READY = 'ready';
-const WORKTREE_BOOTSTRAP_FAILED = 'failed';
-const WORKTREE_BOOTSTRAP_PHASE_DIRECTORY_CREATED = 'directory-created';
-const WORKTREE_BOOTSTRAP_PHASE_GIT_READY = 'git-ready';
-const WORKTREE_BOOTSTRAP_PHASE_SETUP_READY = 'setup-ready';
-const WORKTREE_BOOTSTRAP_RECOVERY_ERROR = 'Worktree bootstrap completion is unknown. Inspect the checkout and repair setup before use.';
 const GIT_NULL_REF = '0'.repeat(40);
 const WORKTREE_INDEX_LOCK_RETRY_DELAY_MS = 250;
 const WORKTREE_INDEX_LOCK_STALE_DELAY_MS = 750;
-
-const toBootstrapStateKey = (directory) => {
-  const normalized = normalizeDirectoryPath(directory);
-  if (!normalized) {
-    return '';
-  }
-  return path.resolve(normalized);
-};
-
-const toCanonicalBootstrapStateKey = async (directory) => {
-  const key = toBootstrapStateKey(directory);
-  if (!key) {
-    return '';
-  }
-  const realPath = await fsp.realpath(key).catch(() => key);
-  const normalized = path.normalize(realPath);
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
-};
-
-const createWorktreeBootstrapState = (status, phase, error = null, hydration, errorCode) => {
-  const safeError = typeof error === 'string'
-    ? error.trim().replace(/[\0\r\n]+/g, ' ').replace(/\s+/g, ' ').slice(0, 4096)
-    : '';
-  const state = {
-    status,
-    phase,
-    error: safeError || null,
-    updatedAt: Date.now(),
-  };
-  if (hydration) state.hydration = hydration;
-  if (errorCode) state.errorCode = errorCode;
-  return state;
-};
-
-const setWorktreeBootstrapState = async (directory, status, phase, error = null, hydration, errorCode, bootstrapStore) => {
-  const key = await toCanonicalBootstrapStateKey(directory);
-  if (!key) {
-    return null;
-  }
-  let state = createWorktreeBootstrapState(status, phase, error, hydration, errorCode);
-  worktreeBootstrapState.set(key, state);
-  if (bootstrapStore) {
-    try {
-      state = await bootstrapStore.write(key, state);
-      worktreeBootstrapState.set(key, state);
-    } catch (cause) {
-      const blocker = createWorktreeBootstrapState(
-        WORKTREE_BOOTSTRAP_FAILED,
-        phase === WORKTREE_BOOTSTRAP_PHASE_SETUP_READY ? WORKTREE_BOOTSTRAP_PHASE_GIT_READY : phase,
-        WORKTREE_BOOTSTRAP_RECOVERY_ERROR,
-        undefined,
-        'UNKNOWN',
-      );
-      worktreeBootstrapState.set(key, blocker);
-      throw Object.assign(new Error(WORKTREE_BOOTSTRAP_RECOVERY_ERROR, { cause }), {
-        code: 'WORKTREE_BOOTSTRAP_PERSISTENCE_FAILED',
-        bootstrapStatus: blocker,
-      });
-    }
-  }
-  return state;
-};
-
-const clearWorktreeBootstrapState = async (directory, bootstrapStore) => {
-  const key = await toCanonicalBootstrapStateKey(directory);
-  if (!key) {
-    return;
-  }
-  if (bootstrapStore) await bootstrapStore.remove(key);
-  worktreeBootstrapState.delete(key);
-};
-
-const trackWorktreeBootstrapTask = (directory, task) => {
-  const key = toBootstrapStateKey(directory);
-  if (!key) {
-    return task;
-  }
-
-  let tasks = activeWorktreeBootstrapTasks.get(key);
-  if (!tasks) {
-    tasks = new Set();
-    activeWorktreeBootstrapTasks.set(key, tasks);
-  }
-  tasks.add(task);
-  const clearTask = () => {
-    tasks.delete(task);
-    if (tasks.size === 0 && activeWorktreeBootstrapTasks.get(key) === tasks) {
-      activeWorktreeBootstrapTasks.delete(key);
-    }
-  };
-  void task.then(clearTask, clearTask);
-  return task;
-};
-
-const waitForActiveWorktreeBootstrap = async (directory) => {
-  const key = toBootstrapStateKey(directory);
-  if (!key) {
-    return;
-  }
-
-  while (true) {
-    let tasks = activeWorktreeBootstrapTasks.get(key);
-    if (!tasks) {
-      const canonicalKey = await canonicalPath(key);
-      for (const [trackedKey, trackedTasks] of activeWorktreeBootstrapTasks) {
-        if (await canonicalPath(trackedKey) === canonicalKey) {
-          tasks = trackedTasks;
-          break;
-        }
-      }
-    }
-    if (!tasks) {
-      return;
-    }
-    await Promise.allSettled([...tasks]);
-  }
-};
-
-const hasActiveWorktreeBootstrap = async (directory) => {
-  const key = toBootstrapStateKey(directory);
-  if (!key) {
-    return false;
-  }
-  if (activeWorktreeBootstrapTasks.has(key)) {
-    return true;
-  }
-  const canonicalKey = await toCanonicalBootstrapStateKey(key);
-  for (const trackedKey of activeWorktreeBootstrapTasks.keys()) {
-    if (await toCanonicalBootstrapStateKey(trackedKey) === canonicalKey) {
-      return true;
-    }
-  }
-  return false;
-};
 
 const isExecutableFile = (candidate) => {
   if (typeof candidate !== 'string' || candidate.trim().length === 0) {
@@ -453,27 +332,6 @@ const createGit = async (directory, { stallTimeoutMs = 0 } = {}) => {
 // Global config reads do not need a repository; use the home directory as a
 // stable baseDir so we never accidentally inherit process.cwd().
 const createGitForGlobalConfig = async () => createGit(os.homedir());
-
-const normalizeDirectoryPath = (value) => {
-  if (typeof value !== 'string') {
-    return value;
-  }
-
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return trimmed;
-  }
-
-  if (trimmed === '~') {
-    return os.homedir();
-  }
-
-  if (trimmed.startsWith('~/') || trimmed.startsWith('~\\')) {
-    return path.join(os.homedir(), trimmed.slice(2));
-  }
-
-  return trimmed;
-};
 
 const normalizePath = (value) => {
   const normalized = normalizeDirectoryPath(value);
@@ -852,13 +710,6 @@ const parseWorktreePorcelain = (raw) => {
   }
 
   return entries;
-};
-
-const canonicalPath = async (input) => {
-  const absolutePath = path.resolve(input);
-  const realPath = await fsp.realpath(absolutePath).catch(() => absolutePath);
-  const normalized = path.normalize(realPath);
-  return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
 };
 
 const checkPathExists = async (targetPath) => {
