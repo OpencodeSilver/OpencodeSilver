@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { EventEmitter } from 'node:events';
-import { createSilverIntelligenceRouter } from '../server/router';
+import { createSilverIntelligenceRouter, SilverEngineError } from '../server/router';
 import { SilverMissionOrchestrator } from '../mission/orchestrator';
 
 describe('SilverIntelligenceRouter Unit Tests', () => {
@@ -43,7 +43,8 @@ describe('SilverIntelligenceRouter Unit Tests', () => {
     req.emit('end');
     const result = await promise;
     const handled = typeof result === 'boolean' ? result : (result as any).handled;
-    return { handled, statusCode, data: responseBody ? JSON.parse(responseBody) : null };
+    const error = typeof result === 'object' && result !== null ? (result as any).error : undefined;
+    return { handled, result, error, statusCode, data: responseBody ? JSON.parse(responseBody) : null };
   };
 
   it('rejects forbidden origin with 403', async () => {
@@ -54,6 +55,9 @@ describe('SilverIntelligenceRouter Unit Tests', () => {
     expect(response.handled).toBe(true);
     expect(response.statusCode).toBe(403);
     expect(response.data.error).toContain('Forbidden');
+    expect(response.error).toBeInstanceOf(SilverEngineError);
+    expect(response.error?.code).toBe('ORIGIN_FORBIDDEN');
+    expect(response.error?.statusCode).toBe(403);
   });
 
   it('allows matching origin in allowlist', async () => {
@@ -74,6 +78,8 @@ describe('SilverIntelligenceRouter Unit Tests', () => {
     expect(response.handled).toBe(true);
     expect(response.statusCode).toBe(401);
     expect(response.data.error).toContain('Unauthorized');
+    expect(response.error).toBeInstanceOf(SilverEngineError);
+    expect(response.error?.code).toBe('UNAUTHORIZED');
   });
 
   it('accepts valid authentication token via x-opencodesilver-token header', async () => {
@@ -105,6 +111,8 @@ describe('SilverIntelligenceRouter Unit Tests', () => {
     expect(response.statusCode).toBe(400);
     expect(response.data.error).toBe('Invalid input');
     expect(response.data.issues).toBeDefined();
+    expect(response.error).toBeInstanceOf(SilverEngineError);
+    expect(response.error?.code).toBe('VALIDATION_FAILED');
   });
 
   it('successfully creates a mission via POST /missions/plan', async () => {

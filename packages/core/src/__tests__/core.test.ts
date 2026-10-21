@@ -405,8 +405,9 @@ describe('@opencodesilver/core intelligence suite by Ahmed (GEMTM)', () => {
         req.emit('data', Buffer.from(JSON.stringify(options.body)));
       }
       req.emit('end');
-      const handled = await promise;
-      return { handled, statusCode, data: responseBody ? JSON.parse(responseBody) : null };
+      const result = await promise;
+      const handled = typeof result === 'boolean' ? result : result.handled;
+      return { handled, result, statusCode, data: responseBody ? JSON.parse(responseBody) : null };
     };
 
     // 1. Rejects unauthenticated request with 401

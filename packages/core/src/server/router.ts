@@ -87,11 +87,49 @@ export const InspectDiffsSchema = z.object({
   hunks: z.array(DiffHunkSchema),
 });
 
+export class SilverEngineError extends Error {
+  public readonly code: string;
+  public readonly statusCode: number;
+  public readonly details?: unknown;
+
+  constructor(message: string, code = 'ENGINE_ERROR', statusCode = 500, details?: unknown) {
+    super(message);
+    this.name = 'SilverEngineError';
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+    Object.setPrototypeOf(this, SilverEngineError.prototype);
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      code: this.code,
+      statusCode: this.statusCode,
+      message: this.message,
+      details: this.details,
+    };
+  }
+}
+
+export class SilverRouterResult {
+  constructor(
+    public readonly handled: boolean,
+    public readonly statusCode: number,
+    public readonly data?: unknown,
+    public readonly error?: SilverEngineError
+  ) {}
+
+  valueOf(): boolean {
+    return this.handled;
+  }
+}
+
 export type SilverIntelligenceHandler = (
   req: IncomingMessage,
   res: ServerResponse,
   next?: () => void
-) => Promise<boolean>;
+) => Promise<SilverRouterResult>;
 
 export function createSilverIntelligenceRouter(
   options: SilverIntelligenceRouterOptions = {}
@@ -169,7 +207,7 @@ export function createSilverIntelligenceRouter(
     res.end(payload);
   };
 
-  return async (req: IncomingMessage, res: ServerResponse, next?: () => void): Promise<boolean> => {
+  return async (req: IncomingMessage, res: ServerResponse, next?: () => void): Promise<SilverRouterResult> => {
     const rawUrl = req.url || '/';
     const [path, search] = rawUrl.split('?');
     const query = new URLSearchParams(search || '');
@@ -183,7 +221,7 @@ export function createSilverIntelligenceRouter(
 
     if (!prefix) {
       if (next) next();
-      return false;
+      return new SilverRouterResult(false, 0);
     }
 
     const route = path.slice(prefix.length) || '/';
@@ -192,8 +230,9 @@ export function createSilverIntelligenceRouter(
     // 1. Origin check
     const origin = req.headers.origin;
     if (origin && !isOriginAllowed(origin)) {
-      sendJson(res, 403, { error: 'Forbidden: origin not allowed', origin });
-      return true;
+      const error = new SilverEngineError(`Forbidden: origin '${origin}' not allowed`, 'ORIGIN_FORBIDDEN', 403, { origin });
+      sendJson(res, 403, { error: error.message, code: error.code, origin });
+      return new SilverRouterResult(true, 403, undefined, error);
     }
 
     // 2. Authentication check
@@ -212,26 +251,29 @@ export function createSilverIntelligenceRouter(
       }
 
       if (!candidateToken || candidateToken !== authToken) {
-        sendJson(res, 401, { error: 'Unauthorized: valid authentication token required' });
-        return true;
+        const error = new SilverEngineError('Unauthorized: valid authentication token required', 'UNAUTHORIZED', 401);
+        sendJson(res, 401, { error: error.message, code: error.code });
+        return new SilverRouterResult(true, 401, undefined, error);
       }
     }
 
     try {
       // Health probe
       if (route === '/health' && method === 'GET') {
-        sendJson(res, 200, {
+        const data = {
           status: 'healthy',
           engine: 'OpencodeSilver Core Intelligence',
-          version: '3.0.0',
-        });
-        return true;
+          version: '3.0.1',
+        };
+        sendJson(res, 200, data);
+        return new SilverRouterResult(true, 200, data);
       }
 
       // Missions: List
       if ((route === '/missions' || route === '/missions/') && method === 'GET') {
-        sendJson(res, 200, { missions: orchestrator.listMissions() });
-        return true;
+        const data = { missions: orchestrator.listMissions() };
+        sendJson(res, 200, data);
+        return new SilverRouterResult(true, 200, data);
       }
 
       // Missions: Plan
@@ -239,12 +281,14 @@ export function createSilverIntelligenceRouter(
         const body = await readBodyJson(req);
         const parsed = PlanMissionSchema.safeParse(body);
         if (!parsed.success) {
-          sendJson(res, 400, { error: 'Invalid input', issues: parsed.error.issues });
-          return true;
+          const error = new SilverEngineError('Invalid input', 'VALIDATION_FAILED', 400, parsed.error.issues);
+          sendJson(res, 400, { error: error.message, code: error.code, issues: parsed.error.issues });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
         const mission = orchestrator.planMission(parsed.data.title, parsed.data.objective, parsed.data.context);
-        sendJson(res, 201, { mission });
-        return true;
+        const data = { mission };
+        sendJson(res, 201, data);
+        return new SilverRouterResult(true, 201, data);
       }
 
       // Missions: Advance
@@ -252,8 +296,9 @@ export function createSilverIntelligenceRouter(
         const body = await readBodyJson(req);
         const parsed = AdvancePhaseSchema.safeParse(body);
         if (!parsed.success) {
-          sendJson(res, 400, { error: 'Invalid input', issues: parsed.error.issues });
-          return true;
+          const error = new SilverEngineError('Invalid input', 'VALIDATION_FAILED', 400, parsed.error.issues);
+          sendJson(res, 400, { error: error.message, code: error.code, issues: parsed.error.issues });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
         try {
           const mission = orchestrator.advancePhase(
@@ -262,11 +307,14 @@ export function createSilverIntelligenceRouter(
             parsed.data.status,
             parsed.data.artifacts
           );
-          sendJson(res, 200, { mission });
+          const data = { mission };
+          sendJson(res, 200, data);
+          return new SilverRouterResult(true, 200, data);
         } catch (err: any) {
-          sendJson(res, 400, { error: err?.message || 'Failed to advance phase' });
+          const error = new SilverEngineError(err?.message || 'Failed to advance phase', 'PHASE_ADVANCE_FAILED', 400);
+          sendJson(res, 400, { error: error.message, code: error.code });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
-        return true;
       }
 
       // Missions: Abort
@@ -274,16 +322,20 @@ export function createSilverIntelligenceRouter(
         const body = await readBodyJson(req);
         const parsed = AbortMissionSchema.safeParse(body);
         if (!parsed.success) {
-          sendJson(res, 400, { error: 'Invalid input', issues: parsed.error.issues });
-          return true;
+          const error = new SilverEngineError('Invalid input', 'VALIDATION_FAILED', 400, parsed.error.issues);
+          sendJson(res, 400, { error: error.message, code: error.code, issues: parsed.error.issues });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
         try {
           const mission = orchestrator.abortMission(parsed.data.missionId, parsed.data.reason);
-          sendJson(res, 200, { mission });
+          const data = { mission };
+          sendJson(res, 200, data);
+          return new SilverRouterResult(true, 200, data);
         } catch (err: any) {
-          sendJson(res, 404, { error: err?.message || 'Mission not found' });
+          const error = new SilverEngineError(err?.message || 'Mission not found', 'MISSION_NOT_FOUND', 404);
+          sendJson(res, 404, { error: error.message, code: error.code });
+          return new SilverRouterResult(true, 404, undefined, error);
         }
-        return true;
       }
 
       // Missions: Get by ID
@@ -291,11 +343,14 @@ export function createSilverIntelligenceRouter(
       if (missionMatch && method === 'GET') {
         const mission = orchestrator.getMission(missionMatch[1]);
         if (!mission) {
-          sendJson(res, 404, { error: `Mission ${missionMatch[1]} not found` });
+          const error = new SilverEngineError(`Mission ${missionMatch[1]} not found`, 'MISSION_NOT_FOUND', 404);
+          sendJson(res, 404, { error: error.message, code: error.code });
+          return new SilverRouterResult(true, 404, undefined, error);
         } else {
-          sendJson(res, 200, { mission });
+          const data = { mission };
+          sendJson(res, 200, data);
+          return new SilverRouterResult(true, 200, data);
         }
-        return true;
       }
 
       // Consensus: Evaluate candidates
@@ -303,12 +358,14 @@ export function createSilverIntelligenceRouter(
         const body = await readBodyJson(req);
         const parsed = EvaluateConsensusSchema.safeParse(body);
         if (!parsed.success) {
-          sendJson(res, 400, { error: 'Invalid input', issues: parsed.error.issues });
-          return true;
+          const error = new SilverEngineError('Invalid input', 'VALIDATION_FAILED', 400, parsed.error.issues);
+          sendJson(res, 400, { error: error.message, code: error.code, issues: parsed.error.issues });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
         const result = consensusMatrix.evaluateCandidates(parsed.data.taskDescription, parsed.data.candidates);
-        sendJson(res, 200, { result });
-        return true;
+        const data = { result };
+        sendJson(res, 200, data);
+        return new SilverRouterResult(true, 200, data);
       }
 
       // Inspector: Diff inspection
@@ -316,27 +373,32 @@ export function createSilverIntelligenceRouter(
         const body = await readBodyJson(req);
         const parsed = InspectDiffsSchema.safeParse(body);
         if (!parsed.success) {
-          sendJson(res, 400, { error: 'Invalid input', issues: parsed.error.issues });
-          return true;
+          const error = new SilverEngineError('Invalid input', 'VALIDATION_FAILED', 400, parsed.error.issues);
+          sendJson(res, 400, { error: error.message, code: error.code, issues: parsed.error.issues });
+          return new SilverRouterResult(true, 400, undefined, error);
         }
         const report = codeInspector.inspectDiffs(parsed.data.hunks);
-        sendJson(res, 200, { report });
-        return true;
+        const data = { report };
+        sendJson(res, 200, data);
+        return new SilverRouterResult(true, 200, data);
       }
 
       // Bridge: Claude Code detection
       if (route === '/bridge/claude/detect' && method === 'GET') {
         const info = await claudeBridge.detectClaudeInstallation();
-        sendJson(res, 200, { claude: info });
-        return true;
+        const data = { claude: info };
+        sendJson(res, 200, data);
+        return new SilverRouterResult(true, 200, data);
       }
 
-      sendJson(res, 404, { error: `Route not found: ${method} ${route}` });
-      return true;
+      const notFoundError = new SilverEngineError(`Route not found: ${method} ${route}`, 'NOT_FOUND', 404);
+      sendJson(res, 404, { error: notFoundError.message, code: notFoundError.code });
+      return new SilverRouterResult(true, 404, undefined, notFoundError);
     } catch (err: any) {
-      const statusCode = err?.statusCode || 500;
-      sendJson(res, statusCode, { error: err?.message || 'Internal server error' });
-      return true;
+      const statusCode = err?.statusCode || (err instanceof SilverEngineError ? err.statusCode : 500);
+      const engineError = err instanceof SilverEngineError ? err : new SilverEngineError(err?.message || 'Internal server error', 'INTERNAL_ERROR', statusCode);
+      sendJson(res, statusCode, { error: engineError.message, code: engineError.code });
+      return new SilverRouterResult(true, statusCode, undefined, engineError);
     }
   };
 }
