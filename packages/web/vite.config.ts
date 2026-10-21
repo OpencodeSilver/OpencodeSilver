@@ -46,7 +46,9 @@ const themeJsonHmrPlugin = () => ({
 // alone, which is what made `bun run dev` start and reload slowly. Production
 // builds keep it; set OPENCODESILVER_DEV_REACT_COMPILER=1 to use it in dev too
 // (for example when debugging a compiler-specific issue).
-const devReactCompiler = process.env.OPENCODESILVER_DEV_REACT_COMPILER === '1';
+const devReactCompiler =
+  process.env.OPENCODESILVER_DEV_REACT_COMPILER === '1' ||
+  process.env.OPENCODESILVER_DEV_REACT_COMPILER === 'true';
 
 export default defineConfig(({ command }) => ({
   root: path.resolve(__dirname, '.'),
