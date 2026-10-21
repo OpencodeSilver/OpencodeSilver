@@ -1,4 +1,5 @@
 import { isIP } from 'node:net';
+export { getEnv, validatedEnv, OpencodeSilverEnvSchema } from '../config/env-schema.js';
 
 const MAX_HOSTNAME_LENGTH = 253;
 const HOSTNAME_LABEL_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/;
