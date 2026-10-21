@@ -4,11 +4,12 @@ import { useGuestDialogStore } from '@/lib/guests/dialog-store';
 import { useGuestResolveHostStore } from '@/lib/guests/run-command';
 import { useGuestActionHostStore } from '@/lib/guests/run-action';
 import { pluginModeFromId } from '@/lib/surfaces/modes';
+import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 
 // Guest surfaces load on demand: nothing here is paid for until an extension
 // contributes an action or a command and the user uses it.
-const GuestAttachDialog = React.lazy(() => import('./GuestAttachDialog').then((module) => ({ default: module.GuestAttachDialog })));
-const PluginPane = React.lazy(() => import('./PluginPane').then((module) => ({ default: module.PluginPane })));
+const GuestAttachDialog = lazyWithChunkRecovery(() => import('./GuestAttachDialog').then((module) => ({ default: module.GuestAttachDialog })));
+const PluginPane = lazyWithChunkRecovery(() => import('./PluginPane').then((module) => ({ default: module.PluginPane })));
 
 /**
  * Frames that belong to no particular column: attach dialogs, temporary

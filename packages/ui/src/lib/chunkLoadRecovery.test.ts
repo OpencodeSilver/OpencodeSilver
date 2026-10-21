@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { importWithChunkRecovery } from './chunkLoadRecovery';
+import { importWithChunkRecovery, lazyWithChunkRecovery } from './chunkLoadRecovery';
 
 describe('importWithChunkRecovery', () => {
   test('preserves the import error without navigating the VS Code webview', async () => {
@@ -82,5 +82,13 @@ describe('importWithChunkRecovery', () => {
         globalWithWindow.window = previousWindow;
       }
     }
+  });
+
+  test('lazyWithChunkRecovery wraps dynamic loader in a recoverable lazy component', () => {
+    const Component = lazyWithChunkRecovery(async () => ({
+      default: () => null,
+    }));
+    expect(Component).toBeDefined();
+    expect(typeof Component).toBe('object');
   });
 });

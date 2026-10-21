@@ -50,8 +50,10 @@ import { useUIStore, type TimeFormatPreference } from '@/stores/useUIStore';
 import { useSessionListSync } from '@/components/session/sidebar/list/useSessionListSync';
 import { RunOverview } from '@/components/multirun/RunOverview';
 import { RunAutoFusion } from '@/lib/multirun/autoFusion';
+import { importWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 
-const loadSettingsView = () => import('@/components/views/SettingsView').then(m => m.SettingsView);
+const loadSettingsView = () =>
+  importWithChunkRecovery(() => import('@/components/views/SettingsView').then((m) => m.SettingsView));
 
 const formatTime = (timestamp: number | null, timeFormatPreference: TimeFormatPreference) => {
   if (!timestamp) return '-';

@@ -37,10 +37,12 @@ import { useDeviceInfo } from '@/lib/device';
 import { cn } from '@/lib/utils';
 import { useOnDemandComponent } from '@/hooks/useOnDemandComponent';
 import { useSessionListSync } from '@/components/session/sidebar/list/useSessionListSync';
+import { importWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 
 import { ChatView } from '@/components/views/ChatView';
 
-const loadSettingsWindow = () => import('@/components/views/SettingsWindow').then(m => m.SettingsWindow);
+const loadSettingsWindow = () =>
+  importWithChunkRecovery(() => import('@/components/views/SettingsWindow').then((m) => m.SettingsWindow));
 
 /**
  * Desktop-surface layout: the chat owns the main area, and every other

@@ -42,7 +42,7 @@ import { subscribeOpencodesilverEvents } from '@/lib/opencodesilverEvents';
 import { Icon } from "@/components/icon/Icon";
 import { GuestIcon } from './GuestRailIcon';
 import { ChatView } from '@/components/views/ChatView';
-const PluginPane = React.lazy(() => import('./PluginPane').then((module) => ({ default: module.PluginPane })));
+const PluginPane = lazyWithChunkRecovery(() => import('./PluginPane').then((module) => ({ default: module.PluginPane })));
 // How an extension page sits beside its shared surface: flex direction puts
 // the page first on top/left and last on bottom/right; the page's size is
 // fixed across the docked edge and the picture takes the rest.
@@ -78,7 +78,7 @@ const DockedGuestPage: React.FC<{ mode: PluginContextPanelMode; docking: GuestSu
   );
 };
 
-const GuestSurfacePane = React.lazy(() => import('./GuestSurfacePane').then((module) => ({ default: module.GuestSurfacePane })));
+const GuestSurfacePane = lazyWithChunkRecovery(() => import('./GuestSurfacePane').then((module) => ({ default: module.GuestSurfacePane })));
 import { useGuestsStore } from '@/lib/guests/store';
 import { guestHasSharedSurface, guestSurfaceDocking, type GuestSurfaceDocking } from '@/lib/guests/surfaces';
 import { FALLBACK_GUEST_ICON } from '@/lib/guests/icon';

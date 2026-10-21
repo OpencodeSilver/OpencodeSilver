@@ -25,10 +25,11 @@ import { useFilesViewTabsStore } from '@/stores/useFilesViewTabsStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
 import { normalizePath as normalizePathImpl } from '@/lib/pathNormalization';
+import { lazyWithChunkRecovery } from '@/lib/chunkLoadRecovery';
 
 // The full desktop file editor, loaded on demand — it's a heavy chunk and only
 // needed once a file is actually opened.
-const LazyFilesEditor = React.lazy(() =>
+const LazyFilesEditor = lazyWithChunkRecovery(() =>
   import('@/components/views/FilesView').then((module) => ({ default: module.FilesView })),
 );
 
