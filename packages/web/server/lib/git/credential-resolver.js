@@ -163,8 +163,10 @@ const runFile = (file, args, { input = '', deadline = Date.now() + 30_000, contr
   let settled = false;
   const remaining = Math.max(1, deadline - Date.now());
   const timer = setTimeout(() => {
-    try { child.kill('SIGTERM'); } catch {}
-    const escalation = setTimeout(() => { try { child.kill('SIGKILL'); } catch {} }, 1_000);
+    try { child.kill('SIGTERM'); } catch (_err) { /* Process may already have terminated */ }
+    const escalation = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch (_err) { /* Process may already have terminated */ }
+    }, 1_000);
     escalation.unref?.();
   }, remaining);
   timer.unref?.();

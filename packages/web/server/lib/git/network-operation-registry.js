@@ -231,7 +231,9 @@ export function createNetworkOperationRegistry({
         try {
           Promise.resolve(finish(operationId, plannedCancellation(entry, 'Git network operation plan expired before it started')))
             .catch(() => {});
-        } catch {}
+        } catch (_finishErr) {
+          /* Local cleanup ignores sync throw when cancelling an expired plan */
+        }
         continue;
       }
       if ((TERMINAL_STATES.has(entry.state) && entry.state !== 'outcome-unknown' && entry.finishedAt <= cutoff)
@@ -339,7 +341,7 @@ export function createNetworkOperationRegistry({
   };
   const persistDurabilityBlock = async (entry) => {
     const blocked = blockForDurability(entry);
-    try { await persist(entry, blocked); } catch {}
+    try { await persist(entry, blocked); } catch (_persistErr) { /* Storage update failure is non-fatal for blocked state */ }
     return blocked;
   };
   const finishLocal = (operationId, completion) => {
@@ -357,7 +359,7 @@ export function createNetworkOperationRegistry({
       return snapshot(entry);
     }
     if (entry.child) {
-      try { cancelChild(entry.child); } catch {}
+      try { cancelChild(entry.child); } catch (_killErr) { /* Process may already have exited */ }
     }
     const completionData = {};
     if (completion.error !== undefined) completionData.error = cloneAndFreeze(completion.error);
@@ -420,7 +422,7 @@ export function createNetworkOperationRegistry({
     }
     entry.child = child;
     if (entry.cancellationRequested && !allowAfterCancellation) {
-      try { cancelChild(child); } catch {}
+      try { cancelChild(child); } catch (_killErr) { /* Child process may have already exited */ }
     }
     return entry.cancellationRequested;
   };
@@ -434,11 +436,11 @@ export function createNetworkOperationRegistry({
     if (entry.cancellationRequested) return snapshot(entry);
     entry.cancellationRequested = true;
     for (const listener of entry.cancellationListeners) {
-      try { listener(); } catch {}
+      try { listener(); } catch (_listenerErr) { /* Cancellation listener error must not abort other listeners */ }
     }
     entry.cancellationListeners.clear();
     if (entry.child) {
-      try { cancelChild(entry.child); } catch {}
+      try { cancelChild(entry.child); } catch (_killErr) { /* Process may already have exited */ }
     }
     if (entry.state === 'planned') return finish(operationId, plannedCancellation(entry, 'Git network operation was cancelled'));
     return snapshot(entry);

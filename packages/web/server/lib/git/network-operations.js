@@ -156,11 +156,13 @@ const terminateProcessTree = (child, { platform, spawnImpl, escalationMs }) => {
       });
       killer.unref?.();
     } else if (Number.isInteger(child.pid)) {
-      try { process.kill(-child.pid, 'SIGTERM'); } catch { try { child.kill('SIGTERM'); } catch {} }
+      try { process.kill(-child.pid, 'SIGTERM'); } catch (_pgErr) {
+        try { child.kill('SIGTERM'); } catch (_procErr) { /* Process may already have terminated */ }
+      }
     } else {
-      try { child.kill('SIGTERM'); } catch {}
+      try { child.kill('SIGTERM'); } catch (_procErr) { /* Process may already have terminated */ }
     }
-  } catch {}
+  } catch (_err) { /* Termination is best-effort */ }
   const timer = setTimeout(() => {
     if (child.exitCode !== null || child.signalCode) return;
     try {
@@ -170,11 +172,13 @@ const terminateProcessTree = (child, { platform, spawnImpl, escalationMs }) => {
         });
         killer.unref?.();
       } else if (Number.isInteger(child.pid)) {
-        try { process.kill(-child.pid, 'SIGKILL'); } catch { try { child.kill('SIGKILL'); } catch {} }
+        try { process.kill(-child.pid, 'SIGKILL'); } catch (_pgErr) {
+          try { child.kill('SIGKILL'); } catch (_procErr) { /* Process may already have terminated */ }
+        }
       } else {
-        try { child.kill('SIGKILL'); } catch {}
+        try { child.kill('SIGKILL'); } catch (_procErr) { /* Process may already have terminated */ }
       }
-    } catch {}
+    } catch (_err) { /* Kill escalation is best-effort */ }
   }, escalationMs);
   timer.unref?.();
   child.once?.('close', () => clearTimeout(timer));
@@ -1321,7 +1325,11 @@ export function createNetworkOperations({
     } catch {
       cleanupFailed = true;
     }
-    try { credentialBroker?.revoke(operationId); } catch {}
+    try {
+      credentialBroker?.revoke(operationId);
+    } catch (_revokeErr) {
+      /* Best-effort credential cleanup */
+    }
     return cleanupFailed;
   };
 
@@ -1573,7 +1581,11 @@ export function createNetworkOperations({
         result = terminal('conflicted', 'CONFLICT', 'Pull left conflicts in the local repository; resolve them and continue the rebase');
       } else if (mergeStarted && (error.cancelled || error.timedOut || controls.isCancellationRequested())) {
         let mergeInProgress = false;
-        try { mergeInProgress = await hasMergeState(plan.directory); } catch {}
+        try {
+          mergeInProgress = await hasMergeState(plan.directory);
+        } catch (_mergeErr) {
+          /* Repository may be unavailable or unreadable */
+        }
         result = mergeInProgress
           ? terminal('conflicted', 'CONFLICT', 'Pull was interrupted with an active merge state')
           : terminal('outcome-unknown', 'OUTCOME_UNKNOWN', 'Pull integration was interrupted; the local outcome is unknown');
@@ -1750,7 +1762,11 @@ export function createNetworkOperations({
       if (activeStep === 'pull' && mergeStarted
         && (error.cancelled || error.timedOut || controls.isCancellationRequested())) {
         let mergeInProgress = false;
-        try { mergeInProgress = await hasMergeState(plan.directory); } catch {}
+        try {
+          mergeInProgress = await hasMergeState(plan.directory);
+        } catch (_mergeErr) {
+          /* Repository may be unavailable or unreadable */
+        }
         if (mergeInProgress) {
           const publicFailure = publicError('CONFLICT', 'Sync pull was interrupted with an active merge state');
           step('pull', 'conflicted', publicFailure);
@@ -1856,12 +1872,20 @@ export function createNetworkOperations({
     try {
       await fsImpl.rename(target, moved);
     } catch (error) {
-      try { await fsImpl.rm(quarantine, { recursive: true, force: true }); } catch {}
+      try {
+        await fsImpl.rm(quarantine, { recursive: true, force: true });
+      } catch (_rmErr) {
+        /* Best-effort quarantine folder cleanup */
+      }
       if (error?.code === 'ENOENT') return { removed: true, changed: false, failed: false };
       return { removed: false, changed: false, failed: true };
     }
     let owned = false;
-    try { owned = await matches(moved); } catch {}
+    try {
+      owned = await matches(moved);
+    } catch (_matchErr) {
+      /* Matching error means target cannot be proven owned; preserve safety */
+    }
     if (owned) {
       try {
         await fsImpl.rm(quarantine, { recursive: true, force: true });

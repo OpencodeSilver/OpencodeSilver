@@ -115,7 +115,7 @@ function withReclaimGuardSync(fsImpl, lockPath, deadline, operation) {
       try {
         const stats = fsImpl.lstatSync(guard);
         if (Date.now() - stats.mtimeMs > GUARD_STALE_MS) {
-          try { fsImpl.unlinkSync(guard); } catch {}
+          try { fsImpl.unlinkSync(guard); } catch (_unlinkErr) { /* Guard file may have been cleared concurrently */ }
           continue;
         }
       } catch {
@@ -128,8 +128,8 @@ function withReclaimGuardSync(fsImpl, lockPath, deadline, operation) {
   try {
     return operation();
   } finally {
-    try { fsImpl.closeSync(handle); } catch {}
-    try { fsImpl.unlinkSync(guard); } catch {}
+    try { fsImpl.closeSync(handle); } catch (_closeErr) { /* Descriptor may already be closed */ }
+    try { fsImpl.unlinkSync(guard); } catch (_unlinkErr) { /* Guard file may have been unlinked concurrently */ }
   }
 }
 
@@ -169,7 +169,7 @@ function reclaimAbandonedSync(fsImpl, lockPath) {
     // Unreadable or already gone: leave it to the next attempt.
     return false;
   } finally {
-    try { fsImpl.closeSync(handle); } catch {}
+    try { fsImpl.closeSync(handle); } catch (_closeErr) { /* Descriptor cleanup is best effort */ }
   }
 }
 
