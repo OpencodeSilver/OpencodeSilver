@@ -131,13 +131,7 @@ export function detectInitialLocale(): Locale {
   return DEFAULT_LOCALE;
 }
 
-const RTL_LOCALES = new Set<string>(['ar', 'fa', 'he', 'ur']);
-
-export function isRtlLocale(locale: Locale | string): boolean {
-  if (!locale) {
-    return false;
-  }
-  const base = locale.toLowerCase().split('-')[0];
-  return RTL_LOCALES.has(base);
+export function isRtlLocale(_locale: Locale | string): boolean {
+  return false;
 }
 

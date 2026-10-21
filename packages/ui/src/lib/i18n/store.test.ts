@@ -81,19 +81,16 @@ describe('i18n store', () => {
     expect(missingKeys).toEqual([]);
   });
 
-  test('isRtlLocale detects RTL and LTR languages correctly', () => {
-    expect(isRtlLocale('ar')).toBe(true);
-    expect(isRtlLocale('fa')).toBe(true);
-    expect(isRtlLocale('he')).toBe(true);
-    expect(isRtlLocale('ur')).toBe(true);
-    expect(isRtlLocale('ar-SA')).toBe(true);
+  test('isRtlLocale returns false to preserve LTR workspace layout', () => {
+    expect(isRtlLocale('ar')).toBe(false);
+    expect(isRtlLocale('fa')).toBe(false);
+    expect(isRtlLocale('he')).toBe(false);
+    expect(isRtlLocale('ur')).toBe(false);
     expect(isRtlLocale('en')).toBe(false);
     expect(isRtlLocale('ja')).toBe(false);
-    expect(isRtlLocale('zh-CN')).toBe(false);
-    expect(isRtlLocale('de')).toBe(false);
   });
 
-  test('sets document.documentElement.dir correctly on locale switch', () => {
+  test('keeps document.documentElement.dir as ltr across all locales', () => {
     const originalDoc = globalThis.document;
     const mockDoc = {
       documentElement: {
@@ -105,7 +102,7 @@ describe('i18n store', () => {
 
     try {
       useI18nStore.getState().setLocale('ar');
-      expect(mockDoc.documentElement.dir).toBe('rtl');
+      expect(mockDoc.documentElement.dir).toBe('ltr');
       expect(mockDoc.documentElement.lang).toBe('ar');
 
       useI18nStore.getState().setLocale('en');

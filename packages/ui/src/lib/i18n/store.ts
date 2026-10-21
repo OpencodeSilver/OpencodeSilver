@@ -72,7 +72,7 @@ export const useI18nStore = create<I18nState>()((set, get) => ({
 
     if (typeof document !== 'undefined') {
       document.documentElement.lang = locale;
-      document.documentElement.dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
+      document.documentElement.dir = 'ltr';
     }
 
     set({
@@ -103,7 +103,7 @@ export function initializeLocale(): void {
   const initial = detectInitialLocale();
   if (typeof document !== 'undefined') {
     document.documentElement.lang = initial;
-    document.documentElement.dir = isRtlLocale(initial) ? 'rtl' : 'ltr';
+    document.documentElement.dir = 'ltr';
   }
   useI18nStore.getState().setLocale(initial);
 }
