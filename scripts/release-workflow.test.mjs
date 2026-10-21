@@ -66,3 +66,18 @@ test('release job sets RELEASE_VERSION and uses it across binary names', () => {
   assert.ok(releaseStep, 'release must have Create GitHub Release step');
   assert.match(String(releaseStep.with?.body || ''), /\$\{\{ env\.RELEASE_VERSION \}\}/, 'Release body must use env.RELEASE_VERSION');
 });
+
+test('release job generates SHA-256 checksums and SBOM for integrity verification', () => {
+  const steps = workflow.jobs.release.steps || [];
+  const prepStep = steps.find((step) => String(step.name || '').includes('Prepare Release Assets'));
+  assert.ok(prepStep, 'release must have Prepare Release Assets step');
+  assert.match(String(prepStep.run), /sha256sum \* > SHA256SUMS\.txt/, 'Must generate SHA256SUMS.txt');
+
+  const sbomStep = steps.find((step) => String(step.name || '').includes('SBOM'));
+  assert.ok(sbomStep, 'release must have SBOM generation step');
+  assert.match(String(sbomStep.run), /@cyclonedx\/cyclonedx-npm/, 'Must generate CycloneDX SBOM');
+
+  const releaseStep = steps.find((step) => String(step.name || '').includes('Create GitHub Release'));
+  assert.match(String(releaseStep.with?.body || ''), /SHA256SUMS\.txt/, 'Release body must reference SHA256SUMS.txt');
+  assert.match(String(releaseStep.with?.body || ''), /CODE_SIGNING\.md/, 'Release body must reference CODE_SIGNING.md');
+});

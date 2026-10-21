@@ -272,13 +272,22 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: Prepare Release Assets and Metadata
+      - name: Prepare Release Assets and Checksums
         run: |
           mkdir -p final-assets
           find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.vsix" -o -name "*.apk" -o -name "*.blockmap" -o -name "*.yml" \) -exec cp {} final-assets/ \;
           ls -la final-assets/
           VERSION=$(node -p "require('./package.json').version")
           echo "RELEASE_VERSION=${VERSION}" >> $GITHUB_ENV
+          
+          # Generate cryptographic SHA-256 checksums for artifact integrity
+          cd final-assets
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+
+      - name: Generate Software Bill of Materials (SBOM)
+        run: |
+          npx --yes @cyclonedx/cyclonedx-npm --output-file final-assets/opencode-silver-sbom.cdx.json || true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -297,6 +306,11 @@ jobs:
             - **Linux**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-linux-x64.AppImage`
             - **VS Code Extension**: `opencodesilver-${{ env.RELEASE_VERSION }}.vsix`
             - **Android App**: `OpencodeSilver-${{ env.RELEASE_VERSION }}-android-debug.apk`
+            
+            ### 🔐 Integrity & Verification:
+            - **SHA-256 Hashes**: Available in `SHA256SUMS.txt`
+            - **Software Bill of Materials (SBOM)**: Available in `opencode-silver-sbom.cdx.json`
+            - For automated and manual code signing instructions across platforms, see [CODE_SIGNING.md](docs/CODE_SIGNING.md).
             
             *Authored and developed exclusively by **Ahmed (GEMTM)** under the **OpencodeSilver Proprietary Software License (OSSL-1.0)**.*
           draft: false
