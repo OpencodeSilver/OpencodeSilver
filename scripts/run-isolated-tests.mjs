@@ -80,17 +80,45 @@ const resolveCommand = (file) => {
       args: hasNodeExecutable ? ['--test', file] : ['test', file],
     };
   }
+  if (/(?:from\s+|require\(\s*)['"]vitest['"]/.test(source)) {
+    return {
+      label: 'vitest',
+      command: hasNodeExecutable ? 'npx' : bunExecutable,
+      args: hasNodeExecutable ? ['vitest', 'run', file] : ['run', 'vitest', 'run', file],
+    };
+  }
+  // Generic test detection: fallback to bun test
+  if (/\b(?:test|describe|it)\s*\(/.test(source)) {
+    return {
+      label: 'bun',
+      command: bunExecutable,
+      args: ['test', file],
+    };
+  }
   return null;
 };
 
-// Only the tail of a file's output is kept for its failure report. A test that
-// logs in a loop otherwise grows the buffer past V8's string limit and takes
-// the whole run down with a RangeError that names no file.
-const OUTPUT_TAIL_BYTES = 1024 * 1024;
+// Keep both head and tail of process output for diagnostics so neither the
+// initial assertion failure nor the trailing summary is lost if output is verbose.
+const OUTPUT_HEAD_BYTES = 256 * 1024;
+const OUTPUT_TAIL_BYTES = 768 * 1024;
 
 // A hung file is killed so it cannot block the run. The whole CI test step
 // takes about two minutes, so this leaves room for slower machines.
 const FILE_TIMEOUT_MS = 5 * 60 * 1000;
+
+const terminateChild = (child) => {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === 'win32' && child.pid) {
+    try {
+      spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+      return;
+    } catch {
+      // Fall through to standard kill if taskkill fails
+    }
+  }
+  child.kill('SIGKILL');
+};
 
 const run = ({ command, args }) => new Promise((resolve) => {
   const child = spawn(command, args, {
@@ -98,6 +126,34 @@ const run = ({ command, args }) => new Promise((resolve) => {
     windowsHide: true,
   });
   let timedOut = false;
+  let head = '';
+  let tail = '';
+  let dropped = 0;
+
+  const append = (chunk) => {
+    const text = String(chunk);
+    if (head.length < OUTPUT_HEAD_BYTES) {
+      const take = OUTPUT_HEAD_BYTES - head.length;
+      head += text.slice(0, take);
+      if (text.length > take) {
+        tail += text.slice(take);
+      }
+    } else {
+      tail += text;
+    }
+    if (tail.length > 2 * OUTPUT_TAIL_BYTES) {
+      dropped += tail.length - OUTPUT_TAIL_BYTES;
+      tail = tail.slice(-OUTPUT_TAIL_BYTES);
+    }
+  };
+
+  const report = () => {
+    if (dropped > 0) {
+      return `${head}\n\n[... ${dropped} characters of intermediate output dropped ...]\n\n${tail}`;
+    }
+    return `${head}${tail}`;
+  };
+
   const timer = setTimeout(() => {
     timedOut = true;
     // A process the test started can hold the pipes open after the kill, so
@@ -114,18 +170,9 @@ const run = ({ command, args }) => new Promise((resolve) => {
       return;
     }
     child.once('exit', settle);
-    child.kill('SIGKILL');
+    terminateChild(child);
   }, FILE_TIMEOUT_MS);
-  let output = '';
-  let dropped = 0;
-  const append = (chunk) => {
-    output += chunk;
-    if (output.length > 2 * OUTPUT_TAIL_BYTES) {
-      dropped += output.length - OUTPUT_TAIL_BYTES;
-      output = output.slice(-OUTPUT_TAIL_BYTES);
-    }
-  };
-  const report = () => (dropped > 0 ? `[${dropped} earlier characters of output dropped]\n${output}` : output);
+
   child.stdout.on('data', append);
   child.stderr.on('data', append);
   child.on('error', (error) => {
