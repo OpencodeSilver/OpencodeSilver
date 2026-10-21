@@ -1,0 +1,83 @@
+name: Docs Source Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/docs/**'
+      - 'scripts/docs/**'
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-sync:
+    name: Package Docs and Trigger Website Sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate documentation structure
+        run: bun run docs:validate
+
+      - name: Package docs source archive
+        run: |
+          ARCHIVE_NAME="opencodesilver-docs-source-${{ github.sha }}.tar.gz"
+          tar -czf "${ARCHIVE_NAME}" -C packages docs
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> $GITHUB_ENV
+
+      - name: Upload docs archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-docs-source
+          path: ${{ env.ARCHIVE_NAME }}
+
+      - name: Attach archive to Release assets (if release event)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE_NAME }}
+
+      - name: Trigger opencodesilver-website repository dispatch
+        run: |
+          if [ -z "${{ secrets.OPENCODESILVER_WEBSITE_REPO_TOKEN }}" ]; then
+            echo "OPENCODESILVER_WEBSITE_REPO_TOKEN not set; skipping cross-repo website dispatch."
+            exit 0
+          fi
+
+          REF="${{ github.ref_name }}"
+          if [ -z "${REF}" ]; then
+            REF="main"
+          fi
+
+          echo "Sending repository_dispatch event (docs_source_updated) to opencodesilver/opencodesilver-website..."
+          curl -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.OPENCODESILVER_WEBSITE_REPO_TOKEN }}" \
+            https://api.github.com/repos/opencodesilver/opencodesilver-website/dispatches \
+            -d "{\"event_type\": \"docs_source_updated\", \"client_payload\": {\"source_repo\": \"${{ github.repository }}\", \"source_ref\": \"${REF}\", \"archive_name\": \"${{ env.ARCHIVE_NAME }}\"}}"
