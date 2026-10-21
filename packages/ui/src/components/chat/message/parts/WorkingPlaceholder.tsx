@@ -236,7 +236,7 @@ export function WorkingPlaceholder({
 
   const trimmedModelName = modelName?.trim() ?? '';
   const label = trimmedModelName.length > 0
-    ? t('chat.statusRow.modelStatus', { model: trimmedModelName, status: displayedText })
+    ? `${trimmedModelName}: ${displayedText}`
     : displayedText.charAt(0).toUpperCase() + displayedText.slice(1);
 
   return (
@@ -244,17 +244,29 @@ export function WorkingPlaceholder({
       // Full muted-foreground, matching the scroll-to-bottom pill's status
       // text: the row and the pill hand off to each other in the same spot
       // and must read as one element changing chrome.
-      className={
-        'flex h-full items-center text-muted-foreground'
-      }
+      className="flex h-full items-center text-muted-foreground min-w-0"
       role="status"
       aria-live={displayedPermission ? 'assertive' : 'polite'}
       aria-label={label}
       data-waiting={displayedPermission ? 'true' : undefined}
+      dir="auto"
     >
-      <span className="text-sm">
-        {providerLogo}
-        {label}
+      <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm min-w-0 truncate">
+        {providerLogo ? (
+          providerLogo
+        ) : (
+          <span className="relative flex h-2 w-2 shrink-0 mr-0.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+          </span>
+        )}
+        {trimmedModelName ? (
+          <>
+            <bdi className="font-semibold text-foreground/90 shrink-0">{trimmedModelName}</bdi>
+            <span className="text-muted-foreground/60 select-none shrink-0" aria-hidden="true">:</span>
+          </>
+        ) : null}
+        <bdi className="truncate text-muted-foreground font-normal">{displayedText}</bdi>
       </span>
     </div>
   );

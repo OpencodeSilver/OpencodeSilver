@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build Core Engine
+        run: bun run --cwd packages/core build
+
       - name: Build web extension assets
         run: bun run --cwd packages/vscode build
 
@@ -103,6 +106,9 @@ jobs:
         env:
           OPENCODESILVER_TARGET_ARCH: ${{ matrix.target-arch }}
 
+      - name: Build Core Engine
+        run: bun run --cwd packages/core build
+
       - name: Build Web Assets
         run: bun run --cwd packages/electron build:web-assets
 
@@ -121,6 +127,17 @@ jobs:
         env:
           OPENCODESILVER_TARGET_ARCH: ${{ matrix.target-arch }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Verify Core Engine inside app.asar
+        shell: bash
+        run: |
+          ASAR_PATH=$(find packages/electron/dist -name "app.asar" | head -n 1)
+          if [ -z "$ASAR_PATH" ]; then
+            echo "Error: app.asar not found in packages/electron/dist"
+            exit 1
+          fi
+          echo "Checking $ASAR_PATH for @opencodesilver/core/dist/index.js..."
+          npx --yes @electron/asar list "$ASAR_PATH" | grep -F "node_modules/@opencodesilver/core/dist/index.js"
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
@@ -159,6 +176,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Build Core Engine
+        run: bun run --cwd packages/core build
 
       - name: Build Web Assets for Mobile
         run: |

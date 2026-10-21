@@ -8,7 +8,7 @@
  * module evaluation runs on the thread Chromium needs to finish initialising.
  */
 
-import { app, protocol } from 'electron';
+import { app, dialog, protocol } from 'electron';
 import path from 'node:path';
 import { shouldIgnoreLoopbackConnectionLimit } from './startup-url-selection.mjs';
 import {
@@ -93,5 +93,11 @@ app.whenReady().then(async () => {
   return import('./main.mjs');
 }).catch((error) => {
   console.error('[electron] startup failed before the main module loaded:', error);
+  try {
+    dialog.showErrorBox(
+      'OpencodeSilver',
+      `حدث خطأ أثناء تحميل التطبيق:\n${error?.stack || error?.message || String(error)}`,
+    );
+  } catch {}
   app.exit(1);
 });

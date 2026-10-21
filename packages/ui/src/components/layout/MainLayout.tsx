@@ -27,6 +27,7 @@ import { SkillsStoreView } from '@/components/views/customize/SkillsStoreView';
 import { DiffWorkerProvider } from '@/contexts/DiffWorkerProvider';
 import { RunOverview } from '@/components/multirun/RunOverview';
 import { RunAutoFusion } from '@/lib/multirun/autoFusion';
+import { OnboardingWizardDialog, useOnboardingState } from '@/components/session/OnboardingWizardDialog';
 
 import { useUIStore } from '@/stores/useUIStore';
 import { useSessionUIStore } from '@/sync/session-ui-store';
@@ -50,6 +51,7 @@ const loadSettingsWindow = () => import('@/components/views/SettingsWindow').the
 export const MainLayout: React.FC = () => {
     useSessionListSync({ isVSCode: false });
     useTerminalSessionKeepalive();
+    const { isOpen: isOnboardingOpen, closeOnboarding } = useOnboardingState();
     const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
     // The grant dialog of isolated spaces; the main layout is never VS Code's (decision 16).
     const isolatedSpacesEnabled = useUIStore((state) => state.isolatedSpacesEnabled);
@@ -117,6 +119,7 @@ export const MainLayout: React.FC = () => {
                 <OpenCodeStatusDialog />
                 <RunAutoFusion />
                 <SessionDialogs />
+                <OnboardingWizardDialog open={isOnboardingOpen} onClose={closeOnboarding} />
                 {isolatedSpacesEnabled ? <><SpaceAccessDialog /><SpaceActionsSheet /><SpaceApplyDialog /><SpaceDeleteDialog /><SpaceSetupOutputDialog /></> : null}
 
                 {/* Persistent top-left controls (toggle + project actions) that

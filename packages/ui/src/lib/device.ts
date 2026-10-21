@@ -253,6 +253,10 @@ const startDeviceInfoSource = (): (() => void) => {
       window.cancelAnimationFrame(deviceInfoFrameId);
       deviceInfoFrameId = undefined;
     }
+    // The snapshot describes the window this source measured. A later source
+    // (a remount, or a test swapping the DOM) starts by reading again, so
+    // dropping it here keeps a stale measurement from outliving its window.
+    deviceInfoSnapshot = null;
   };
 };
 

@@ -45,3 +45,28 @@ test('authoritative no-update result clears pending update', async () => {
   assert.equal(result.available, false);
   assert.equal(result.pendingUpdate, null);
 });
+
+test('treats "No published versions on GitHub" as no update available', async () => {
+  const result = await checkForDesktopUpdate({
+    autoUpdater: {
+      checkForUpdates: async () => {
+        throw new Error('No published versions on GitHub');
+      },
+    },
+    currentVersion: '3.0.0',
+    pendingUpdate: null,
+    compareVersions,
+  });
+  assert.equal(result.available, false);
+  assert.equal(result.pendingUpdate, null);
+  assert.equal(result.nextVersion, '3.0.0');
+});
+
+test('isMissingUpdateFeedError recognises a missing feed but not network failures', async () => {
+  const { isMissingUpdateFeedError } = await import('./updater-check.mjs');
+  assert.equal(isMissingUpdateFeedError(new Error('No published versions on GitHub')), true);
+  assert.equal(isMissingUpdateFeedError(new Error('HttpError: 404 \n"method: GET url: https://github.com/o/r/releases.atom"')), true);
+  assert.equal(isMissingUpdateFeedError('Error: No published versions on GitHub'), true);
+  assert.equal(isMissingUpdateFeedError(new Error('net::ERR_INTERNET_DISCONNECTED')), false);
+  assert.equal(isMissingUpdateFeedError(undefined), false);
+});

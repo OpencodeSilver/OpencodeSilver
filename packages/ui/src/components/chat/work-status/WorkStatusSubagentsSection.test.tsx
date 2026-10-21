@@ -3,6 +3,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
 import { OpenCode } from '@opencode/client';
+import { opencodeClient } from '@/lib/opencode/client';
 import { useUIStore } from '@/stores/useUIStore';
 import { I18nProvider } from '@/lib/i18n';
 import { SyncProvider } from '@/sync/sync-context';
@@ -19,12 +20,31 @@ const child: Session = { ...parent, id: 'child', parentID: parent.id, title: 'Ch
 
 const childForm: FormRequest = { id: 'form', sessionID: 'child', title: 'Question', fields: [{ key: 'answer', type: 'string' }] };
 
+let origGetActiveSessionStatuses: any;
+let origListPendingForms: any;
+let origListPendingPermissions: any;
+let origGetLocation: any;
+let origGetFilesystemHome: any;
+let origGetConfig: any;
+let origListProjects: any;
+
 describe('subagent status rows', () => {
   let win: Window;
   let root: Root;
   let container: HTMLElement;
   let restoreGlobals: () => void;
-  const sdk = OpenCode.make({ baseUrl: 'http://subagents.test', fetch: () => new Promise<Response>(() => undefined) });
+  const sdk = OpenCode.make({
+    baseUrl: 'http://subagents.test',
+    fetch: async (input) => {
+      const url = String(input);
+      if (url.includes('event')) {
+        return new Response(new ReadableStream(), {
+          headers: { 'content-type': 'text/event-stream' },
+        });
+      }
+      return new Response('[]', { headers: { 'content-type': 'application/json' } });
+    },
+  });
   const render = async () => {
     await act(async () => root.render(
       <SyncProvider sdk={sdk} directory={directory}>
@@ -64,6 +84,27 @@ describe('subagent status rows', () => {
         else Reflect.deleteProperty(globalThis, name);
       }
     };
+    origGetActiveSessionStatuses = opencodeClient.getActiveSessionStatuses;
+    origListPendingForms = opencodeClient.listPendingForms;
+    origListPendingPermissions = opencodeClient.listPendingPermissions;
+    origGetLocation = opencodeClient.getLocation;
+    origGetFilesystemHome = opencodeClient.getFilesystemHome;
+    origGetConfig = opencodeClient.getConfig;
+    origListProjects = opencodeClient.listProjects;
+
+    opencodeClient.getLocation = (async () => ({ directory, project: { id: 'project', directory, canonical: directory } })) as any;
+    opencodeClient.getFilesystemHome = async () => '/home';
+    opencodeClient.getConfig = (async () => ({})) as any;
+    opencodeClient.listProjects = async () => [];
+    opencodeClient.getActiveSessionStatuses = async () => ({});
+    opencodeClient.listPendingForms = async () => [];
+    opencodeClient.listPendingPermissions = async () => [];
+    opencodeClient.getVcs = (async () => undefined) as any;
+    opencodeClient.listAgents = async () => [];
+    opencodeClient.listCommands = async () => [];
+    opencodeClient.listMcpServers = async () => [];
+    opencodeClient.listRunningShells = (async (d: string) => ({ directory: d, shells: [] })) as any;
+
     ({ WorkStatusSubagentsSection } = await import('./WorkStatusSubagentsSection'));
     useUIStore.setState({ workStatusExpandedSections: {} });
     useSessionActivityTimingStore.setState({ startedAt: new Map(), settledMs: new Map() });
@@ -75,6 +116,13 @@ describe('subagent status rows', () => {
   });
 
   afterEach(async () => {
+    opencodeClient.getActiveSessionStatuses = origGetActiveSessionStatuses;
+    opencodeClient.listPendingForms = origListPendingForms;
+    opencodeClient.listPendingPermissions = origListPendingPermissions;
+    opencodeClient.getLocation = origGetLocation;
+    opencodeClient.getFilesystemHome = origGetFilesystemHome;
+    opencodeClient.getConfig = origGetConfig;
+    opencodeClient.listProjects = origListProjects;
     await act(async () => root.unmount());
     await win.happyDOM.close();
     restoreGlobals();
@@ -90,7 +138,7 @@ describe('subagent status rows', () => {
     expect(row().getAttribute('aria-label')).toContain('is working');
     await publish({ session_status: { child: { type: 'retry', attempt: 1, message: 'Retrying', next: 100 } } });
     expect(icon()).toBe('#oc-record-circle');
-    expect(container.textContent).toContain('1/1');
+    expect(rowContent().textContent).toBe('Child$0.25');
     await publish({ session_status: { child: { type: 'idle' } } });
     expect(icon()).toBe('#oc-checkbox-circle');
     expect(rowContent().textContent).toBe('Child$0.25');
@@ -131,7 +179,7 @@ describe('subagent status rows', () => {
     const older: Session = { ...child, id: 'older', title: 'Older', time: { created: 2, updated: 50 } };
     const newer: Session = { ...child, id: 'newer', title: 'Newer', time: { created: 3, updated: 10 } };
     const titles = () => Array.from(container.querySelectorAll<HTMLButtonElement>('button[aria-label]'))
-      .map((button) => button.parentElement?.textContent?.replace(/\$.*$/, ''));
+      .map((button) => button.querySelector('span')?.textContent?.replace(/\$.*$/, ''));
     await publish({
       session: [parent, older, newer],
       sessionStatusReady: true,

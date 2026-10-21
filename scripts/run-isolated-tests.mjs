@@ -15,9 +15,10 @@
 //
 // Usage: node scripts/run-isolated-tests.mjs <root> [...roots]
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { resolveBunExecutable } from './lib/bun-executable.mjs';
 
@@ -25,6 +26,22 @@ const TEST_FILE = /\.(test|spec)\.(js|cjs|mjs|jsx|ts|tsx)$/;
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'dist-bundle', 'build', 'out', '.git', 'ios', 'android']);
 const MAX_PARALLEL = 4;
 const bunExecutable = resolveBunExecutable();
+const hasNodeExecutable = (() => {
+  try {
+    const result = spawnSync(process.platform === 'win32' ? 'where.exe' : 'which', ['node'], { windowsHide: true });
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+})();
+const HAPPY_DOM_PRELOAD = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'packages',
+  'ui',
+  'scripts',
+  'test-preload-happy-dom.mjs',
+);
 
 const collect = (root, found = []) => {
   for (const entry of readdirSync(root, { withFileTypes: true })) {
@@ -47,10 +64,21 @@ const resolveCommand = (file) => {
   // implements. Node's ESM loader cannot resolve the extensionless local
   // specifiers these files use (`./sseProxy`), so it never ran them at all.
   if (isTypeScript || /(?:from\s+|require\(\s*)['"]bun:test['"]/.test(source)) {
-    return { label: 'bun', command: bunExecutable, args: ['test', file] };
+    // happy-dom 18 keeps nodeName off Node.prototype; DOMPurify 3.4 reads it
+    // there, so every element looks disallowed. The shim restores the DOM
+    // contract, and only tests that build a happy-dom window need it.
+    const usesHappyDom = /(?:from\s+|require\(\s*)['"]happy-dom['"]/.test(source);
+    const args = ['test'];
+    if (usesHappyDom) args.push('--preload', HAPPY_DOM_PRELOAD);
+    args.push(file);
+    return { label: 'bun', command: bunExecutable, args };
   }
   if (/(?:from\s+|require\(\s*)['"]node:test['"]/.test(source)) {
-    return { label: 'node', command: 'node', args: ['--test', file] };
+    return {
+      label: hasNodeExecutable ? 'node' : 'bun',
+      command: hasNodeExecutable ? 'node' : bunExecutable,
+      args: hasNodeExecutable ? ['--test', file] : ['test', file],
+    };
   }
   return null;
 };

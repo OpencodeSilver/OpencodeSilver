@@ -16,7 +16,7 @@ import { useI18n } from '@/lib/i18n';
  * Uses the dedicated assistant status hook so the row keeps accurate live activity
  * labels while still limiting subscriptions to the active assistant message.
  */
-export const StatusRowContainer: React.FC<{ variant?: 'floating' | 'inline' }> = React.memo(({ variant = 'floating' }) => {
+export const StatusRowContainer: React.FC<{ variant?: 'floating' | 'inline' | 'conversation' }> = React.memo(({ variant = 'floating' }) => {
     const { t } = useI18n();
     const { activeModel, working } = useAssistantStatus();
     const currentAgentName = useConfigStore((state) => state.currentAgentName);

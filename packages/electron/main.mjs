@@ -1,5 +1,5 @@
 import { canReuseManagedOpenCodePreflight } from './opencode-readiness.mjs';
-import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, nativeTheme, net as electronNet, Notification, powerMonitor, powerSaveBlocker, protocol, session, shell, webContents } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, MessageChannelMain, nativeTheme, net as electronNet, Notification, powerMonitor, powerSaveBlocker, protocol, session, shell, webContents } from 'electron';
 import contextMenu from 'electron-context-menu';
 import log from 'electron-log/main.js';
 import dgram from 'node:dgram';
@@ -56,7 +56,7 @@ import { isPackagedUiRuntimeRequest } from './packaged-ui-routing.mjs';
 import { probeDirectHostWithRetry } from './host-probe-policy.mjs';
 import { probeElectronHostWithDeadline } from './electron-host-probe.mjs';
 import { assertUpdaterCapability } from './updater-capability.mjs';
-import { checkForDesktopUpdate } from './updater-check.mjs';
+import { checkForDesktopUpdate, isMissingUpdateFeedError } from './updater-check.mjs';
 import { resolveUpdaterChannel } from './updater-channel.mjs';
 import { createContextMenuLabels, menuLabel, normalizeMenuLocale, roleMenuItem } from './menu-locales.mjs';
 import { resolveUpdaterFeed } from './updater-feed.mjs';
@@ -103,6 +103,29 @@ try {
 
 log.initialize();
 log.transports.file.maxSize = 5 * 1024 * 1024;
+log.transports.file.archiveLogFn = (oldLogFile) => {
+  const filePath = oldLogFile?.path || (typeof oldLogFile === 'string' ? oldLogFile : null);
+  if (!filePath) return;
+  const info = path.parse(filePath);
+  try {
+    const maxArchives = 3;
+    const oldest = path.join(info.dir, `${info.name}.${maxArchives}${info.ext}`);
+    if (fs.existsSync(oldest)) {
+      try { fs.unlinkSync(oldest); } catch {}
+    }
+    for (let i = maxArchives - 1; i >= 1; i--) {
+      const src = path.join(info.dir, `${info.name}.${i}${info.ext}`);
+      const dst = path.join(info.dir, `${info.name}.${i + 1}${info.ext}`);
+      if (fs.existsSync(src)) {
+        try { fs.renameSync(src, dst); } catch {}
+      }
+    }
+    const firstArchive = path.join(info.dir, `${info.name}.1${info.ext}`);
+    fs.renameSync(filePath, firstArchive);
+  } catch (error) {
+    log.warn?.('[electron] log rotation error:', error);
+  }
+};
 log.transports.file.level = 'info';
 log.transports.console.level = isDev ? 'debug' : 'warn';
 
@@ -1691,7 +1714,10 @@ const loginRemoteAndIssueClientToken = async ({ url, password, trustDevice, requ
 
 const emitToWindow = (browserWindow, event, detail) => {
   if (!browserWindow || browserWindow.isDestroyed()) return;
-  browserWindow.webContents.send('opencodesilver:emit', { event, detail });
+  try {
+    if (browserWindow.webContents?.isDestroyed()) return;
+    browserWindow.webContents.send('opencodesilver:emit', { event, detail });
+  } catch {}
 };
 
 const emitToAllWindows = (event, detail) => {
@@ -2050,10 +2076,16 @@ const flushPendingDeepLinks = ({ includeSessions }) => {
   pendingDeepLinks.push(...kept);
 };
 
-const isMainWindowReadyForDeepLink = () =>
-  Boolean(state.mainWindow)
-  && !state.mainWindow.isDestroyed()
-  && !state.mainWindow.webContents.isLoading();
+const isMainWindowReadyForDeepLink = () => {
+  try {
+    return Boolean(state.mainWindow)
+      && !state.mainWindow.isDestroyed()
+      && !state.mainWindow.webContents?.isDestroyed()
+      && !state.mainWindow.webContents.isLoading();
+  } catch {
+    return false;
+  }
+};
 
 const handleDeepLinks = (urls) => {
   for (const raw of urls) {
@@ -2078,7 +2110,11 @@ const dispatchDomEventToWindow = (browserWindow, event, detail) => {
     ? `window.dispatchEvent(new Event(${eventLiteral}));`
     : `window.dispatchEvent(new CustomEvent(${eventLiteral}, { detail: ${JSON.stringify(detail)} }));`;
 
-  void browserWindow.webContents.executeJavaScript(script, true).catch(() => {});
+  try {
+    if (!browserWindow.webContents?.isDestroyed()) {
+      void browserWindow.webContents.executeJavaScript(script, true).catch(() => {});
+    }
+  } catch {}
 };
 
 const getMenuTargetWindow = () => {
@@ -2120,13 +2156,21 @@ const dispatchOpenMiniChat = (browserWindow) => {
 const reloadMenuTargetWindow = () => {
   const target = getMenuTargetWindow();
   if (!target || target.isDestroyed()) return;
-  target.webContents.reload();
+  try {
+    if (!target.webContents?.isDestroyed()) {
+      target.webContents.reload();
+    }
+  } catch {}
 };
 
 const openDevToolsForMenuTarget = () => {
   const target = getMenuTargetWindow();
   if (!target || target.isDestroyed()) return;
-  target.webContents.toggleDevTools();
+  try {
+    if (!target.webContents?.isDestroyed()) {
+      target.webContents.toggleDevTools();
+    }
+  } catch {}
 };
 
 const relaunchFromMenu = () => {
@@ -2237,6 +2281,22 @@ const createBrowserWindow = ({ label, restoreGeometry, url, runtimeConfig = {}, 
       debounceWindowStatePersist(browserWindow, true);
       event.preventDefault();
       browserWindow.hide();
+
+      const settings = readSettingsRoot();
+      if (!settings.desktopCloseToTrayNoticeShown) {
+        mutateSettingsRoot((root) => {
+          root.desktopCloseToTrayNoticeShown = true;
+        }).catch(() => {});
+
+        try {
+          if (Notification.isSupported()) {
+            new Notification({
+              title: 'OpencodeSilver',
+              body: 'البرنامج ما زال يعمل في الخلفية بجانب الساعة. يمكنك الإغلاق بالكامل من أيقونة شريط المهام.',
+            }).show();
+          }
+        } catch {}
+      }
       return;
     }
 
@@ -2612,10 +2672,12 @@ const openHostWindow = async (host, route = null, { reuseOpenWindow = false } = 
     existing.focus();
     if (!route) return;
     // A window still booting has no listener yet; it reloads on the route.
-    if (existing.webContents.isLoading() && existing.__ocHostWindowBaseUrl) {
-      await navigateWindow(existing, withSessionRoute(existing.__ocHostWindowBaseUrl, route), { allowAbort: true });
-      return;
-    }
+    try {
+      if (!existing.webContents?.isDestroyed() && existing.webContents.isLoading() && existing.__ocHostWindowBaseUrl) {
+        await navigateWindow(existing, withSessionRoute(existing.__ocHostWindowBaseUrl, route), { allowAbort: true });
+        return;
+      }
+    } catch {}
     emitToWindow(existing, 'opencodesilver:open-session', route);
     return;
   }
@@ -2781,18 +2843,21 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
     browserWindow.on('focus', refreshTrafficLights);
   }
 
+  const contents = browserWindow.webContents;
+  const isGone = () => browserWindow.isDestroyed() || contents.isDestroyed();
+
   browserWindow.once('ready-to-show', () => {
+    if (isGone()) return;
     browserWindow.show();
     browserWindow.focus();
   });
 
-  const contents = browserWindow.webContents;
-  const isGone = () => browserWindow.isDestroyed() || contents.isDestroyed();
   contents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url).catch(() => {});
     return { action: 'deny' };
   });
   contents.on('will-navigate', (event, url) => {
+    if (isGone()) return;
     try {
       const target = new URL(url);
       const local = new URL(shouldUsePackagedUi() ? packagedUiOrigin() : (state.localOrigin || state.sidecarUrl || ''));
@@ -2976,7 +3041,27 @@ const setupAutoUpdater = () => {
   autoUpdater.allowPrerelease = false;
   autoUpdater.fullChangelog = true;
   autoUpdater.disableWebInstaller = false;
-  autoUpdater.logger = log;
+  // electron-updater reports a missing feed (no published release yet) as an
+  // error on every check; that is an expected state, so it is logged once as
+  // info instead of filling the log with errors.
+  let missingFeedLogged = false;
+  const logMissingFeedOnce = () => {
+    if (missingFeedLogged) return;
+    missingFeedLogged = true;
+    log.info('[electron] no published update feed yet; skipping update checks until a release exists');
+  };
+  autoUpdater.logger = {
+    info: (...args) => log.info(...args),
+    warn: (...args) => log.warn(...args),
+    debug: (...args) => log.debug(...args),
+    error: (...args) => {
+      if (args.some((arg) => isMissingUpdateFeedError(arg))) {
+        logMissingFeedOnce();
+        return;
+      }
+      log.error(...args);
+    },
+  };
 
   const testBuild = typeof __OPENCODESILVER_UPDATER_E2E_BUILD__ !== 'undefined'
     && __OPENCODESILVER_UPDATER_E2E_BUILD__ === true;
@@ -3018,6 +3103,10 @@ const setupAutoUpdater = () => {
 
   autoUpdater.on('error', (err) => {
     setTaskbarProgress(-1);
+    if (isMissingUpdateFeedError(err)) {
+      logMissingFeedOnce();
+      return;
+    }
     log.error('[electron] autoUpdater error', err);
   });
 };
@@ -3889,8 +3978,15 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       return { closed: client.close({ baseUrl, port }) };
     }
 
-    case 'desktop_relay_dev_tunnel_close_all':
-      return { closed: relayDevTunnelBridge.closeForWebContents(browserWindow?.webContents.id) };
+    case 'desktop_relay_dev_tunnel_close_all': {
+      let wcId;
+      try {
+        if (!browserWindow?.isDestroyed() && !browserWindow?.webContents?.isDestroyed()) {
+          wcId = browserWindow?.webContents?.id;
+        }
+      } catch {}
+      return { closed: relayDevTunnelBridge.closeForWebContents(wcId) };
+    }
 
     /**
      * Forces prefers-color-scheme for one previewed page.
@@ -4129,7 +4225,11 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
     case 'desktop_clear_cache':
       await session.defaultSession.clearStorageData();
       for (const browserWindow of BrowserWindow.getAllWindows()) {
-        browserWindow.webContents.reload();
+        try {
+          if (!browserWindow.isDestroyed() && !browserWindow.webContents?.isDestroyed()) {
+            browserWindow.webContents.reload();
+          }
+        } catch {}
       }
       return null;
 
@@ -4753,12 +4853,43 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
   }
 };
 
+const copySystemInfoAction = async () => {
+  const logFile = log.transports.file.getFile();
+  const logPath = logFile?.path || '';
+  let recentLogs = '';
+  try {
+    if (logPath && fs.existsSync(logPath)) {
+      const content = fs.readFileSync(logPath, 'utf8');
+      const lines = content.trim().split(/\r?\n/);
+      recentLogs = lines.slice(-50).join('\n');
+    }
+  } catch (err) {
+    recentLogs = `(Error reading log: ${err?.message || err})`;
+  }
+  const info = [
+    `OpencodeSilver: v${app.getVersion()}`,
+    `Electron: ${process.versions.electron}`,
+    `Node: ${process.versions.node}`,
+    `OS: ${os.type()} ${os.release()} (${os.arch()})`,
+    `Log Path: ${logPath}`,
+    '',
+    '--- Recent Logs (last 50 lines) ---',
+    recentLogs,
+  ].join('\n');
+  clipboard.writeText(info);
+};
+
 const buildMacMenu = (locale = 'en') => {
   const dispatchAction = (action) => dispatchMenuAction(action);
   const t = (key) => menuLabel(locale, key);
   const roleItem = (role, key) => roleMenuItem(locale, role, key);
   const handleCopyAction = () => {
-    BrowserWindow.getFocusedWindow()?.webContents.copy();
+    try {
+      const focused = BrowserWindow.getFocusedWindow();
+      if (focused && !focused.isDestroyed() && !focused.webContents?.isDestroyed()) {
+        focused.webContents.copy();
+      }
+    } catch {}
     dispatchAction('copy');
   };
 
@@ -4847,6 +4978,8 @@ const buildMacMenu = (locale = 'en') => {
       submenu: [
         { label: t('keyboardShortcuts'), accelerator: 'Cmd+.', click: () => dispatchAction('help-dialog') },
         { label: t('showDiagnostics'), accelerator: 'Cmd+Shift+L', click: () => dispatchAction('download-logs') },
+        { label: t('openLogFile'), click: () => shell.openPath(log.transports.file.getFile().path) },
+        { label: t('copySystemInfo'), click: () => void copySystemInfoAction() },
         { label: t('toggleDeveloperTools'), accelerator: 'Cmd+Alt+I', click: () => openDevToolsForMenuTarget() },
         { type: 'separator' },
         { label: t('clearCache'), click: () => void handleInvoke(null, 'desktop_clear_cache') },
@@ -4860,7 +4993,12 @@ const buildAutoHiddenMenu = (locale = 'en') => {
   const t = (key) => menuLabel(locale, key);
   const roleItem = (role, key) => roleMenuItem(locale, role, key);
   const handleCopyAction = () => {
-    BrowserWindow.getFocusedWindow()?.webContents.copy();
+    try {
+      const focused = BrowserWindow.getFocusedWindow();
+      if (focused && !focused.isDestroyed() && !focused.webContents?.isDestroyed()) {
+        focused.webContents.copy();
+      }
+    } catch {}
     dispatchAction('copy');
   };
 
@@ -4957,6 +5095,8 @@ const buildAutoHiddenMenu = (locale = 'en') => {
       submenu: [
         { label: t('keyboardShortcuts'), accelerator: 'Ctrl+.', click: () => dispatchAction('help-dialog') },
         { label: t('showDiagnostics'), accelerator: 'Ctrl+Shift+L', click: () => dispatchAction('download-logs') },
+        { label: t('openLogFile'), click: () => shell.openPath(log.transports.file.getFile().path) },
+        { label: t('copySystemInfo'), click: () => void copySystemInfoAction() },
         { type: 'separator' },
         { label: t('clearCache'), click: () => void handleInvoke(null, 'desktop_clear_cache') },
       ],
@@ -5266,7 +5406,7 @@ const dispatchTrayAction = async (action) => {
   if (!action || typeof action !== 'object') return;
 
   if (action.type === 'quit') {
-    app.quit();
+    void performConfirmedQuit();
     return;
   }
 
@@ -5525,5 +5665,11 @@ app.whenReady().then(async () => {
 }).catch((error) => {
   if (state.quitInProgress) return;
   log.error('[electron] startup failed:', error);
+  try {
+    dialog.showErrorBox(
+      'OpencodeSilver',
+      `حدث خطأ أثناء تشغيل التطبيق:\n${error?.stack || error?.message || String(error)}\n\nملف السجل:\n${state.logFile || path.join(app.getPath('userData'), 'logs', 'main.log')}`,
+    );
+  } catch {}
   app.exit(1);
 });

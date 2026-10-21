@@ -1474,12 +1474,22 @@ export const registerFsRoutes = (app, dependencies) => {
         return res.status(400).json({ error: resolved.error });
       }
 
-      await fsPromises.rm(resolved.resolved, { recursive: true, force: true });
+      // On Windows a folder that another handle still has open (a file
+      // watcher, an indexer, antivirus) fails with EBUSY/EPERM for a moment
+      // after its last write; fs.rm retries those codes itself.
+      await fsPromises.rm(resolved.resolved, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
       return res.json({ success: true, path: resolved.resolved });
     } catch (error) {
       const err = error;
       if (err && typeof err === 'object' && err.code === 'ENOENT') {
         return res.status(404).json({ error: 'File or directory not found' });
+      }
+      if (err && typeof err === 'object' && (err.code === 'EBUSY' || err.code === 'ENOTEMPTY')) {
+        console.warn(`Failed to delete path (still in use): ${err.code} ${err.path || targetPath}`);
+        return res.status(409).json({
+          error: 'The file or folder is in use by another program. Close it and try again.',
+          reason: 'busy',
+        });
       }
       if (isOsPermissionError(err)) {
         return sendOsPermissionDenied(res, 'Access denied');

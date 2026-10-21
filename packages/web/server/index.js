@@ -2283,7 +2283,16 @@ async function main(options = {}) {
     setSwitch: spacesSwitch.setSwitch,
     getArchive: () => spaceArchive,
   });
-  app.use('/api/silver', createSilverIntelligenceRouter());
+  app.use('/api/silver', async (req, res, next) => {
+    if (typeof isRequestOriginAllowed === 'function' && !isRequestOriginAllowed(req)) {
+      return res.status(403).json({ error: 'Origin not allowed' });
+    }
+    const authorized = await isRequestAuthorized(req, res, { tunnelAuthController, uiAuthController });
+    if (!authorized) {
+      return res.status(401).json({ error: 'Unauthorized: valid UI session or token required' });
+    }
+    next();
+  }, createSilverIntelligenceRouter());
   realtimeProxyRuntime = attachRealtimeProxy({
     app,
     server,

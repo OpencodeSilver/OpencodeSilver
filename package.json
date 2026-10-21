@@ -1,6 +1,6 @@
 {
   "name": "opencodesilver-monorepo",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "OpencodeSilver monorepo workspace for web, ui, and desktop runtimes",
   "private": true,
   "type": "module",
@@ -31,9 +31,7 @@
     "build:ui": "bun run --cwd packages/ui build",
     "extensions:build": "bun scripts/build-builtin-extensions.mjs",
     "build:electron": "bun run --cwd packages/electron build",
-    "electron:build": "bun run --cwd packages/electron package",
     "electron:package": "bun run --cwd packages/electron package",
-    "vscode:package": "bun run --cwd packages/vscode package",
     "build:mobile": "bun run --cwd packages/mobile build",
     "type-check": "bun run --filter '*' type-check",
     "type-check:web": "bun run --cwd packages/web type-check",
@@ -51,7 +49,7 @@
     "changelog-card": "node scripts/changelog-card/generate.mjs",
     "changelog:build": "node scripts/changelog/build.mjs",
     "changelog:check": "node scripts/changelog/build.mjs --check",
-    "postinstall": "node ./fix-deprecation.js && bun run --cwd packages/sdk build && bun run extensions:build && node ./packages/electron/scripts/ensure-electron.mjs --best-effort",
+    "postinstall": "bun run --cwd packages/sdk build && bun run extensions:build && node ./packages/electron/scripts/ensure-electron.mjs --best-effort",
     "dev:web": "bun run --cwd packages/web build:watch",
     "dev:web:server": "bun run --cwd packages/web dev:server:watch",
     "dev:web:full": "node ./scripts/dev-web-full.mjs",
@@ -200,11 +198,5 @@
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2"
-  },
-  "patchedDependencies": {
-    "@tanstack/virtual-core@3.17.11": "bun-patches/@tanstack+virtual-core+3.17.11.patch",
-    "bun-pty@0.4.8": "bun-patches/bun-pty@0.4.8.patch",
-    "happy-dom@18.0.1": "bun-patches/happy-dom@18.0.1.patch",
-    "@legendapp/list@3.6.0": "bun-patches/@legendapp%2Flist@3.6.0.patch"
   }
 }

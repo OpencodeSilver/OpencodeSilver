@@ -78,6 +78,14 @@ const copyDir = async (src, dst) => {
 
 const bunExe = resolveBun();
 
+if (process.env.OPENCODESILVER_SKIP_WEB_BUILD === '1') {
+  try {
+    await fs.access(path.join(resourcesWebDistDir, 'index.html'));
+    console.log(`[electron] using existing web assets: ${resourcesWebDistDir}`);
+    process.exit(0);
+  } catch {}
+}
+
 console.log('[electron] building web UI dist...');
 run(bunExe, ['run', 'build'], webDir);
 

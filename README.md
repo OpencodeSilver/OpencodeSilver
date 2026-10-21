@@ -21,10 +21,10 @@
 
 At the heart of OpencodeSilver lies the **Silver Intelligence Engine**, a proprietary suite of autonomous systems designed by Ahmed (GEMTM) to bring enterprise-grade reasoning, multi-model consensus, and security to modern AI-driven software development:
 
-- 🎯 **Silver Mission Orchestrator:** Autonomously plans and decomposes complex multi-phase software goals into structured milestones with state checkpoints, rollbacks, and risk scoring.
-- ⚖️ **Multi-Model Consensus Matrix:** Executes coding tasks across multiple frontier models (Claude 3.7 Sonnet, GPT-4o, DeepSeek-R1) in parallel, scoring and synthesizing the optimal AST implementation using mathematical consensus.
-- 🛡️ **AST Security & Blast Radius Inspector:** Real-time semantic diff analysis that proactively detects credential leaks (AWS, Anthropic, OpenAI, GitHub), security regressions, and cross-file blast radius impact before changes touch production.
-- 🔌 **Claude Code Headless Bridge:** Native zero-overhead integration connecting the OpencodeSilver terminal with Anthropic's Claude Code Pro/Max CLI without third-party API token billing.
+- 🎯 **Silver Mission Orchestrator:** Autonomously plans and decomposes complex multi-phase software goals into structured milestones with state checkpoints, rollbacks, and persistent mission recovery in `OPENCODESILVER_DATA_DIR`.
+- ⚖️ **Multi-Model Consensus Matrix:** Executes coding tasks across multiple models in parallel (dynamically populated from your active provider catalog and settings), scoring and synthesizing the optimal AST implementation using mathematical consensus, type check, test results, and lint metrics.
+- 🛡️ **AST Security & Blast Radius Inspector:** Real-time semantic diff analysis that proactively detects credential leaks (AWS, Anthropic, OpenAI, GitHub PATs, JWTs, PEM private keys), security regressions, and cross-file blast radius impact before changes touch production.
+- 🔌 **Claude Code Headless Bridge:** Native integration connecting the OpencodeSilver terminal with a locally installed Anthropic Claude Code CLI using your existing authenticated account, featuring live cost tracking (`total_cost_usd`) and session resumption.
 - 🌐 **Native Arabic NLP & BiDi Engine:** Full Unicode Bidirectional Algorithm (UBA) support, intelligent Alef normalization, and native right-to-left UI alignment for seamless Arabic developer workflows.
 
 ---
@@ -167,6 +167,27 @@ OpencodeSilver supports configuration through environment variables or local fil
 
 ---
 
+## Troubleshooting & Diagnostics
+
+### Application Logs
+OpencodeSilver automatically maintains diagnostic logs with size capping and automatic rotation (up to 3 archive files of 5MB each):
+- **Windows:** `%APPDATA%\opencodesilver\logs\main.log`
+- **macOS:** `~/Library/Logs/OpencodeSilver/main.log`
+- **Linux:** `~/.config/opencodesilver/logs/main.log`
+
+You can also quickly access your logs and system diagnostics via **Help → Open Log File** or **Help → Copy System Info** in the application menu.
+
+### Handling `FreeTierError`
+If you encounter a `FreeTierError` while generating responses, the bundled free tier quota has been reached. You can immediately continue using OpencodeSilver by configuring your own API key:
+1. Open **Settings** (`Ctrl+,` on Windows/Linux, `Cmd+,` on macOS).
+2. Navigate to **Providers**.
+3. Select your preferred provider (such as OpenRouter, Anthropic, DeepSeek, or OpenAI) and enter your API key.
+
+### Automatic Updates
+Automatic desktop updates check for releases via GitHub. For automated detection and installation, published releases must include `latest.yml`, the `.exe` installer, and `.blockmap` files.
+
+---
+
 ## Author & Maintainer
 
 - **Creator & Lead Architect:** [Ahmed (GEMTM)](https://github.com/OpencodeSilver/OpencodeSilver)
@@ -179,4 +200,4 @@ OpencodeSilver supports configuration through environment variables or local fil
 OpencodeSilver is licensed under the **OpencodeSilver Proprietary Software License (OSSL-1.0)**.  
 Copyright (c) 2026 **Ahmed (GEMTM)**. All rights reserved.
 
-See the [LICENSE](file:///c:/Users/GEMTM/Desktop/OpencodeSilver-main/LICENSE) file for complete terms, conditions, and commercial licensing guidelines.
+See the [LICENSE](LICENSE) file for complete terms, conditions, and commercial licensing guidelines.

@@ -64,7 +64,7 @@ const checkCommitSelection = async (mobile: boolean, tablet = false) => {
     const first = document.querySelector('[cmdk-item]');
     expect(first?.textContent).toContain('fix: first commit');
     expect(first?.textContent).toContain('Test Author');
-    expect(first?.textContent).toContain('2026');
+    expect(first?.textContent).toMatch(/2026|٢٠٢٦/);
     expect(first?.textContent).toContain('aaaaaaaa');
     await press('ArrowDown');
     expect(document.querySelector('[cmdk-item][data-selected="true"]')?.getAttribute('data-value')).toBe('b'.repeat(40));

@@ -1,6 +1,6 @@
 {
   "name": "@opencodesilver/sdk",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Contract for OpencodeSilver guests: manifest parse and iframe host bridge.",
   "author": "Ahmed (gemtm)",
   "private": false,

@@ -1,6 +1,6 @@
 {
   "name": "@opencodesilver/web",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "author": "Ahmed (gemtm)",
   "private": false,
   "type": "module",
@@ -19,7 +19,7 @@
     "build": "bun ../../scripts/build-builtin-extensions.mjs && NODE_OPTIONS=--max-old-space-size=6144 vite build && bun ../../scripts/patch-themes.mjs",
     "build:watch": "bun ../../scripts/build-builtin-extensions.mjs && vite build --watch",
     "prepack": "bun ../../scripts/build-builtin-extensions.mjs",
-    "type-check": "tsc --noEmit",
+    "type-check": "node --max-old-space-size=8192 ../../node_modules/typescript/bin/tsc --noEmit",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js",
     "test": "vitest run",
     "start": "node bin/cli.js serve"

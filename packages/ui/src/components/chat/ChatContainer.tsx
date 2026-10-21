@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import ChatEmptyState from './ChatEmptyState';
 import { useGlobalSyncStore } from '@/sync/global-sync-store';
 import MessageList, { type MessageListHandle } from './MessageList';
+import { StatusRowContainer } from './StatusRowContainer';
 import { createTimelineRevealGate, TimelineRevealGateContext, type TimelineRevealGate } from './timelineRevealGate';
 
 // How long the previous timeline stays on screen while a session that is not
@@ -363,6 +364,11 @@ const ChatViewport = React.memo(({
         <>
             {/* Permissions and forms dock above the composer (`PermissionDock`, `FormDock`). */}
             <SessionErrorNotice sessionId={currentSessionId} directory={directory} />
+
+            {/* Live working indicator inside the conversation timeline */}
+            <div className="w-full px-4 py-1 flex items-center min-w-0" data-chat-timeline-activity="true">
+                <StatusRowContainer variant="conversation" />
+            </div>
 
             {/* Tail spacer. With a floating composer it reserves the band the
                 composer covers, plus any panel docked above it (queue, BTW),

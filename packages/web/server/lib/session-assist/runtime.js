@@ -195,7 +195,7 @@ export const createSessionAssistRuntime = ({
       });
     } catch (error) {
       if (!signal.aborted && Number(error?.statusCode) !== 404 && !QUIET_FAILURE_CODES.has(error?.code)) {
-        console.warn('[session-assist] generation failed');
+        console.warn(`[session-assist] generation failed: ${error?.code || error?.statusCode || ''} ${error?.message || error}`.replace(/\s+/g, ' ').trim());
       }
       return;
     }
@@ -237,6 +237,21 @@ export const createSessionAssistRuntime = ({
     persisted.set(sessionId, directory);
   };
 
+  // Say why reading or saving failed, but only once per distinct reason a
+  // minute, so an unreachable server does not repeat the line on every turn.
+  const ASSIST_FAILURE_LOG_INTERVAL_MS = 60_000;
+  const lastAssistFailureLog = new Map();
+  const reportAssistFailure = (sessionId, error) => {
+    const reason = [error?.name, error?.code, error?.statusCode, error?.message]
+      .filter((part) => part !== undefined && part !== null && part !== '')
+      .join(' ') || String(error);
+    const now = Date.now();
+    if (now - (lastAssistFailureLog.get(reason) || 0) < ASSIST_FAILURE_LOG_INTERVAL_MS) return;
+    lastAssistFailureLog.set(reason, now);
+    if (lastAssistFailureLog.size > 50) lastAssistFailureLog.clear();
+    console.warn(`[session-assist] failed to read or save assistance for session ${sessionId}: ${reason}`);
+  };
+
   const startGeneration = (sessionId, directory, armedAt, allowed) => {
     if (stopped) return;
     if (inflight.has(sessionId)) {
@@ -246,8 +261,12 @@ export const createSessionAssistRuntime = ({
     const controller = new AbortController();
     inflight.set(sessionId, { controller, armedAt });
     generateAssist(sessionId, directory, controller.signal, allowed)
-      .catch(() => {
-        if (!controller.signal.aborted) console.warn('[session-assist] failed to read or save assistance');
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        // The managed OpenCode server was restarted under us: the next idle
+        // event re-arms generation against the new runtime.
+        if (error?.message === 'Session assist runtime changed') return;
+        reportAssistFailure(sessionId, error);
       })
       .finally(() => {
         inflight.delete(sessionId);

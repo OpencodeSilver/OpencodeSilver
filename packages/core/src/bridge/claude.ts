@@ -202,4 +202,75 @@ export class SilverClaudeBridge {
   public parseStreamLine(line: string): ClaudeStreamEvent | null {
     return this.parseStreamEvents(line)[0] ?? null;
   }
+
+  /**
+   * Detects whether the Claude Code CLI binary (`claude`) is installed and available in PATH.
+   * Also retrieves its version string.
+   */
+  public async detectClaudeInstallation(
+    runner?: (cmd: string, args: string[]) => Promise<{ stdout: string; stderr?: string; exitCode: number }>
+  ): Promise<{ installed: boolean; version?: string; error?: string }> {
+    try {
+      if (runner) {
+        const result = await runner('claude', ['--version']);
+        if (result.exitCode === 0 && result.stdout) {
+          const match = result.stdout.match(/(\d+\.\d+\.\d+[\w.-]*)/);
+          return { installed: true, version: match ? match[1] : result.stdout.trim() };
+        }
+        return {
+          installed: false,
+          error: result.stderr?.trim() || 'claude returned non-zero exit code',
+        };
+      }
+
+      // Default Node/Bun environment execution
+      const { spawnSync } = await import('node:child_process');
+      const res = spawnSync('claude', ['--version'], {
+        encoding: 'utf8',
+        windowsHide: true,
+        shell: process.platform === 'win32',
+      });
+
+      if (res.status === 0 && res.stdout) {
+        const match = res.stdout.match(/(\d+\.\d+\.\d+[\w.-]*)/);
+        return { installed: true, version: match ? match[1] : res.stdout.trim() };
+      }
+
+      return {
+        installed: false,
+        error: res.error?.message || res.stderr?.trim() || 'Claude Code binary not found in PATH',
+      };
+    } catch (err: any) {
+      return {
+        installed: false,
+        error: err?.message || 'Failed to probe Claude Code installation',
+      };
+    }
+  }
+
+  /**
+   * Calculates the cumulative cost from a stream of ClaudeStreamEvents.
+   */
+  public summarizeSessionCost(events: ClaudeStreamEvent[]): number {
+    let latestCost = 0;
+    for (const ev of events) {
+      if (typeof ev.costUsd === 'number' && ev.costUsd > latestCost) {
+        latestCost = ev.costUsd;
+      }
+    }
+    return latestCost;
+  }
+
+  /**
+   * Finds the latest session ID from a stream of ClaudeStreamEvents, enabling resumption.
+   */
+  public extractSessionId(events: ClaudeStreamEvent[]): string | undefined {
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].sessionId) {
+        return events[i].sessionId;
+      }
+    }
+    return undefined;
+  }
 }
+

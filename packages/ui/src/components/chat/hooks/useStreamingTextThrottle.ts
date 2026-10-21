@@ -46,6 +46,14 @@ export const useStreamingTextThrottle = ({
     allowTextReplacement = false,
 }: UseStreamingTextThrottleInput): string => {
     const [throttledText, setThrottledText] = React.useState(text);
+    // What effects actually emitted. The synchronous first render returns this
+    // instead of `throttledText`: an identity that mounts mid-stream with no
+    // committed line yet (`commitStreamedText` holds an unfinished paragraph —
+    // the case issue #2020 covers) would otherwise render raw text that no
+    // effect ever emitted, leaving the caller's own gate as the only guard.
+    const [committedText, setCommittedText] = React.useState(
+        () => getStreamingThrottleText(text, text, isStreaming, allowTextReplacement),
+    );
     const latestTextRef = React.useRef(text);
     const throttledTextRef = React.useRef(throttledText);
 
@@ -68,14 +76,19 @@ export const useStreamingTextThrottle = ({
         clearTimer(state);
         state.pendingText = latestTextRef.current;
         state.lastEmitAt = 0;
-        setThrottledText(latestTextRef.current);
-    }, [identityKey]);
+        // New identity or a streaming edge: re-apply the gate, never the raw
+        // text, so a held paragraph stays held on the first streaming render.
+        const seeded = getStreamingThrottleText(latestTextRef.current, latestTextRef.current, isStreaming, allowTextReplacement);
+        setThrottledText(seeded);
+        setCommittedText(seeded);
+    }, [identityKey, isStreaming]);
 
     React.useEffect(() => {
         const state = stateRef.current;
         state.pendingText = text;
         const currentThrottled = throttledTextRef.current;
         const stableText = getStreamingThrottleText(currentThrottled, text, isStreaming, allowTextReplacement);
+        setCommittedText(stableText);
 
         if (!isStreaming) {
             clearTimer(state);
@@ -99,7 +112,9 @@ export const useStreamingTextThrottle = ({
             state.timer = null;
             state.lastEmitAt = Date.now();
             setThrottledText((prev) => {
-                return getStreamingThrottleText(prev, state.pendingText, isStreaming, allowTextReplacement);
+                const next = getStreamingThrottleText(prev, state.pendingText, isStreaming, allowTextReplacement);
+                setCommittedText(next);
+                return next;
             });
         }, remaining);
 
@@ -115,5 +130,5 @@ export const useStreamingTextThrottle = ({
         };
     }, []);
 
-    return throttledText;
+    return committedText;
 };

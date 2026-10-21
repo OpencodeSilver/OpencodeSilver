@@ -1,6 +1,6 @@
 {
   "name": "@opencodesilver/electron",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "description": "Electron desktop runtime for OpencodeSilver",
   "author": "Ahmed (gemtm)",
@@ -53,7 +53,7 @@
     "package": "bun run --cwd ../core build && bun run build:web-assets && bun run prepare:opencode-cli && bun run bundle:main && bun run rebuild:native && node ./scripts/package.mjs",
     "finalize:latest-yml": "node ./scripts/finalize-latest-yml.mjs",
     "type-check": "node --check ./entry.mjs && node --check ./early-startup.mjs && node --check ./main.mjs && node --check ./preload.mjs",
-    "lint": "node -e \"process.exit(0)\""
+    "lint": "eslint \"./*.mjs\" --config ../../eslint.config.js"
   },
   "build": {
     "appId": "dev.opencode.silver.desktop",
@@ -70,8 +70,15 @@
       "dist-bundle/entry.mjs",
       "dist-bundle/main.mjs",
       "dist-bundle/early-startup.mjs",
-      "preload.mjs"
+      "preload.mjs",
+      "!**/node_modules/*/{test,__tests__,tests,powertest}/**",
+      "!**/*.test.*",
+      "!**/*.spec.*",
+      "!**/*.map",
+      "!**/packages/web/src/**",
+      "!**/packages/web/vite.config.*"
     ],
+    "compression": "maximum",
     "extraResources": [
       {
         "from": "resources/web-dist",

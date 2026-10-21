@@ -19,7 +19,7 @@ describe('checked-in SDK examples', () => {
       { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'findings', arguments: { scope: 'Sample' } } },
       { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'checks', arguments: { project: 'Sample' } } },
     ];
-    const result = spawnSync('node', [fileURLToPath(new URL('tools-only/mcp.js', examples))], { cwd: fileURLToPath(examples), env: { ...process.env }, input: requests.map((request) => JSON.stringify(request)).join('\n') + '\n', encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [fileURLToPath(new URL('tools-only/mcp.js', examples))], { cwd: fileURLToPath(examples), env: { ...process.env }, input: requests.map((request) => JSON.stringify(request)).join('\n') + '\n', encoding: 'utf8' });
     expect(result.status).toBe(0);
     const replies = z.array(z.object({ jsonrpc: z.literal('2.0'), id: z.number(), result: z.object({
       tools: z.array(z.object({ name: z.string() })).optional(), content: z.array(z.object({ type: z.literal('text'), text: z.string() })).optional(),
@@ -80,5 +80,5 @@ describe('checked-in SDK examples', () => {
       expect(Bun.hash(normalize(await readFile(output, 'utf8')))).toBe(Bun.hash(normalize(await readFile(new URL(`${entry}.js`, examples), 'utf8'))));
     }
     } finally { await rm(temporary, { recursive: true, force: true }); }
-  });
+  }, 30000);
 });

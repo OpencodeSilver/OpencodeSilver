@@ -124,6 +124,10 @@ const main = async () => {
     ? fs.readFileSync(archMarkerPath, 'utf8').trim()
     : null;
   const currentMarker = `${targetPlatform}-${targetArchitecture.opencode}`;
+  if (fs.existsSync(outputBinary) && fs.statSync(outputBinary).size > 1000000) {
+    console.log(`[electron] bundled OpenCode CLI already prepared: ${outputBinary} (${version}, ${currentMarker})`);
+    return;
+  }
   const existingVersion = existingMarker === currentMarker && targetPlatform === process.platform
     ? readBinaryVersion(outputBinary)
     : null;

@@ -18,3 +18,4 @@ release-builds/
 packages/vscode/*.vsix
 *.blockmap
 dist-*/
+packages/*/dist-*/

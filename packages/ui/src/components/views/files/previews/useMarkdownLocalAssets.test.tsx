@@ -30,14 +30,16 @@ function Preview({ container, filePath, onOpenFile, enabled, colorScheme = 'ligh
   return null;
 }
 
+let windowInstance: Window;
+
 const flush = async () => {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await windowInstance?.happyDOM?.waitUntilComplete?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
   });
 };
 
 describe('useMarkdownLocalAssets', () => {
-  let windowInstance: Window;
   let root: Root;
   let container: HTMLDivElement;
   let created: string[];
@@ -78,11 +80,6 @@ describe('useMarkdownLocalAssets', () => {
       root.render(<Preview container={container} filePath="/repo/docs/report.md" onOpenFile={() => {}} enabled />);
     });
     expect(fetchCalls).toEqual([]);
-
-    // A collection between observe() and the mutation must not detach the
-    // observer. Forcing one here makes that deterministic; see
-    // bun-patches/happy-dom@18.0.1.patch.
-    gc(true);
 
     // The markdown pipeline inserts the DOM later, the way the worker does.
     const image = document.createElement('img');

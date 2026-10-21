@@ -69,6 +69,9 @@ export const WorkStatusSubagentsSection: React.FC<Props> = ({ sessionId, directo
   const openContextPanelTab = useUIStore((state) => state.openContextPanelTab);
   const setCurrentSession = useSessionUIStore((state) => state.setCurrentSession);
   const setSectionExpanded = useUIStore((state) => state.setWorkStatusSectionExpanded);
+  const expanded = useUIStore(
+    React.useCallback((state) => state.workStatusExpandedSections[SECTION_ID] ?? true, []),
+  );
 
   // Subagents appearing where there were none is the one moment this section
   // has something urgent to say, so it opens itself. Only on the empty→present
@@ -123,17 +126,17 @@ export const WorkStatusSubagentsSection: React.FC<Props> = ({ sessionId, directo
       <div className="max-h-64 overflow-y-auto">
         {rows.map(({ child, blocked, asked, busy, failed, done }) => {
           const label = child.title?.trim() || t('chat.workStatus.subagent.untitled');
-          let statusLabel = t('ag.inspector.subagent.completed');
+          let statusLabel = t('chat.workStatus.subagent.done');
           if (blocked) {
             statusLabel = t('chat.workStatus.subagent.needsPermission');
           } else if (asked) {
             statusLabel = t('chat.workStatus.subagent.askedQuestion');
           } else if (busy) {
-            statusLabel = t('ag.inspector.subagent.running');
+            statusLabel = t('chat.workStatus.subagent.working');
           } else if (failed) {
             statusLabel = t('chat.workStatus.subagent.failed');
           } else if (done) {
-            statusLabel = t('ag.inspector.subagent.completed');
+            statusLabel = t('chat.workStatus.subagent.done');
           }
           const childCost = perChildCost.get(child.id) ?? 0;
           const modelName = getProviderModelDisplayName(
@@ -154,15 +157,34 @@ export const WorkStatusSubagentsSection: React.FC<Props> = ({ sessionId, directo
                   {label}
                 </span>
                 <div className="flex items-center gap-2 text-[12px] leading-tight text-muted-foreground">
-                  <span className={blocked || asked ? 'text-[var(--status-warning)]' : failed ? 'text-[var(--status-error)]' : undefined}>
-                    {statusLabel}
-                  </span>
-                  {busy ? <SubagentDuration sessionId={child.id} /> : null}
+                  {/* Only states the row cannot otherwise show get a visible
+                      label: a blocker and a failure both need words, while a
+                      running or settled row already carries its state in the
+                      icon, the duration and the aria-label. A settled row that
+                      also painted "Completed" made every row look the same. */}
+                  {blocked || asked || failed ? (
+                    <span className={blocked || asked ? 'text-[var(--status-warning)]' : 'text-[var(--status-error)]'}>
+                      {statusLabel}
+                    </span>
+                  ) : null}
+                  {busy && !blocked && !asked && expanded ? <SubagentDuration sessionId={child.id} /> : null}
                   {childCost > 0 ? <span className="tabular-nums opacity-75">{formatCost(childCost)}</span> : null}
                 </div>
               </div>
               <span className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/80 transition-colors group-hover:text-foreground">
-                <Icon name="close-circle" className="size-4" />
+                {/* The icon is the row's whole status signal, so it maps every
+                    state the row can be in: blockers warn, a running turn
+                    pulses, a failure stays visible after the turn ends, and a
+                    child whose status has not loaded yet still reads as
+                    pending rather than done. */}
+                <Icon
+                  name={blocked || asked ? 'alert'
+                    : failed ? 'close-circle'
+                    : busy ? 'record-circle'
+                    : done ? 'checkbox-circle'
+                    : 'time'}
+                  className="size-4"
+                />
               </span>
             </button>
           );

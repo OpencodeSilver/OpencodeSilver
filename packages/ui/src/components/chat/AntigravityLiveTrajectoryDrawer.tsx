@@ -92,8 +92,9 @@ export function extractLiveTrajectory(
 
       const input = stateObj.input || part.args || {};
       const fileCandidate =
-        input.filePath || input.TargetFile || input.AbsolutePath || input.path || input.file || undefined;
+        input.filePath || input.TargetFile || input.AbsolutePath || input.path || input.file || input.file_path || input.filename || undefined;
       const commandCandidate = input.command || input.CommandLine || input.cmd || undefined;
+      const queryCandidate = input.pattern || input.query || input.url || input.prompt || input.description || undefined;
       const skillCandidate = input.skill || input.name || undefined;
 
       if (typeof fileCandidate === 'string' && fileCandidate.trim()) {
@@ -131,11 +132,13 @@ export function extractLiveTrajectory(
           };
 
       const shortTarget =
-        typeof fileCandidate === 'string'
+        typeof fileCandidate === 'string' && fileCandidate.trim()
           ? fileCandidate.split(/[\\/]/).pop()
-          : typeof commandCandidate === 'string'
-            ? commandCandidate.slice(0, 36)
-            : '';
+          : typeof commandCandidate === 'string' && commandCandidate.trim()
+            ? commandCandidate.trim().replace(/\s+/g, ' ').slice(0, 36)
+            : typeof queryCandidate === 'string' && queryCandidate.trim()
+              ? queryCandidate.trim().replace(/\s+/g, ' ').slice(0, 32)
+              : '';
 
       const explicitAction = input.toolAction || stateObj.title;
       const explicitSummary = input.toolSummary;
@@ -165,7 +168,7 @@ export function extractLiveTrajectory(
 
   const runningStep = [...steps].reverse().find((s) => s.status === 'running');
   const lastStep = steps[steps.length - 1];
-  const focusStep = runningStep || lastStep;
+  const focusStep = runningStep || (lastStep?.status === 'running' ? lastStep : null);
 
   return {
     steps,

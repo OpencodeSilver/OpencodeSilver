@@ -3797,6 +3797,9 @@ export const dict = {
   "agy.tool.skill.summary": "Skill activation",
   "agy.tool.generic.action": "Running {tool}",
   "agy.tool.generic.summary": "{tool} execution",
+  "chat.freeTierError.title": "Free Tier Usage Limit Reached (FreeTierError)",
+  "chat.freeTierError.description": "You have reached the free tier limit provided by OpenCode. To continue using frontier models without interruption, please add your own API key in Settings.",
+  "chat.freeTierError.addApiKey": "Add API Key",
 } as const;
 
 export type I18nKey = keyof typeof dict;

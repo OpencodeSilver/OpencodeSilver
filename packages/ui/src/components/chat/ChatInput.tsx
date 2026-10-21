@@ -1,5 +1,4 @@
 import React from 'react';
-import { StatusRowContainer } from './StatusRowContainer';
 import { formatChangeRequestReference } from '@/lib/source-control/identity';
 import { ComposerDictation } from '@/components/dictation/ComposerDictation';
 // sessionStore removed — currentSessionId comes from useSessionUIStore
@@ -4110,8 +4109,6 @@ const ChatInputComponent: React.FC<ChatInputProps> = ({
                     <div className={cn('relative flex flex-col', isComposerExpanded && 'flex-1 min-h-0')}>
                     <div className={cn("overflow-hidden", isComposerExpanded && 'flex flex-1 min-h-0 flex-col')}>
                         {parallel.isActive ? <ParallelComposerStrip parallel={parallel} project={parallelProjectRef} /> : null}
-                        {/* Live "working…" status sits inside the box, above the prompt. */}
-                        {!isBtwActive ? <StatusRowContainer variant="inline" /> : null}
                         {artifactActionRow}
                         {composerTopRows}
 

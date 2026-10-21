@@ -3126,7 +3126,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.statusRow.todo.priority.low": "أولوية منخفضة",
   "chat.statusRow.actions.stopGeneratingAria": "توقف عن التوليد",
   "chat.statusRow.tasksTitle": "المهام",
-  "chat.statusRow.modelStatus": "{model} هو {status}",
+  "chat.statusRow.modelStatus": "{model}: {status}",
   "chat.statusRow.summary.activeLeft": "{active} نشط · {left} يسار",
   "chat.revertIndicator.redo": "إعادة",
   "chat.revertIndicator.redoAria": "إعادة - استعادة الرسائل التي تم إرجاعها",
@@ -4561,4 +4561,7 @@ export const dict: Record<I18nKey, string> = {
   "agy.tool.skill.summary": "تحميل مهارة",
   "agy.tool.generic.action": "تشغيل {tool}",
   "agy.tool.generic.summary": "تنفيذ {tool}",
+  "chat.freeTierError.title": "انتهت الحصة المجانية للنماذج (FreeTierError)",
+  "chat.freeTierError.description": "لقد استهلكت الحصة المجانية المتاحة عبر خوادم OpenCode. لمواصلة استخدام النماذج دون انقطاع، يرجى إضافة مفتاح API خاص بك في صفحة المزوّدين.",
+  "chat.freeTierError.addApiKey": "إضافة مفتاح API",
 };

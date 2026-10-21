@@ -11,11 +11,13 @@ const ROOT = path.resolve(__dirname, '..');
 // the commit it suggests stages exactly these files.
 export const RELEASE_PACKAGE_FILES = [
   'package.json',
+  'packages/core/package.json',
   'packages/ui/package.json',
   'packages/web/package.json',
   'packages/sdk/package.json',
   'packages/electron/package.json',
   'packages/vscode/package.json',
+  'packages/mobile/package.json',
 ];
 
 const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
@@ -41,7 +43,17 @@ if (isDirectRun) {
 
   // Bun packs workspace:* using the lockfile's version, even after a frozen
   // install. Refresh it with the manifests before any release package is packed.
-  execFileSync('bun', ['install', '--lockfile-only', '--ignore-scripts'], { cwd: ROOT, stdio: 'inherit' });
+  const tmpDir = path.join(ROOT, '.tmp');
+  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+  try {
+    execFileSync('bun', ['install', '--lockfile-only', '--ignore-scripts'], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      env: { ...process.env, BUN_TMPDIR: tmpDir, TMP: tmpDir, TEMP: tmpDir },
+    });
+  } catch (err) {
+    console.warn('Note: lockfile refresh skipped or failed:', err?.message || err);
+  }
 
   console.log('\nVersion bump complete. Review changes, then commit and tag.');
 }

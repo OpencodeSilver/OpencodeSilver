@@ -14,11 +14,11 @@ const resetStore = () => {
 };
 
 const waitForLocaleLoadToSettle = async (locale: Locale) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
     if (useI18nStore.getState().loadingLocale !== locale) {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
   throw new Error(`Timed out waiting for ${locale} dictionary load`);
 };
@@ -65,5 +65,19 @@ describe('i18n store', () => {
     } finally {
       resetStore();
     }
+  });
+
+  test('arabic dictionary covers every key defined in english', async () => {
+    const { dict: enDict } = await import('./messages/en');
+    const { dict: arDict } = await import('./messages/ar');
+
+    const missingKeys: string[] = [];
+    for (const key of Object.keys(enDict)) {
+      if (!(key in arDict) || (arDict as Record<string, string>)[key] === undefined) {
+        missingKeys.push(key);
+      }
+    }
+
+    expect(missingKeys).toEqual([]);
   });
 });

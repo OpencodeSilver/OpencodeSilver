@@ -116,7 +116,7 @@ export const resolveThemePreferencesFromStorageEvent = (
 // the pre-React splash shells and the Android status bar read them as
 // cosmetic last-writer-wins hints.
 const readLegacyThemePreferences = (): StoredThemePreferences => {
-  let themeMode: ThemeMode = 'dark';
+  let themeMode: ThemeMode = 'system';
   let lightThemeId: string = DEFAULT_LIGHT_THEME_ID;
   let darkThemeId: string = DEFAULT_DARK_THEME_ID;
 

@@ -26,8 +26,8 @@ interface StatusRowProps {
   stepCount?: number;
   activeSkillsCount?: number;
   currentToolAction?: string | null;
-  /** `inline` renders a slim row inside the composer box instead of a floating chip. */
-  variant?: 'floating' | 'inline';
+  /** `conversation` renders a clean pill in the timeline; `inline` inside composer; `floating` classic. */
+  variant?: 'floating' | 'inline' | 'conversation';
 }
 
 export const StatusRow: React.FC<StatusRowProps> = ({
@@ -97,10 +97,15 @@ export const StatusRow: React.FC<StatusRowProps> = ({
 
       {isWorking ? (
         <div
-          className={variant === 'inline'
-            ? "flex w-full min-w-0 items-center gap-2 h-8 whitespace-nowrap px-3 border-b border-[var(--border-soft,var(--border))]"
-            : "oc-glass-popover inline-flex w-max max-w-full items-center gap-2 h-8 whitespace-nowrap rounded-full [corner-shape:round] px-3"}
+          className={
+            variant === 'conversation'
+              ? "flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-card/85 border border-border/60 text-foreground w-fit max-w-full shadow-sm backdrop-blur-md transition-all animate-in fade-in slide-in-from-bottom-1 duration-200"
+              : variant === 'inline'
+                ? "flex w-full min-w-0 items-center gap-2 h-8 whitespace-nowrap px-3 border-b border-[var(--border-soft,var(--border))]"
+                : "oc-glass-popover inline-flex w-max max-w-full items-center gap-2 h-8 whitespace-nowrap rounded-full [corner-shape:round] px-3"
+          }
           data-status-row-variant={variant}
+          dir="auto"
         >
           <div className="flex items-center min-w-0 gap-2 overflow-x-hidden">
             {shouldRenderPlaceholder ? (

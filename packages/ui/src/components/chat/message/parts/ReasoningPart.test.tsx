@@ -11,6 +11,7 @@ import { SyncProvider } from '@/sync/sync-context';
 
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import type { RuntimeAPIs } from '@/lib/api/types';
+import { useUIStore } from '@/stores/useUIStore';
 
 import { I18nProvider } from '@/lib/i18n';
 import ReasoningPart, { ReasoningTimelineBlock } from './ReasoningPart';
@@ -291,15 +292,44 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
     time,
   });
 
-  // Server rendering reads the UI store's initial state, which is
-  // chatRenderMode 'live' — the mode in which the streaming presentation is
-  // reachable and the issue reproduces.
   const renderPart = (part: ReasoningPartFixture, streamPhase?: StreamPhase): string =>
     renderToStaticMarkup(
       <TestProviders>
         <ReasoningPart part={part} messageId="msg_2020" streamPhase={streamPhase} />
       </TestProviders>,
     );
+
+  // The live-streaming presentation is reachable only in chatRenderMode 'live',
+  // which is NOT the shipped default and cannot be reached through SSR:
+  // `renderToStaticMarkup` makes zustand's `useSyncExternalStore` read
+  // `getInitialState()`, so a store mutation before the render is invisible.
+  // Mount a client root instead — it reads `getState()` — and restore the store
+  // when the test is done.
+  const renderLivePart = async (
+    part: ReasoningPartFixture,
+    streamPhase: StreamPhase,
+  ): Promise<string> => {
+    const previous = useUIStore.getState().chatRenderMode;
+    useUIStore.setState({ chatRenderMode: 'live' });
+    const dom = installDomStub();
+    const root = createRoot(dom.container);
+    try {
+      await act(async () => {
+        root.render(
+          <TestProviders>
+            <ReasoningPart part={part} messageId="msg_2020" streamPhase={streamPhase} />
+          </TestProviders>,
+        );
+      });
+      return dom.container.innerHTML;
+    } finally {
+      await act(async () => {
+        root.unmount();
+      });
+      dom.restore();
+      useUIStore.setState({ chatRenderMode: previous });
+    }
+  };
 
   test('reasoning without time.end and without a live stream phase renders complete, not streaming', () => {
     // Freshly opened completed session: cached part never received `time.end`
@@ -343,11 +373,11 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
     </TestProviders>,
   );
 
-  test('live in-progress reasoning renders as streaming, folded to its header by default', () => {
+  test('live in-progress reasoning renders as streaming, folded to its header by default', async () => {
     // Genuinely live: the message-level stream phase reports streaming and the
     // part has not ended. The header shows the busy indicator; the body stays
     // folded so its closing at the end does not move the chat.
-    const markup = renderPart(makeReasoningPart({ start: 1_000 }), 'streaming');
+    const markup = await renderLivePart(makeReasoningPart({ start: 1_000 }), 'streaming');
 
     expect(markup).toContain(BUSY_INDICATOR);
     expect(markup).toContain('aria-expanded="false"');
@@ -370,11 +400,11 @@ describe('ReasoningPart streaming gating (issue #2020)', () => {
     expect(markup).toContain('data-scrollable="true"');
   });
 
-  test('a live part with no committed text yet shows the busy header and no empty summary', () => {
+  test('a live part with no committed text yet shows the busy header and no empty summary', async () => {
     // The streaming early-return keeps the block mounted before the block-level
     // reveal commits a first line. The header must read as busy and must not
     // paint an empty summary row.
-    const markup = renderPart(makeReasoningPart({ start: 1_000 }, ''), 'streaming');
+    const markup = await renderLivePart(makeReasoningPart({ start: 1_000 }, ''), 'streaming');
     const withText = renderPart(makeReasoningPart({ start: 1_000 }), undefined);
 
     expect(markup).toContain(BUSY_INDICATOR);

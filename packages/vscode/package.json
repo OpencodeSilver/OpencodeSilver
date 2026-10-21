@@ -2,7 +2,7 @@
   "name": "opencodesilver",
   "displayName": "OpencodeSilver",
   "description": "%extension.description%",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "publisher": "gemtm",
   "author": "Ahmed (gemtm)",
   "license": "UNLICENSED",
@@ -288,7 +288,6 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "node -e \"process.exit(0)\"",
     "build": "bun run build:extension && bun run build:webview",
     "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify --main-fields=module,main && node -e \"const fs=require('fs'),path=require('path');const src=path.resolve('../web/server/lib/opencode/default-skills');const dst=path.resolve('dist/default-skills');if(fs.existsSync(src)){fs.rmSync(dst,{recursive:true,force:true});fs.cpSync(src,dst,{recursive:true});}\"",
     "build:webview": "VITE_OPENCODE_URL=/api vite build",
@@ -296,7 +295,7 @@
     "dev:webview": "vite --host localhost --port 5173 --strictPort",
     "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap --main-fields=module,main",
     "watch:webview": "vite build --watch",
-    "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.webview.json",
+    "type-check": "node --max-old-space-size=8192 ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.json && node --max-old-space-size=8192 ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.webview.json",
     "lint": "bun x eslint --ext .ts,.tsx src webview",
     "test": "node ../../scripts/run-isolated-tests.mjs src webview",
     "package": "vsce package --no-dependencies --allow-package-all-secrets"

@@ -49,10 +49,14 @@
       ${EndIf}
       IntOp $R2 $R2 + 1
       ${If} $R2 >= 5
-        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION|MB_TOPMOST "تعذّر إغلاق OpencodeSilver تلقائياً. أغلقه من مدير المهام ثم اضغط «إعادة المحاولة».$\r$\n$\r$\nCould not close OpencodeSilver. Close it from Task Manager, then click Retry." /SD IDCANCEL IDRETRY ocs_retry
-        Quit
-        ocs_retry:
-        StrCpy $R2 0
+        ${IfNot} ${Silent}
+          MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION|MB_TOPMOST "تعذّر إغلاق OpencodeSilver تلقائياً. أغلقه من مدير المهام ثم اضغط «إعادة المحاولة».$\r$\n$\r$\nCould not close OpencodeSilver. Close it from Task Manager, then click Retry." /SD IDCANCEL IDRETRY ocs_retry
+          Quit
+          ocs_retry:
+          StrCpy $R2 0
+        ${Else}
+          Quit
+        ${EndIf}
       ${EndIf}
     ${Loop}
     ; Let Windows release the file handles before files are replaced.

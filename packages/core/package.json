@@ -1,6 +1,6 @@
 {
   "name": "@opencodesilver/core",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "description": "Core intelligence engine, mission orchestrator, and multi-model consensus matrix for OpencodeSilver",
   "author": "Ahmed (GEMTM)",
@@ -15,12 +15,13 @@
     }
   },
   "scripts": {
-    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build": "bun build ./src/index.ts --outdir ./dist --target node && tsc --emitDeclarationOnly",
     "test": "bun test",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"./src/**/*.ts\" --config ../../eslint.config.js"
   },
   "dependencies": {
-    "zod": "^3.23.8"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "typescript": "^5.8.2"

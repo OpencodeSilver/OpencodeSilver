@@ -21,6 +21,14 @@ import { useRoutingStore } from '@/stores/useRoutingStore';
 
 type VariantChoice = string | null | undefined;
 
+/**
+ * The effort trigger renders the selection as a parenthesized, capitalized
+ * label — `(High)`, or `(Default)` when nothing is selected — to keep it
+ * visually distinct from the model name beside it.
+ */
+const variantTriggerLabel = (variant: VariantChoice): string =>
+  `(${variant ? variant.charAt(0).toUpperCase() + variant.slice(1) : 'Default'})`;
+
 type UserModelChoice = {
   id: string;
   agent?: string;
@@ -562,7 +570,7 @@ describe('ModelControls effort restore', () => {
     const { dom, cleanup } = await renderModelControls();
     try {
       expect(dom.container.querySelector('.model-controls__model-trigger')?.textContent).toContain('GPT Five');
-      expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe('high');
+      expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe('(High)');
       expect(dom.container.querySelector('.model-controls__agent-label')?.textContent).toBe('Build');
       expect(useConfigStore.getState().currentVariant).toBe('high');
       expect(overrideWrites).toEqual([]);
@@ -813,7 +821,7 @@ describe('ModelControls effort restore', () => {
         expect(variantWrites).toEqual([]);
         expect(saveModel.mock.calls).toEqual([]);
         expect(dom.container.querySelector('.model-controls__agent-label')).toBeNull();
-        expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe(variant ?? 'Default');
+        expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe(variantTriggerLabel(variant));
         if (!isMobile) {
           expect(dom.container.querySelector('.model-controls__model-trigger')?.closest('[data-menu-open]')?.getAttribute('data-menu-open')).toBe('false');
         }

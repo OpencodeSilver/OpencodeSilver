@@ -11,3 +11,4 @@ export * from './inspector/reviewer';
 export * from './bridge/claude';
 export * from './prompts/agents';
 export * from './i18n/arabic-nlp';
+export * from './server/router';

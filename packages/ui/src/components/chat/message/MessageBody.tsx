@@ -2384,24 +2384,58 @@ const AssistantMessageBody = React.memo(({
                     {renderedParts}
                     {showErrorMessage && (
                         <FadeInOnReveal key="assistant-error">
-                            <div className="group/assistant-text relative mt-3 max-w-full break-words rounded-2xl border border-[var(--status-info-border)] bg-[var(--status-info-background)] px-4 py-3 text-base leading-relaxed">
-                                <div className="flex items-center gap-3">
-                                    <Icon name="information" className="size-4 shrink-0 text-[var(--status-info)]" />
-                                    <div className="min-w-0 flex-1 break-words">
-                                        <LongErrorText text={errorMessage ?? ''}>
-                                            {(visibleText) => (
-                                                <SimpleMarkdownRenderer
-                                                    content={visibleText}
-                                                    onShowPopup={onShowPopup}
-                                                    className="[&_.markdown-content>*:first-child]:mt-0 [&_.markdown-content>*:last-child]:mb-0"
-                                                    enableFileReferences={false}
-                                                />
-                                            )}
-                                        </LongErrorText>
+                            {Boolean(
+                                (errorMessage && /FreeTierError|free\s*tier/i.test(errorMessage)) ||
+                                (errorResponseBody && /FreeTierError|free\s*tier/i.test(errorResponseBody))
+                            ) ? (
+                                <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-[var(--status-warning-border)] bg-[var(--status-warning-background)] px-4 py-3 text-base leading-relaxed">
+                                    <div className="flex items-start gap-3">
+                                        <Icon name="information" className="mt-1 size-4 shrink-0 text-[var(--status-warning)]" />
+                                        <div className="flex-1 space-y-1">
+                                            <p className="font-semibold text-foreground">
+                                                {t('chat.freeTierError.title')}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                                {t('chat.freeTierError.description')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-1 flex items-center gap-2 self-start pl-7">
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                            onClick={() => {
+                                                useUIStore.setState({
+                                                    settingsPage: 'providers',
+                                                    settingsProvidersConnectRequested: true,
+                                                    isSettingsDialogOpen: true,
+                                                });
+                                            }}
+                                        >
+                                            {t('chat.freeTierError.addApiKey')}
+                                        </Button>
                                     </div>
                                 </div>
-                                {errorResponseBody ? <ErrorResponseDetails body={errorResponseBody} className="mt-1 pl-7" /> : null}
-                            </div>
+                            ) : (
+                                <div className="group/assistant-text relative mt-3 max-w-full break-words rounded-2xl border border-[var(--status-info-border)] bg-[var(--status-info-background)] px-4 py-3 text-base leading-relaxed">
+                                    <div className="flex items-center gap-3">
+                                        <Icon name="information" className="size-4 shrink-0 text-[var(--status-info)]" />
+                                        <div className="min-w-0 flex-1 break-words">
+                                            <LongErrorText text={errorMessage ?? ''}>
+                                                {(visibleText) => (
+                                                    <SimpleMarkdownRenderer
+                                                        content={visibleText}
+                                                        onShowPopup={onShowPopup}
+                                                        className="[&_.markdown-content>*:first-child]:mt-0 [&_.markdown-content>*:last-child]:mb-0"
+                                                        enableFileReferences={false}
+                                                    />
+                                                )}
+                                            </LongErrorText>
+                                        </div>
+                                    </div>
+                                    {errorResponseBody ? <ErrorResponseDetails body={errorResponseBody} className="mt-1 pl-7" /> : null}
+                                </div>
+                            )}
                         </FadeInOnReveal>
                     )}
                 </div>

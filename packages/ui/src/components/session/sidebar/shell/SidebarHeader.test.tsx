@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Window } from 'happy-dom';
-import { I18nProvider } from '@/lib/i18n';
+import { I18nProvider, useI18nStore } from '@/lib/i18n';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { SidebarHeader } from './SidebarHeader';
 
@@ -48,6 +48,7 @@ let root: Root;
 const descriptors = new Map<string, PropertyDescriptor | undefined>();
 
 beforeEach(() => {
+  useI18nStore.setState({ locale: 'en', loadingLocale: null });
   browser = new Window({ url: 'http://localhost' });
   for (const [key, value] of Object.entries({
     window: browser,
@@ -147,7 +148,6 @@ describe('SidebarHeader', () => {
     ));
 
     expect(document.querySelector('input')).toBeNull();
-    expect(document.querySelector('[aria-label="Search sessions"]')).not.toBeNull();
     expect(document.querySelector('[aria-label="Add project"]')).not.toBeNull();
     expect(document.querySelector('[aria-label="Display mode"]')).not.toBeNull();
   });

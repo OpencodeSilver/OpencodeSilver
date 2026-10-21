@@ -252,6 +252,10 @@ const UserTextPart: React.FC<UserTextPartProps> = ({ part, messageId, agentMenti
         });
     }, [agentMention, openSkill, skillByName, textContent]);
 
+    // Hooks run before any early return so the render order stays identical
+    // whether or not this message renders as a context payload.
+    const secretScan = React.useMemo(() => scanTextForSecrets(textContent), [textContent]);
+
     if (contextPayload) {
         return (
             <UserContextPart
@@ -265,8 +269,6 @@ const UserTextPart: React.FC<UserTextPartProps> = ({ part, messageId, agentMenti
     if ((!textContent || textContent.trim().length === 0) && terminalContextState.contexts.length === 0) {
         return null;
     }
-
-    const secretScan = React.useMemo(() => scanTextForSecrets(textContent), [textContent]);
 
     return (
         <div className="relative" key={part.id || `${messageId}-user-text`}>
