@@ -2805,8 +2805,10 @@ const createMiniChatWindow = async ({ mode, sessionId = '', directory = '', proj
       backgroundThrottling: false,
       contextIsolation: true,
       nodeIntegration: false,
-      webviewTag: true,
-      // sandbox must stay off
+      // Mini-chat windows never embed preview webviews; disable webviewTag for reduced attack surface
+      webviewTag: false,
+      // sandbox must stay off: preload requires Node layer (process.argv, process.platform, contextBridge)
+      // Security boundary is maintained via contextIsolation:true, nodeIntegration:false, and IPC validation.
       sandbox: false,
     },
   });
