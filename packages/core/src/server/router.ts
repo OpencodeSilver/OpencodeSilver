@@ -36,56 +36,81 @@ export interface SilverIntelligenceRouterOptions {
 // Zod Schemas for Validation
 // ---------------------------------------------------------------------------
 
+export const MAX_CANDIDATES = 10;
+export const MAX_HUNKS = 500;
+export const MAX_BODY_BYTES = 1024 * 1024;
+
 export const PlanMissionSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(300),
-  objective: z.string().min(1, 'Objective is required').max(10000),
+  title: z.string().trim().min(1, 'Title is required').max(300),
+  objective: z.string().trim().min(1, 'Objective is required').max(10000),
   context: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const AdvancePhaseSchema = z.object({
-  missionId: z.string().min(1, 'missionId is required'),
-  phaseId: z.string().min(1, 'phaseId is required'),
+export const PhaseUpdateSchema = z.object({
+  phaseId: z.string().trim().min(1, 'phaseId is required').max(100),
   status: z.enum(['pending', 'in_progress', 'completed', 'failed', 'skipped']),
-  artifacts: z.array(z.string()).optional(),
+  artifacts: z.array(z.string().max(500)).max(50).optional(),
+});
+
+export const AdvancePhaseSchema = PhaseUpdateSchema.extend({
+  missionId: z.string().min(1, 'missionId is required').optional(),
 });
 
 export const AbortMissionSchema = z.object({
-  missionId: z.string().min(1, 'missionId is required'),
+  missionId: z.string().min(1, 'missionId is required').optional(),
   reason: z.string().optional(),
 });
 
 export const CandidateRunSchema = z.object({
-  modelId: z.string().min(1),
-  provider: z.string().optional(),
-  durationMs: z.number().nonnegative(),
-  tokensUsed: z.number().nonnegative(),
-  patch: z.string(),
-  explanation: z.string(),
+  modelId: z.string().trim().min(1).max(200),
+  provider: z.string().max(100).optional(),
+  durationMs: z.number().nonnegative().max(86_400_000),
+  tokensUsed: z.number().nonnegative().max(100_000_000),
+  patch: z.string().max(500_000),
+  explanation: z.string().max(20_000),
   syntaxValid: z.boolean(),
-  lintWarningsCount: z.number().int().nonnegative(),
+  lintWarningsCount: z.number().int().nonnegative().max(100_000),
   confidenceScore: z.number().min(0).max(1),
   testsPassed: z.boolean().optional(),
   typeCheckPassed: z.boolean().optional(),
   costUsd: z.number().nonnegative().optional(),
-  worktreePath: z.string().optional(),
-  branchName: z.string().optional(),
+  worktreePath: z.string().max(1000).optional(),
+  branchName: z.string().max(200).optional(),
 });
 
 export const EvaluateConsensusSchema = z.object({
-  taskDescription: z.string().min(1).max(5000),
-  candidates: z.array(CandidateRunSchema).min(1, 'At least one candidate is required'),
+  taskDescription: z.string().max(5000).optional().default(''),
+  candidates: z.array(CandidateRunSchema).min(1, 'At least one candidate is required').max(MAX_CANDIDATES),
 });
 
 export const DiffHunkSchema = z.object({
-  filePath: z.string().min(1),
-  linesAdded: z.number().int().nonnegative(),
-  linesDeleted: z.number().int().nonnegative(),
-  hunkContent: z.string(),
+  filePath: z.string().trim().min(1).max(1000),
+  hunkContent: z.string().max(1_000_000),
+  linesAdded: z.number().int().nonnegative().max(1_000_000),
+  linesDeleted: z.number().int().nonnegative().max(1_000_000),
 });
 
 export const InspectDiffsSchema = z.object({
-  hunks: z.array(DiffHunkSchema),
+  hunks: z.array(DiffHunkSchema).max(MAX_HUNKS),
 });
+
+export const ClaudeSpawnSchema = z.object({
+  prompt: z.string().max(500_000).optional().default(''),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const ArabicAnalyzeSchema = z.object({
+  text: z.string().max(100_000),
+});
+
+// Canonical aliases for web and core consumption
+export const missionPlanSchema = PlanMissionSchema;
+export const missionPhaseSchema = PhaseUpdateSchema;
+export const consensusSchema = EvaluateConsensusSchema;
+export const diffHunkSchema = DiffHunkSchema;
+export const inspectSchema = InspectDiffsSchema;
+export const claudeSpawnSchema = ClaudeSpawnSchema;
+export const arabicSchema = ArabicAnalyzeSchema;
 
 export class SilverEngineError extends Error {
   public readonly code: string;

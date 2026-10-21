@@ -4,74 +4,21 @@
  */
 
 import { Router } from 'express';
-import * as zodModule from 'zod';
-
-const z = zodModule.z ?? zodModule.default ?? zodModule;
 import {
   SilverMissionOrchestrator,
   SilverConsensusMatrix,
   SilverCodeInspector,
   SilverClaudeBridge,
   SilverArabicEngine,
+  missionPlanSchema,
+  missionPhaseSchema,
+  consensusSchema,
+  diffHunkSchema,
+  inspectSchema,
+  claudeSpawnSchema,
+  arabicSchema,
+  MAX_BODY_BYTES,
 } from '@opencodesilver/core';
-
-// Every route is mounted behind the app's /api auth gate; these limits only
-// bound what an authenticated caller can send.
-const MAX_BODY_BYTES = 1024 * 1024;
-const MAX_CANDIDATES = 10;
-const MAX_HUNKS = 500;
-
-const missionPlanSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  objective: z.string().trim().min(1).max(5000),
-  context: z.record(z.string(), z.unknown()).optional(),
-});
-
-const missionPhaseSchema = z.object({
-  phaseId: z.string().trim().min(1).max(100),
-  status: z.enum(['pending', 'in_progress', 'completed', 'failed', 'skipped']),
-  artifacts: z.array(z.string().max(500)).max(50).optional(),
-});
-
-const consensusSchema = z.object({
-  taskDescription: z.string().max(5000).optional().default(''),
-  candidates: z.array(z.object({
-    modelId: z.string().trim().min(1).max(200),
-    provider: z.string().max(100).optional(),
-    durationMs: z.number().nonnegative().max(86_400_000),
-    tokensUsed: z.number().nonnegative().max(100_000_000),
-    patch: z.string().max(500_000),
-    explanation: z.string().max(20_000),
-    syntaxValid: z.boolean(),
-    lintWarningsCount: z.number().int().nonnegative().max(100_000),
-    confidenceScore: z.number().min(0).max(1),
-    testsPassed: z.boolean().optional(),
-    typeCheckPassed: z.boolean().optional(),
-    costUsd: z.number().nonnegative().optional(),
-    worktreePath: z.string().max(1000).optional(),
-    branchName: z.string().max(200).optional(),
-  })).min(1).max(MAX_CANDIDATES),
-});
-
-const diffHunkSchema = z.object({
-  filePath: z.string().trim().min(1).max(1000),
-  hunkContent: z.string().max(1_000_000),
-  linesAdded: z.number().int().nonnegative().max(1_000_000),
-  linesDeleted: z.number().int().nonnegative().max(1_000_000),
-});
-
-const inspectSchema = z.object({
-  hunks: z.array(diffHunkSchema).max(MAX_HUNKS),
-});
-
-const claudeSpawnSchema = z.object({
-  prompt: z.string().max(500_000).optional().default(''),
-  config: z.record(z.string(), z.unknown()).optional(),
-});
-
-const arabicSchema = z.object({
-  text: z.string().max(100_000),
-});
 
 /** Rejects oversized bodies before any route parses them. */
 const limitBodySize = (req, res, next) => {
