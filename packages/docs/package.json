@@ -1,0 +1,11 @@
+{
+  "name": "@opencodesilver/docs",
+  "version": "3.0.1",
+  "private": true,
+  "description": "OpencodeSilver documentation and multilingual sidebar configurations",
+  "scripts": {
+    "lint": "node ../../scripts/docs/validate-docs.mjs",
+    "type-check": "node -e \"process.exit(0)\"",
+    "test": "node ../../scripts/docs/validate-docs.mjs"
+  }
+}

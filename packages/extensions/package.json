@@ -1,0 +1,11 @@
+{
+  "name": "@opencodesilver/extensions",
+  "version": "3.0.1",
+  "private": true,
+  "description": "OpencodeSilver built-in extensions registry and assets",
+  "scripts": {
+    "lint": "node ./scripts/validate-registry.mjs",
+    "type-check": "node -e \"process.exit(0)\"",
+    "test": "node ./scripts/validate-registry.mjs"
+  }
+}
