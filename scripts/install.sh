@@ -222,18 +222,9 @@ main() {
   
   if eval "$INSTALL_CMD"; then
     echo ""
-    # Wordmark (toilet "pagga", "Open"/"codeSilver" stacked).
-    # Hardcoded so the user needs no extra tools.
-    printf '%b' "$BLUE"
-    cat <<'EOF'
-  ░█▀█░█▀█░█▀▀░█▀█
-  ░█░█░█▀▀░█▀▀░█░█
-  ░▀▀▀░▀░░░▀▀▀░▀░▀
-  ░█▀▀░█░█░█▀█░█▄█░█▀▄░█▀▀░█▀▄
-  ░█░░░█▀█░█▀█░█░█░█▀▄░█▀▀░█▀▄
-  ░▀▀▀░▀░▀░▀░▀░▀░▀░▀▀░░▀▀▀░▀░▀
-EOF
-    printf '%b\n' "$NC"
+    # Product name banner. Plain text so it renders on every terminal and
+    # font, without depending on Unicode block glyph support.
+    printf '%b\n' "${BLUE}OpencodeSilver${NC}"
     success "OpencodeSilver installed successfully!"
     echo ""
 
