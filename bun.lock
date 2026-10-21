@@ -104,6 +104,10 @@
         "typescript": "^5.8.2",
       },
     },
+    "packages/docs": {
+      "name": "@opencodesilver/docs",
+      "version": "3.0.1",
+    },
     "packages/electron": {
       "name": "@opencodesilver/electron",
       "version": "3.0.1",
@@ -120,6 +124,10 @@
         "electron-builder": "^26.0.0",
         "node-abi": "^4.33.0",
       },
+    },
+    "packages/extensions": {
+      "name": "@opencodesilver/extensions",
+      "version": "3.0.1",
     },
     "packages/mobile": {
       "name": "@opencodesilver/mobile",
@@ -307,6 +315,7 @@
         "@types/react-dom": "^19.1.7",
         "@vitejs/plugin-react": "^5.0.0",
         "autoprefixer": "^10.4.21",
+        "axe-core": "^4.14.0",
         "concurrently": "^9.2.1",
         "cors": "^2.8.5",
         "cross-env": "^7.0.3",
@@ -1119,6 +1128,8 @@
 
     "@opencodesilver/core": ["@opencodesilver/core@workspace:packages/core"],
 
+    "@opencodesilver/docs": ["@opencodesilver/docs@workspace:packages/docs"],
+
     "@opencodesilver/electron": ["@opencodesilver/electron@workspace:packages/electron"],
 
     "@opencodesilver/example-browser-provider-stub": ["@opencodesilver/example-browser-provider-stub@workspace:packages/sdk/examples/browser-provider-stub"],
@@ -1138,6 +1149,8 @@
     "@opencodesilver/example-tasks-demo": ["@opencodesilver/example-tasks-demo@workspace:packages/sdk/examples/tasks-demo"],
 
     "@opencodesilver/example-tools-only": ["@opencodesilver/example-tools-only@workspace:packages/sdk/examples/tools-only"],
+
+    "@opencodesilver/extensions": ["@opencodesilver/extensions@workspace:packages/extensions"],
 
     "@opencodesilver/mobile": ["@opencodesilver/mobile@workspace:packages/mobile"],
 
