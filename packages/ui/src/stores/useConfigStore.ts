@@ -30,38 +30,33 @@ import { markStartupTrace, measureStartupTrace } from "@/lib/startupTrace";
 import { normalizePath } from "@/lib/pathNormalization";
 import { getSyncConfig, subscribeToSyncConfigChanges } from "@/sync/sync-refs";
 import { getRuntimeKey, subscribeRuntimeEndpointChanged } from "@/lib/runtime-switch";
+import {
+    MODELS_DEV_API_URL,
+    MODELS_DEV_PROXY_URL,
+    FALLBACK_PROVIDER_ID,
+    FALLBACK_MODEL_ID,
+    ADD_PROVIDER_SENTINEL,
+    GIT_UTILITY_PROVIDER_ID,
+    GIT_UTILITY_PREFERRED_MODEL_ID,
+    PROVIDER_CONFIG_REFRESH_CONCURRENCY,
+    PROVIDERS_RETRY_SOURCE,
+    PROVIDERS_RETRY_DELAY_MS,
+    type OpencodeSilverDefaults,
+} from "./config/constants";
 
-const MODELS_DEV_API_URL = "https://models.dev/api.json";
-const MODELS_DEV_PROXY_URL = "/api/opencodesilver/models-metadata";
-
-const FALLBACK_PROVIDER_ID = "opencode";
-const FALLBACK_MODEL_ID = "big-pickle";
-// Sentinel selectedProviderId used by the providers UI while the "Add provider"
-// form is open. It is intentionally not a real provider id and must not be
-// persisted as a stable provider selection.
-const ADD_PROVIDER_SENTINEL = "__add_provider__";
-const GIT_UTILITY_PROVIDER_ID = "zen";
-const GIT_UTILITY_PREFERRED_MODEL_ID = "big-pickle";
-const PROVIDER_CONFIG_REFRESH_CONCURRENCY = 4;
-const PROVIDERS_RETRY_SOURCE = "loadProviders:retryAfterFailure";
-const PROVIDERS_RETRY_DELAY_MS = 3000;
-
-interface OpencodeSilverDefaults {
-    defaultModel?: string;
-    defaultVariant?: string;
-    defaultAgent?: string;
-    autoCreateWorktree?: boolean;
-    gitmojiEnabled?: boolean;
-    defaultFileViewerPreview?: boolean;
-    zenModel?: string;
-    messageStreamTransport?: 'auto' | 'ws' | 'sse';
-    dictationEnabled?: boolean;
-    sttProvider?: 'local' | 'openai-compatible';
-    sttServerUrl?: string;
-    sttModel?: string;
-    sttLocalModel?: string;
-    sttLanguage?: string;
-}
+export {
+    MODELS_DEV_API_URL,
+    MODELS_DEV_PROXY_URL,
+    FALLBACK_PROVIDER_ID,
+    FALLBACK_MODEL_ID,
+    ADD_PROVIDER_SENTINEL,
+    GIT_UTILITY_PROVIDER_ID,
+    GIT_UTILITY_PREFERRED_MODEL_ID,
+    PROVIDER_CONFIG_REFRESH_CONCURRENCY,
+    PROVIDERS_RETRY_SOURCE,
+    PROVIDERS_RETRY_DELAY_MS,
+    type OpencodeSilverDefaults,
+};
 
 // Directory activation re-reads the OpencodeSilver defaults, which are global,
 // not per directory: one request serves the switches that land inside this

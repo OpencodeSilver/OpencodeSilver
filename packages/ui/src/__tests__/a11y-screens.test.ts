@@ -33,7 +33,7 @@ describe('Accessibility (a11y) Audits with axe-core', () => {
       </main>
     `);
 
-    const results = await axe.run(document.body, {
+    const results: any = await (axe.run as any)(document.body, {
       rules: {
         'region': { enabled: true },
         'color-contrast': { enabled: false }, // Color contrast requires real canvas/computed styles
@@ -41,7 +41,7 @@ describe('Accessibility (a11y) Audits with axe-core', () => {
     });
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v: any) => v.impact === 'critical' || v.impact === 'serious',
     );
     expect(criticalViolations).toEqual([]);
   });
@@ -66,14 +66,14 @@ describe('Accessibility (a11y) Audits with axe-core', () => {
       </nav>
     `);
 
-    const results = await axe.run(document.body, {
+    const results: any = await (axe.run as any)(document.body, {
       rules: {
         'color-contrast': { enabled: false },
       },
     });
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v: any) => v.impact === 'critical' || v.impact === 'serious',
     );
     expect(criticalViolations).toEqual([]);
   });
@@ -97,14 +97,14 @@ describe('Accessibility (a11y) Audits with axe-core', () => {
       </section>
     `);
 
-    const results = await axe.run(document.body, {
+    const results: any = await (axe.run as any)(document.body, {
       rules: {
         'color-contrast': { enabled: false },
       },
     });
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v: any) => v.impact === 'critical' || v.impact === 'serious',
     );
     expect(criticalViolations).toEqual([]);
   });
@@ -134,14 +134,14 @@ describe('Accessibility (a11y) Audits with axe-core', () => {
       </main>
     `);
 
-    const results = await axe.run(document.body, {
+    const results: any = await (axe.run as any)(document.body, {
       rules: {
         'color-contrast': { enabled: false },
       },
     });
 
     const criticalViolations = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
+      (v: any) => v.impact === 'critical' || v.impact === 'serious',
     );
     expect(criticalViolations).toEqual([]);
   });
