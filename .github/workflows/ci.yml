@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build SDK and dependencies
+        run: bun run build:deps
+
       - name: Type check
         run: bun run type-check
 

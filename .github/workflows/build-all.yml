@@ -58,6 +58,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build SDK and dependencies
+        run: bun run build:deps
+
       - name: Build Core Engine
         run: bun run --cwd packages/core build
 
@@ -218,6 +221,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build SDK and dependencies
+        run: bun run build:deps
+
       - name: Build Core Engine
         run: bun run --cwd packages/core build
 
@@ -282,6 +288,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Build SDK and dependencies
+        run: bun run build:deps
 
       - name: Build Core Engine
         run: bun run --cwd packages/core build
