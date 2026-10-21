@@ -1,0 +1,25 @@
+[
+  {
+    "version": "3.0.0",
+    "date": "2026-10-18",
+    "title": "OpencodeSilver v3.0.0 Initial Release",
+    "intro": "Initial public release of OpencodeSilver workspace.",
+    "app": {
+      "new": [
+        "Multi-surface AI workspace supporting Web, Desktop, VS Code, and Mobile.",
+        "Silver Intelligence multi-agent orchestration and consensus matrix."
+      ],
+      "improvements": [],
+      "fixes": [],
+      "misc": []
+    },
+    "vscode": {
+      "new": [
+        "In-Editor Chat Panel with multi-model parallel inference and right-click context actions."
+      ],
+      "improvements": [],
+      "fixes": [],
+      "misc": []
+    }
+  }
+]
