@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@5/overview/configuration-schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{mjs,js,ts}"],
+      "project": ["scripts/**/*.{mjs,js,ts}"]
+    },
+    "packages/core": {
+      "entry": ["src/index.ts!"],
+      "project": ["src/**/*.ts!"]
+    },
+    "packages/sdk": {
+      "entry": ["src/index.ts!", "src/ui/index.ts!", "src/schemas.ts!"],
+      "project": ["src/**/*.ts!"]
+    },
+    "packages/ui": {
+      "entry": ["src/main.tsx!"],
+      "project": ["src/**/*.{ts,tsx}!"]
+    },
+    "packages/web": {
+      "entry": ["server/index.js!", "bin/cli.js!"],
+      "project": ["src/**/*.{ts,tsx}!", "server/**/*.js!", "bin/**/*.js!"]
+    },
+    "packages/electron": {
+      "entry": ["main.mjs!", "preload.mjs!"],
+      "project": ["*.mjs!", "scripts/**/*.mjs!"]
+    },
+    "packages/vscode": {
+      "entry": ["src/extension.ts!"],
+      "project": ["src/**/*.ts!"]
+    }
+  },
+  "ignore": [
+    "packages/mobile/**",
+    "packages/docs/**",
+    "packages/extensions/**",
+    "**/*.d.ts",
+    "**/*.test.{js,ts,tsx,cjs,mjs}",
+    "**/test/**",
+    "**/dist/**",
+    "release-builds/**"
+  ]
+}

@@ -61,6 +61,11 @@ jobs:
       - name: Test
         run: bun run test
 
+      - name: Dead code check (Knip)
+        if: matrix.os == 'ubuntu-latest'
+        run: bun run dead-code
+        continue-on-error: true
+
       - name: Generate Coverage
         if: matrix.os == 'ubuntu-latest'
         run: bun run --cwd packages/core test:coverage
