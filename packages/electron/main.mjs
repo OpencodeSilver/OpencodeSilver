@@ -1,4 +1,5 @@
 import { canReuseManagedOpenCodePreflight } from './opencode-readiness.mjs';
+import { COMMANDS_SAFE_FOR_REMOTE, validateIpcCommand } from './ipc-registry.mjs';
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, MessageChannelMain, nativeTheme, net as electronNet, Notification, powerMonitor, powerSaveBlocker, protocol, session, shell, webContents } from 'electron';
 import contextMenu from 'electron-context-menu';
 import log from 'electron-log/main.js';
@@ -5179,34 +5180,15 @@ const isLocalSender = (webContents) => {
   }
 };
 
-const COMMANDS_SAFE_FOR_REMOTE = new Set([
-  'desktop_hosts_get',
-  'desktop_host_probe',
-  'desktop_new_window',
-  'desktop_new_window_at_url',
-  'desktop_new_window_for_host',
-  'desktop_set_window_title',
-  'desktop_set_window_theme',
-  'desktop_is_window_fullscreen',
-  'desktop_start_window_drag',
-  'desktop_minimize_current_window',
-  'desktop_toggle_current_window_maximized',
-  'desktop_close_current_window',
-  'desktop_get_current_window_state',
-  'desktop_get_app_version',
-  'desktop_get_lan_address',
-  'desktop_capture_page_rect',
-  'desktop_tray_update',
-]);
-
-ipcMain.handle('opencodesilver:invoke', async (event, command, args) => {
-  if (!isLocalSender(event.sender) && !COMMANDS_SAFE_FOR_REMOTE.has(command)) {
+ipcMain.handle('opencodesilver:invoke', async (event, command, rawArgs) => {
+  const local = isLocalSender(event.sender);
+  if (!local && !COMMANDS_SAFE_FOR_REMOTE.has(command)) {
     log.warn(`[ipc] rejected ${command} from non-local origin: ${event.sender?.getURL?.() || '(unknown)'}`);
     throw new Error('IPC not available for this origin');
   }
-  const local = isLocalSender(event.sender);
+  const validatedArgs = validateIpcCommand(command, rawArgs, local);
   const browserWindow = BrowserWindow.fromWebContents(event.sender);
-  const result = await handleInvoke(browserWindow, command, args);
+  const result = await handleInvoke(browserWindow, command, validatedArgs);
   return !local && command === 'desktop_hosts_get' ? redactHostsConfigForRemote(result) : result;
 });
 
