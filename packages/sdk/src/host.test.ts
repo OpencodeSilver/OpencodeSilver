@@ -23,11 +23,13 @@ const pointerEvent = (type: string, relatedTarget: EventTarget | null = null): E
   return event;
 };
 
-const createFrame = (): HostFrame & { dispatch: (event: Event) => void; posted: GuestMessage[] } => {
+const createFrame = (): HostFrame & { dispatch: (event: Event) => void; posted: GuestMessage[]; postedOrigins: string[] } => {
   const listeners = new Map<string, Set<Listener>>();
   const posted: GuestMessage[] = [];
-  const postMessage = (message: GuestMessage) => {
+  const postedOrigins: string[] = [];
+  const postMessage = (message: GuestMessage, targetOrigin = '*') => {
     posted.push(message);
+    postedOrigins.push(targetOrigin);
   };
   return {
     parent: { postMessage },
@@ -42,6 +44,7 @@ const createFrame = (): HostFrame & { dispatch: (event: Event) => void; posted: 
       for (const listener of listeners.get(event.type) ?? []) listener(event);
     },
     posted,
+    postedOrigins,
   };
 };
 
@@ -1076,6 +1079,75 @@ describe('connectHost resolve and badge', () => {
     const seen: unknown[] = [];
     host.onItem((item) => seen.push(item));
     expect(seen).toEqual([messageItem]);
+    host.dispose();
+  });
+
+  test('respects explicit hostOrigin for target.parent.postMessage', () => {
+    const parent = createFrame();
+    const guest = createFrame();
+    guest.parent = parent.parent;
+    const host = connectHost({
+      target: guest,
+      hostOrigin: 'https://app.opencodesilver.local',
+      acceptSource: () => true,
+    });
+
+    // connectHost immediately posts 'hello' using the configured hostOrigin
+    expect(parent.postedOrigins).toContain('https://app.opencodesilver.local');
+    host.dispose();
+  });
+
+  test('rejects incoming messages from untrusted origins when allowedHostOrigins is configured', () => {
+    const parent = createFrame();
+    const guest = createFrame();
+    guest.parent = parent.parent;
+    const host = connectHost({
+      target: guest,
+      allowedHostOrigins: ['https://trusted.local'],
+      acceptSource: () => true,
+    });
+
+    let readySeen = false;
+    host.onReady(() => { readySeen = true; });
+
+    // Untrusted origin: message should be rejected
+    guest.dispatch(new MessageEvent('message', {
+      data: ready,
+      origin: 'https://evil.local',
+    }));
+    expect(readySeen).toBe(false);
+
+    // Trusted origin: message should be accepted
+    guest.dispatch(new MessageEvent('message', {
+      data: ready,
+      origin: 'https://trusted.local',
+    }));
+    expect(readySeen).toBe(true);
+
+    host.dispose();
+  });
+
+  test('rejects incoming messages from unexpected source window', () => {
+    let acceptSourceCalledWith: unknown = undefined;
+    const parent = createFrame();
+    const guest = createFrame();
+    guest.parent = parent.parent;
+    const host = connectHost({
+      target: guest,
+      acceptSource: (source) => {
+        acceptSourceCalledWith = source;
+        return false; // Rejects untrusted source
+      },
+    });
+
+    let readySeen = false;
+    host.onReady(() => { readySeen = true; });
+
+    guest.dispatch(new MessageEvent('message', {
+      data: ready,
+    }));
+    expect(readySeen).toBe(false);
+
     host.dispose();
   });
 });

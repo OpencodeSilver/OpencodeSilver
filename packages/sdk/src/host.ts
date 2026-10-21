@@ -91,6 +91,17 @@ export type HostClientOptions = {
   acceptSource?: (source: MessageEvent['source']) => boolean;
   /** Test seam. Defaults to `GUEST_REQUEST_TIMEOUT_MS`. */
   requestTimeoutMs?: number;
+  /**
+   * Explicit target origin for messages posted to parent host.
+   * If not provided, falls back to location.search `hostOrigin` parameter,
+   * or '*' for sandboxed opaque iframes where parent origin is unspecified.
+   */
+  hostOrigin?: string;
+  /**
+   * Allowlist of trusted host origins for incoming messages.
+   * If provided and non-empty, any message from an origin not in this list is rejected.
+   */
+  allowedHostOrigins?: string[];
 };
 
 export type HostClient = {
@@ -278,6 +289,23 @@ export const connectHost = (options: HostClientOptions = {}): HostClient => {
   }
   const acceptSource = options.acceptSource ?? ((source: MessageEvent['source']) => source === target.parent);
   const requestTimeoutMs = options.requestTimeoutMs ?? GUEST_REQUEST_TIMEOUT_MS;
+  const allowedHostOrigins = options.allowedHostOrigins;
+
+  const targetOrigin = options.hostOrigin ?? (() => {
+    try {
+      if ('location' in globalThis && (globalThis as any).location?.search) {
+        const queryParams = new URLSearchParams((globalThis as any).location.search);
+        const originParam = queryParams.get('hostOrigin');
+        if (originParam) return originParam;
+      }
+    } catch {
+      // Non-browser or invalid URL context
+    }
+    // Sandboxed iframes without allow-same-origin have an opaque origin ("null").
+    // Per the HTML Living Standard, "null" cannot be used as postMessage targetOrigin.
+    // '*' is used when the host origin is not explicitly specified.
+    return '*';
+  })();
 
   const readyListeners = new Set<(context: HostReadyContext) => void>();
   const directoryListeners = new Set<(directory: string | null) => void>();
@@ -314,7 +342,7 @@ export const connectHost = (options: HostClientOptions = {}): HostClient => {
   };
 
   const post = (message: GuestMessage): void => {
-    target.parent.postMessage(message, '*');
+    target.parent.postMessage(message, targetOrigin);
   };
 
   // One listener that throws must not starve the ones after it; the error
@@ -332,6 +360,9 @@ export const connectHost = (options: HostClientOptions = {}): HostClient => {
   const onMessage = (event: Event): void => {
     if (!(event instanceof MessageEvent)) return;
     if (!acceptSource(event.source)) return;
+    if (allowedHostOrigins && allowedHostOrigins.length > 0 && !allowedHostOrigins.includes(event.origin)) {
+      return;
+    }
     const message = readHostMessage(event.data);
     if (!message) return;
     if (message.type === 'workspace') {

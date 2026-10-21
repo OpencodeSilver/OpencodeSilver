@@ -124,9 +124,15 @@ type PluginPaneProps = {
   onPopoverActivity?: (active: boolean) => void;
 };
 
-// Sandboxed frames without allow-same-origin have an opaque origin.
-// The string "null" is not a legal postMessage targetOrigin; browsers throw.
-// Isolation is the unique contentWindow plus event.source on receive.
+// Sandboxed frames without allow-same-origin have an opaque origin (origin: "null").
+// Per HTML Living Standard §8.4.3, "null" is not a legal postMessage targetOrigin and
+// throws a DOMException (SyntaxError) if provided. Therefore, OPAQUE_FRAME_TARGET_ORIGIN = '*'
+// is required when dispatching messages from the host to the sandboxed guest frame.
+// Boundary security and isolation are strictly enforced by:
+// 1. Direct contentWindow identity: `event.source === iframeRef.current.contentWindow`
+// 2. Strict origin check: rejecting messages from unexpected external origins
+// 3. Channel & API version verification (OPENCODESILVER_SDK_CHANNEL / OPENCODESILVER_SDK_API_VERSION)
+// 4. Schema validation with guestMessageSchema before processing
 const OPAQUE_FRAME_TARGET_ORIGIN = '*';
 
 const HOST_FONT_FALLBACK = '"SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
@@ -531,6 +537,9 @@ export const PluginPane: React.FC<PluginPaneProps> = ({
     const onMessage = (event: MessageEvent) => {
       const frame = iframeRef.current;
       if (!frame || event.source !== frame.contentWindow) return;
+      if (typeof event.origin === 'string' && event.origin !== '' && event.origin !== 'null' && event.origin !== window.location.origin) {
+        return;
+      }
       const parsed = guestMessageSchema.safeParse(event.data);
       if (!parsed.success) return;
       if (disposed || getRuntimeKey() !== runtimeKey || (backgroundAction && !backgroundAction.isActive())

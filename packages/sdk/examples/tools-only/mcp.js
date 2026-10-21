@@ -1,4 +1,4 @@
-// examples/tools-only/mcp.ts
+// packages/sdk/examples/tools-only/mcp.ts
 import { createInterface } from "node:readline";
 
 // node_modules/.bun/zod@4.6.7/node_modules/zod/v4/core/util.js
@@ -5470,7 +5470,7 @@ function refine(fn, _params = {}) {
 function superRefine(fn, params) {
   return _superRefine(fn, params);
 }
-// examples/tools-only/mcp.ts
+// packages/sdk/examples/tools-only/mcp.ts
 var requestSchema = object({
   jsonrpc: literal("2.0"),
   id: union([string2(), number2()]).optional(),
