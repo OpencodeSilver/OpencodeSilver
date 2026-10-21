@@ -2384,10 +2384,8 @@ const AssistantMessageBody = React.memo(({
                     {renderedParts}
                     {showErrorMessage && (
                         <FadeInOnReveal key="assistant-error">
-                            {Boolean(
-                                (errorMessage && /FreeTierError|free\s*tier/i.test(errorMessage)) ||
-                                (errorResponseBody && /FreeTierError|free\s*tier/i.test(errorResponseBody))
-                            ) ? (
+                            {((errorMessage && /FreeTierError|free\s*tier/i.test(errorMessage)) ||
+                             (errorResponseBody && /FreeTierError|free\s*tier/i.test(errorResponseBody))) ? (
                                 <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-[var(--status-warning-border)] bg-[var(--status-warning-background)] px-4 py-3 text-base leading-relaxed">
                                     <div className="flex items-start gap-3">
                                         <Icon name="information" className="mt-1 size-4 shrink-0 text-[var(--status-warning)]" />

@@ -78,7 +78,6 @@ export const MobileSessionRenameForm: React.FC<{
         disabled={aiRename.disabled}
         onClick={() => { aiRename.run(); onCancel(); }}
         aria-label={t('sessions.aiRename.action')}
-        aria-description={aiRename.hint}
         title={aiRename.hint}
         className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         style={{ touchAction: 'manipulation', minHeight: 0, minWidth: 0 }}
