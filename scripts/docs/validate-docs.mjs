@@ -71,6 +71,37 @@ async function run() {
     }
   }
 
+  const localeFolders = new Set(
+    (await readdir(contentRoot, { withFileTypes: true }))
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name),
+  )
+
+  const translationKeys = new Set()
+  for (const section of sidebar.sections ?? []) {
+    if (section.translations) {
+      for (const key of Object.keys(section.translations)) {
+        translationKeys.add(key)
+      }
+    }
+    for (const item of section.items ?? []) {
+      if (item.translations) {
+        for (const key of Object.keys(item.translations)) {
+          translationKeys.add(key)
+        }
+      }
+    }
+  }
+
+  for (const key of translationKeys) {
+    if (key !== key.toLowerCase()) {
+      errors.push(`sidebar translation key '${key}' must be lowercase to match docs folder structure`)
+    }
+    if (!localeFolders.has(key)) {
+      errors.push(`sidebar translation key '${key}' does not match any existing folder in ${toPosix(contentRoot)}`)
+    }
+  }
+
   if (errors.length > 0) {
     console.error("Docs validation failed:")
     for (const error of errors) {

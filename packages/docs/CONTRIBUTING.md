@@ -197,9 +197,9 @@ other language mirrors the English files under a locale folder.
 | --- | --- | --- |
 | English | _(root, no folder)_ | `en` |
 | Ukrainian | `uk/` | `uk` |
-| Chinese (Simplified) | `zh-cn/` | `zh-CN` |
+| Chinese (Simplified) | `zh-cn/` | `zh-cn` |
 | Spanish | `es/` | `es` |
-| Brazilian Portuguese | `pt-br/` | `pt-BR` |
+| Brazilian Portuguese | `pt-br/` | `pt-br` |
 | Korean | `ko/` | `ko` |
 | Polish | `pl/` | `pl` |
 | French | `fr/` | `fr` |
@@ -209,11 +209,9 @@ other language mirrors the English files under a locale folder.
 | Dutch | `nl/` | `nl` |
 
 > [!IMPORTANT]
-> The **content folder** uses the lowercase locale key (`zh-cn`, `pt-br`); the
-> **sidebar `translations`** key uses the BCP-47 language tag (`zh-CN`, `pt-BR`).
-> They look similar but are not interchangeable — Starlight resolves them with
-> different rules. Everything else (`uk`, `es`, `ko`, `pl`, `fr`, `de`, `ja`, `tr`, `nl`, `en`) is identical
-> in both columns.
+> All language keys in **content folder** names and **sidebar `translations`**
+> are strictly lowercase (including `zh-cn` and `pt-br`). This ensures case-congruence
+> across case-sensitive file systems and build pipelines.
 
 This locale set is mirrored in the website at
 `opencodesilver-website/apps/docs/astro.config.mjs` (`locales`). If a language is
@@ -267,9 +265,9 @@ to each section and item in `sidebar.config.json`:
   "label": "Start here",
   "translations": {
     "uk": "Почніть тут",
-    "zh-CN": "从这里开始",
+    "zh-cn": "从这里开始",
     "es": "Empieza aquí",
-    "pt-BR": "Comece aqui",
+    "pt-br": "Comece aqui",
     "ko": "여기서 시작",
     "pl": "Zacznij tutaj",
     "fr": "Commencer ici",
@@ -282,9 +280,9 @@ to each section and item in `sidebar.config.json`:
       "link": "/install/",
       "translations": {
         "uk": "Встановлення",
-        "zh-CN": "安装",
+        "zh-cn": "安装",
         "es": "Instalación",
-        "pt-BR": "Instalação",
+        "pt-br": "Instalação",
         "ko": "설치",
         "pl": "Instalacja",
         "fr": "Installation",
