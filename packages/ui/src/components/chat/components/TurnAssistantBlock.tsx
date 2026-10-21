@@ -11,7 +11,7 @@ interface TurnAssistantBlockProps {
 
 const TurnAssistantBlock: React.FC<TurnAssistantBlockProps> = ({ turnId, assistantMessages, renderMessage }) => {
     return (
-        <div className="relative z-0">
+        <div className="relative z-0 mt-3 md:mt-4">
             <TurnMessageWindow turnId={turnId} messages={assistantMessages} renderMessage={renderMessage} />
         </div>
     );

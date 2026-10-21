@@ -303,9 +303,9 @@ const UserTextPart: React.FC<UserTextPartProps> = ({ part, messageId, agentMenti
             )}
             <div
                 className={cn(
-                    "break-words font-sans typography-markdown-body",
+                    "break-words [overflow-wrap:break-word] [word-break:break-word] font-sans typography-markdown-body leading-relaxed",
                     !isControlled && isExpanded && "pb-3",
-                    normalizedRenderingMode === 'plain' && 'whitespace-pre-wrap [unicode-bidi:plaintext] text-start',
+                    normalizedRenderingMode === 'plain' && 'whitespace-pre-wrap [unicode-bidi:plaintext] text-start leading-relaxed',
                     isCollapsed && "line-clamp-2",
                     collapsibleUserMessages && isTruncated && !effectiveExpanded && "cursor-pointer"
                 )}

@@ -2263,18 +2263,22 @@ html.desktop-runtime .markdown-content [data-opencodesilver-file-link="true"] {
   width: fit-content;
   max-width: min(85%, 40rem) !important;
   margin-inline: auto 0;
+  margin-block-end: 0.5rem;
 }
 
 .chat-message-column [data-user-message-bubble] {
-  padding: 0.625rem 1rem !important;
-  border: 0 !important;
+  padding: 0.75rem 1.125rem !important;
+  border: 1px solid var(--interactive-border, rgba(255, 255, 255, 0.08)) !important;
   border-radius: 1.125rem !important;
   border-end-end-radius: 0.25rem !important;
   background: var(--chat-user-message-bg, var(--surface-field)) !important;
   color: var(--text-primary) !important;
-  box-shadow: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
   font-size: 0.9375rem !important;
-  line-height: 1.5 !important;
+  line-height: 1.75 !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  unicode-bidi: plaintext !important;
 }
 
 .chat-message-column .markdown-content {
@@ -2566,6 +2570,11 @@ html.desktop-runtime .markdown-content [data-opencodesilver-file-link="true"] {
 [dir="rtl"] .chat-message-column [data-user-message-bubble] {
   border-radius: 1.125rem !important;
   border-end-end-radius: 0.25rem !important;
+  text-align: right !important;
+}
+
+[dir="ltr"] .chat-message-column [data-user-message-bubble] {
+  text-align: left !important;
 }
 
 [dir="rtl"] .chat-message-column pre,

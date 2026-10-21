@@ -27,6 +27,7 @@ interface TurnItemProps {
  * 0.75rem strip stays clear of it.
  */
 const stickyHeaderBackground = (fadeRem: string): React.CSSProperties => ({
+    backgroundColor: 'var(--surface-background)',
     backgroundImage:
         `linear-gradient(to bottom, var(--surface-background) calc(100% - ${fadeRem}), transparent)`,
 });
@@ -37,7 +38,7 @@ const TurnItem: React.FC<TurnItemProps> = ({ turn, stickyUserHeader = true, rend
     const { isMobile } = useDeviceInfo();
     return (
         <section
-            className="relative w-full"
+            className="relative w-full pb-6 md:pb-8"
             id={`turn-${turn.turnId}`}
             data-turn-id={turn.turnId}
             data-scroll-spy-id={turn.turnId}

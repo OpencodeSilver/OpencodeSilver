@@ -752,10 +752,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         return null;
     }
 
-    // Desktop keeps the whole gap below the user bubble inside the user row
-    // (see `pb-11` below), so the assistant block adds nothing on top.
-    const assistantTopPaddingClass = !isUser && shouldShowHeader && !previousIsHiddenUserMessage && stickyUserHeader && isMobile
-        ? 'pt-4'
+    // Ensure clear visual separation above assistant output so it is never glued to the user message.
+    const assistantTopPaddingClass = !isUser && shouldShowHeader && !previousIsHiddenUserMessage
+        ? (stickyUserHeader && isMobile ? 'pt-4' : 'pt-3 md:pt-4')
         : 'pt-0';
     const userMessageRadius = 'var(--radius-xl)';
 
@@ -765,7 +764,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 className={cn(
                     'group w-full',
                     isUser ? (isMobile ? 'pt-2' : 'pt-4') : assistantTopPaddingClass,
-                    isUser ? 'pb-0' : (isFollowedByAssistant || nextIsHiddenUserMessage) ? 'pb-0' : 'pb-2'
+                    isUser ? (showStickyInlineHoverRow ? 'pb-0' : 'pb-3') : (isFollowedByAssistant || nextIsHiddenUserMessage) ? 'pb-0' : 'pb-3'
                 )}
                 id={`message-${message.info.id}`}
                 data-message-id={message.info.id}
@@ -789,14 +788,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                                         action row while the reply had not started yet.
                                         peek: the action row is suppressed, so reserve only its
                                         gap to the next message, OUTSIDE the bubble background. */}
-                                    <div className={cn('max-w-[85%]', showStickyInlineHoverRow ? 'pb-11' : undefined, chatSurfaceMode === 'peek' ? 'pb-3' : undefined)}>
+                                    <div className={cn('max-w-[85%]', showStickyInlineHoverRow ? 'pb-11' : 'pb-3', chatSurfaceMode === 'peek' ? 'pb-3' : undefined)}>
                                         <div
                                             style={{
                                                 backgroundColor: 'var(--chat-user-message-bg)',
                                                 borderRadius: userMessageRadius,
                                                 borderBottomRightRadius: 'var(--radius-sm)',
                                             }}
-                                            className="px-5 py-3 shadow-none border border-primary/5"
+                                            className="px-5 py-3 shadow-sm border border-border/40"
                                             data-user-message-bubble=""
                                         >
                                             <MessageBody
