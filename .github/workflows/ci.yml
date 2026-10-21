@@ -13,6 +13,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: '22'
+  BUN_VERSION: '1.4.2'
+
 jobs:
   checks:
     name: Checks (${{ matrix.os }})
@@ -24,6 +28,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
 
     steps:
       - name: Checkout repository
@@ -32,12 +37,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Cache Bun packages
         uses: actions/cache@v4
@@ -98,6 +103,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - macos-latest
 
     steps:
       - name: Checkout repository
@@ -106,12 +112,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Cache Bun packages
         uses: actions/cache@v4
