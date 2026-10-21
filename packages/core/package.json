@@ -17,6 +17,7 @@
   "scripts": {
     "build": "bun build ./src/index.ts --outdir ./dist --target node && tsc --emitDeclarationOnly",
     "test": "bun test",
+    "test:coverage": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=coverage",
     "type-check": "tsc --noEmit",
     "lint": "eslint \"./src/**/*.ts\" --config ../../eslint.config.js"
   },

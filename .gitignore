@@ -16,6 +16,8 @@ packages/electron/.cache/
 **/.cache/
 release-builds/
 packages/vscode/*.vsix
+coverage/
+**/coverage/
 *.blockmap
 dist-*/
 packages/*/dist-*/

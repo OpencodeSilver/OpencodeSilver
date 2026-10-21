@@ -22,6 +22,7 @@
     "type-check": "node --max-old-space-size=8192 ../../node_modules/typescript/bin/tsc --noEmit",
     "lint": "eslint \"./src/**/*.{ts,tsx}\" --config ../../eslint.config.js",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "start": "node bin/cli.js serve"
   },
   "dependencies": {
@@ -74,6 +75,7 @@
     "@types/react-dom": "^19.1.7",
     "@types/supertest": "^7.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

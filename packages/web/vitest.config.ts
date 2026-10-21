@@ -48,5 +48,24 @@ export default defineConfig({
       OPENCODESILVER_JEV_MODEL: '',
       OPENCODESILVER_JEV_API_KEY: '',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'cobertura'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.ts', 'server/**/*.js'],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.js',
+        '**/*.d.ts',
+        'dist/**',
+        'node_modules/**',
+      ],
+      thresholds: {
+        lines: 40,
+        functions: 40,
+        branches: 40,
+        statements: 40,
+      },
+    },
   },
 });
