@@ -395,7 +395,7 @@ export async function startCloudflareQuickTunnel({ originUrl }) {
   const cleanupTempDir = () => {
     try {
       if (fs.existsSync(tempDir)) {
-        fs.rmSync(tempDir, { recursive: true, force: true });
+        fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       }
     } catch {
       // Ignore cleanup errors
@@ -487,7 +487,7 @@ export async function startCloudflareManagedRemoteTunnel({ token, hostname, toke
     if (tempTokenFile) {
       try {
         if (fs.existsSync(tempTokenFile.dir)) {
-          fs.rmSync(tempTokenFile.dir, { recursive: true, force: true });
+          fs.rmSync(tempTokenFile.dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
         }
       } catch {
         // Ignore cleanup errors

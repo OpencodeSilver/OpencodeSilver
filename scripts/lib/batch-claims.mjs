@@ -89,7 +89,7 @@ export function claimedFilePaths(claims) {
 export function releaseRun(runsDir, pipeline, runId) {
   const dir = runDirPath(runsDir, pipeline, runId);
   if (!existsSync(dir)) throw new Error(`Unknown run: ${runId}`);
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   return dir;
 }
 

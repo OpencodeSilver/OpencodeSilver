@@ -51,9 +51,9 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-${{ runner.arch }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -98,7 +98,7 @@ jobs:
             platform-name: macOS-AppleSilicon-arm64
             target-arch: arm64
             artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-mac-arm64.*'
-          - os: macos-13 # Intel x64
+          - os: macos-15-intel # Intel x64 (macos-13 runners are retired)
             platform-name: macOS-Intel-x64
             target-arch: x64
             artifact-pattern: 'packages/electron/dist/OpencodeSilver-*-mac-x64.*'
@@ -127,9 +127,9 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-${{ runner.arch }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -170,7 +170,8 @@ jobs:
             exit 1
           fi
           echo "Checking $ASAR_PATH for @opencodesilver/core/dist/index.js..."
-          npx --yes @electron/asar list "$ASAR_PATH" | grep -F "node_modules/@opencodesilver/core/dist/index.js"
+          # asar prints backslash-separated paths on Windows; normalize first.
+          npx --yes @electron/asar list "$ASAR_PATH" | tr '\\' '/' | grep -F "node_modules/@opencodesilver/core/dist/index.js"
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
@@ -205,9 +206,9 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-${{ runner.arch }}-bun-
 
       - name: Setup Java JDK 21
         uses: actions/setup-java@v4
@@ -282,9 +283,9 @@ jobs:
           path: |
             ~/.bun/install/cache
             node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-bun-
+            ${{ runner.os }}-${{ runner.arch }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

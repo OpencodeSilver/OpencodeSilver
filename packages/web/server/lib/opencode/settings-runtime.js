@@ -204,7 +204,7 @@ export const createSettingsRuntime = (deps) => {
         }
       }
 
-      await fsPromises.rm(fromDir, { recursive: true, force: true });
+      await fsPromises.rm(fromDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     } catch (error) {
       if (!(error && typeof error === 'object' && error.code === 'ENOENT')) {
         throw error;

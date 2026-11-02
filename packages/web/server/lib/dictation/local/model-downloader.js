@@ -143,7 +143,7 @@ export async function ensureLocalSttModel({ modelsDir, modelId, onProgress }) {
 
   // A directory that exists but fails the required-files check is a partial
   // extraction from an earlier interrupted attempt — remove it before retrying.
-  await rm(modelDir, { recursive: true, force: true }).catch(() => undefined);
+  await rm(modelDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(() => undefined);
 
   const downloadsDir = path.join(modelsDir, '.downloads');
   const archiveFilename = path.basename(new URL(spec.archiveUrl).pathname);
@@ -169,13 +169,13 @@ export async function ensureLocalSttModel({ modelsDir, modelId, onProgress }) {
 
     await rename(stagedModelDir, modelDir);
   } catch (error) {
-    await rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
+    await rm(stagingDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(() => undefined);
     // Any extraction failure means the cached archive can't be trusted
     // (corrupt bz2, truncated download). Discard it so retry re-downloads.
     await rm(archivePath, { force: true }).catch(() => undefined);
     throw error;
   }
-  await rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
+  await rm(stagingDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(() => undefined);
 
   await rm(archivePath, { force: true }).catch(() => undefined);
 

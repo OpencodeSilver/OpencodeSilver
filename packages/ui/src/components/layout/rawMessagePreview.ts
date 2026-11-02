@@ -122,10 +122,11 @@ const resolveHour12 = (preference: TimeFormatPreference): boolean | undefined =>
 export const formatMessagePreviewTime = (
   timestamp: number | null,
   preference: TimeFormatPreference,
+  locale?: string,
 ): string => {
   if (!timestamp || !Number.isFinite(timestamp)) return '-';
   const hour12 = resolveHour12(preference);
-  return new Date(timestamp).toLocaleString(undefined, {
+  return new Date(timestamp).toLocaleString(locale, {
     month: 'numeric',
     day: 'numeric',
     hour: hour12 === false ? '2-digit' : 'numeric',

@@ -76,5 +76,5 @@ try {
   client?.close();
   chrome.kill();
   await new Promise(resolve => chrome.once('exit', resolve));
-  await rm(profileDir, { recursive: true, force: true });
+  await rm(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

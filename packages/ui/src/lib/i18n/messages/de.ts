@@ -3796,6 +3796,6 @@ export const dict = {
   "agy.tool.generic.action": "Führe {tool} aus",
   "agy.tool.generic.summary": "{tool}-Ausführung",
   "chat.freeTierError.title": "Nutzungslimit der kostenlosen Stufe erreicht (FreeTierError)",
-  "chat.freeTierError.description": "Sie haben das von OpenCode bereitgestellte Limit der kostenlosen Stufe erreicht. Um Spitzenmodelle ohne Unterbrechung weiter zu nutzen, f?gen Sie Ihren eigenen API-Schl?ssel in den Einstellungen hinzu.",
-  "chat.freeTierError.addApiKey": "API-Schl?ssel hinzuf?gen",
+  "chat.freeTierError.description": "Sie haben das von OpenCode bereitgestellte Limit der kostenlosen Stufe erreicht. Um Spitzenmodelle ohne Unterbrechung weiter zu nutzen, fügen Sie Ihren eigenen API-Schlüssel in den Einstellungen hinzu.",
+  "chat.freeTierError.addApiKey": "API-Schlüssel hinzufügen",
 };

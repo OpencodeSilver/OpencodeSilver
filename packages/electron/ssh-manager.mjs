@@ -319,6 +319,8 @@ const windowsAskpassWrapperContent = () => `@echo off\r
 
 const sanitizeProcessDiagnostic = (value, secret = '') => {
   let sanitized = String(value || '')
+    // Stripping control characters is the point of this regex.
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
     .trim();
   if (secret) sanitized = sanitized.split(secret).join('[redacted]');

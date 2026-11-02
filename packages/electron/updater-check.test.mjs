@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { checkForDesktopUpdate } from './updater-check.mjs';
+import { checkForDesktopUpdate, isOfflineUpdateError } from './updater-check.mjs';
 
 const compareVersions = (left, right) => left.localeCompare(right, undefined, { numeric: true });
 
@@ -69,4 +69,13 @@ test('isMissingUpdateFeedError recognises a missing feed but not network failure
   assert.equal(isMissingUpdateFeedError('Error: No published versions on GitHub'), true);
   assert.equal(isMissingUpdateFeedError(new Error('net::ERR_INTERNET_DISCONNECTED')), false);
   assert.equal(isMissingUpdateFeedError(undefined), false);
+});
+
+test('isOfflineUpdateError recognises offline failures but not real updater errors', () => {
+  assert.equal(isOfflineUpdateError(new Error('net::ERR_INTERNET_DISCONNECTED')), true);
+  assert.equal(isOfflineUpdateError(new Error('net::ERR_NAME_NOT_RESOLVED')), true);
+  assert.equal(isOfflineUpdateError(Object.assign(new Error('getaddrinfo failed'), { code: 'EAI_AGAIN' })), true);
+  assert.equal(isOfflineUpdateError(new Error('connect ETIMEDOUT 140.82.112.3:443')), true);
+  assert.equal(isOfflineUpdateError(new Error('sha512 checksum mismatch')), false);
+  assert.equal(isOfflineUpdateError(undefined), false);
 });

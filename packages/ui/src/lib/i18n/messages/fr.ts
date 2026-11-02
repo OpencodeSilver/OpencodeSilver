@@ -3796,4 +3796,7 @@ export const dict = {
   "agy.tool.skill.summary": "Compétence activée",
   "agy.tool.generic.action": "Exécution de {tool}",
   "agy.tool.generic.summary": "Exécution {tool}",
+  "chat.freeTierError.title": "Limite d'utilisation de l'offre gratuite atteinte (FreeTierError)",
+  "chat.freeTierError.description": "Vous avez atteint la limite de l'offre gratuite fournie par OpenCode. Pour continuer à utiliser les modèles avancés sans interruption, ajoutez votre propre clé API dans les paramètres.",
+  "chat.freeTierError.addApiKey": "Ajouter une clé API",
 } as const;

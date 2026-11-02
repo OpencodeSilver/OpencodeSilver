@@ -98,12 +98,12 @@ describe('formatMessagePreviewTime', () => {
   });
 
   test('24h mode omits AM/PM markers', () => {
-    const result = formatMessagePreviewTime(ts, '24h');
+    const result = formatMessagePreviewTime(ts, '24h', 'en-US');
     expect(/AM|PM/i.test(result)).toBe(false);
   });
 
   test('12h mode includes AM or PM marker', () => {
-    const result = formatMessagePreviewTime(ts, '12h');
+    const result = formatMessagePreviewTime(ts, '12h', 'en-US');
     expect(/AM|PM/i.test(result)).toBe(true);
   });
 

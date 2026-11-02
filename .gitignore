@@ -15,6 +15,7 @@ packages/vscode/dist/
 packages/electron/.cache/
 **/.cache/
 release-builds/
+release-artifacts/
 packages/vscode/*.vsix
 coverage/
 **/coverage/

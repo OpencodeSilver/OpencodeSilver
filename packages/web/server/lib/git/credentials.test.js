@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import express from 'express';
 import request from 'supertest';
@@ -37,7 +37,10 @@ const fixture = async (inventoryOptions = {}) => {
   return { root, record, filePath, snapshotRoot, discoveryRoot, managedKeyRoot, store, inventory, app };
 };
 
-describe('connected-server managed SSH inventory', () => {
+// The fixtures generate real keys; skip where OpenSSH is not installed.
+const hasSshKeygen = !spawnSync('ssh-keygen', ['-?'], { stdio: 'ignore' }).error;
+
+describe.skipIf(!hasSshKeygen)('connected-server managed SSH inventory', () => {
   it('discovers keys on a runtime whose directory close returns no promise', async () => {
     // Bun's Dir.close() returns undefined where Node returns a promise, and the
     // async iterator has already closed the directory. Assuming a promise threw

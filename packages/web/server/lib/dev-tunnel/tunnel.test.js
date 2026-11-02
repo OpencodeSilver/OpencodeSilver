@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import http from 'node:http';
 import net from 'node:net';
+import os from 'node:os';
 import WebSocket from 'ws';
 
 import { createDevTunnelClient } from './client.js';
@@ -14,6 +15,11 @@ import { createDevTunnelRuntime, isDevTunnelPath } from './runtime.js';
  */
 
 const started = [];
+
+// Containers and some locked-down hosts have no IPv6 loopback at all.
+const hasIpv6Loopback = Object.values(os.networkInterfaces())
+  .flat()
+  .some((entry) => entry && entry.family === 'IPv6' && entry.address === '::1');
 
 const listen = (server, host = '127.0.0.1') => new Promise((resolve) => {
   server.listen(0, host, () => resolve(server.address().port));
@@ -114,7 +120,7 @@ describe('dev tunnel end to end', () => {
     expect(response.headers['x-dev-header']).toBe('kept');
   });
 
-  test('reaches a dev server that listens on IPv6 loopback only', async () => {
+  test.skipIf(!hasIpv6Loopback)('reaches a dev server that listens on IPv6 loopback only', async () => {
     // `localhost` resolves to ::1 first on many systems, so a dev server started
     // with its defaults often never binds 127.0.0.1. Discovery lists it anyway.
     const devPort = await startDevServer((req, res) => res.end(`v6:${req.url}`), '::1');

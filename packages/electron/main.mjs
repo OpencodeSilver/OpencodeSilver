@@ -57,7 +57,7 @@ import { isPackagedUiRuntimeRequest } from './packaged-ui-routing.mjs';
 import { probeDirectHostWithRetry } from './host-probe-policy.mjs';
 import { probeElectronHostWithDeadline } from './electron-host-probe.mjs';
 import { assertUpdaterCapability } from './updater-capability.mjs';
-import { checkForDesktopUpdate, isMissingUpdateFeedError } from './updater-check.mjs';
+import { checkForDesktopUpdate, isMissingUpdateFeedError, isOfflineUpdateError } from './updater-check.mjs';
 import { resolveUpdaterChannel } from './updater-channel.mjs';
 import { createContextMenuLabels, menuLabel, normalizeMenuLocale, roleMenuItem } from './menu-locales.mjs';
 import { resolveUpdaterFeed } from './updater-feed.mjs';
@@ -3062,6 +3062,10 @@ const setupAutoUpdater = () => {
         logMissingFeedOnce();
         return;
       }
+      if (args.some((arg) => isOfflineUpdateError(arg))) {
+        log.warn('[electron] update check skipped: network unavailable');
+        return;
+      }
       log.error(...args);
     },
   };
@@ -3108,6 +3112,10 @@ const setupAutoUpdater = () => {
     setTaskbarProgress(-1);
     if (isMissingUpdateFeedError(err)) {
       logMissingFeedOnce();
+      return;
+    }
+    if (isOfflineUpdateError(err)) {
+      log.warn(`[electron] update check skipped: network unavailable (${err?.code || err?.message || err})`);
       return;
     }
     log.error('[electron] autoUpdater error', err);
@@ -4242,7 +4250,16 @@ const handleInvoke = async (browserWindow, command, args = {}) => {
       const validated = await validateLocalPath(targetPath);
       if (process.platform === 'darwin') {
         const openArgs = appName ? ['-a', appName, validated.path] : [validated.path];
-        spawn('open', openArgs, { detached: true, stdio: 'ignore' }).unref();
+        // Wait for the spawn to succeed or fail: an unhandled 'error' event on
+        // the child would otherwise crash the main process.
+        await new Promise((resolve, reject) => {
+          const child = spawn('open', openArgs, { detached: true, stdio: 'ignore' });
+          child.once('error', (error) => reject(new Error(`Failed to open path: ${error.message}`)));
+          child.once('spawn', () => {
+            child.unref();
+            resolve();
+          });
+        });
         return null;
       }
       if (appName && process.platform !== 'linux' && process.platform !== 'win32') {
@@ -5650,9 +5667,18 @@ app.whenReady().then(async () => {
   if (state.quitInProgress) return;
   log.error('[electron] startup failed:', error);
   try {
+    // electron-log picks a different folder per OS (macOS: ~/Library/Logs),
+    // so ask it for the real file instead of guessing a path.
+    let logFilePath = '';
+    try { logFilePath = log.transports.file.getFile().path; } catch {}
+    if (!logFilePath) logFilePath = path.join(app.getPath('logs'), 'main.log');
+    const detail = error?.stack || error?.message || String(error);
+    const arabic = String(app.getLocale?.() || '').toLowerCase().startsWith('ar');
     dialog.showErrorBox(
       'OpencodeSilver',
-      `حدث خطأ أثناء تشغيل التطبيق:\n${error?.stack || error?.message || String(error)}\n\nملف السجل:\n${state.logFile || path.join(app.getPath('userData'), 'logs', 'main.log')}`,
+      arabic
+        ? `حدث خطأ أثناء تشغيل التطبيق:\n${detail}\n\nملف السجل:\n${logFilePath}`
+        : `OpencodeSilver failed to start:\n${detail}\n\nLog file:\n${logFilePath}`,
     );
   } catch {}
   app.exit(1);

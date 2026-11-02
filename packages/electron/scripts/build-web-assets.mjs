@@ -52,7 +52,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const removeDir = async (target) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      await fs.rm(target, { recursive: true, force: true });
+      await fs.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       return;
     } catch (error) {
       if (attempt === 4) throw error;

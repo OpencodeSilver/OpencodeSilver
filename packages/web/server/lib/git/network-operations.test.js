@@ -3418,7 +3418,9 @@ process.exit(safe ? 0 : 1);
         return fs.mkdir(target, options);
       }),
     };
-    const setupValue = setup({ fsImpl, timeoutMs: 5 });
+    // The deadline is crossed by moving the faked clock, not by real time, so
+    // a loaded machine cannot expire an earlier phase before mkdir starts.
+    const setupValue = setup({ fsImpl, timeoutMs: 1_000 });
     const plan = await setupValue.service.plan({
       operation: 'clone', remoteUrl: ENDPOINT, destinationPath: destination,
       transportMode: 'managed', credentialAccount: CLONE_ACCOUNT,
@@ -3426,7 +3428,7 @@ process.exit(safe ? 0 : 1);
 
     const running = setupValue.service.execute(plan.operationId);
     await mkdirStarted;
-    vi.setSystemTime(Date.now() + 10);
+    vi.setSystemTime(Date.now() + 2_000);
     expect(setupValue.service.get(plan.operationId).state).toBe('running');
     releaseMkdir();
     await expect(running).resolves.toMatchObject({

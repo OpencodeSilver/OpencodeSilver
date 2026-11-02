@@ -154,6 +154,6 @@ export const installOpenCodeV2 = async ({
     }
     throw error;
   } finally {
-    if (cleanup) await fs.rm(lock, { recursive: true, force: true });
+    if (cleanup) await fs.rm(lock, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 };

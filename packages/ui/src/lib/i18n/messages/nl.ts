@@ -3797,4 +3797,7 @@ export const dict = {
   "agy.tool.skill.summary": "Vaardigheid geactiveerd",
   "agy.tool.generic.action": "{tool} uitvoeren",
   "agy.tool.generic.summary": "{tool}-uitvoering",
+  "chat.freeTierError.title": "Gebruikslimiet van gratis tier bereikt (FreeTierError)",
+  "chat.freeTierError.description": "Je hebt de limiet van de gratis tier van OpenCode bereikt. Voeg je eigen API-sleutel toe in de instellingen om geavanceerde modellen zonder onderbreking te blijven gebruiken.",
+  "chat.freeTierError.addApiKey": "API-sleutel toevoegen",
 } as const;

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -19,6 +19,8 @@ const temporaryDirectories = [];
 afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => fs.rm(directory, { recursive: true, force: true })));
 });
+
+const hasSshKeygen = !spawnSync('ssh-keygen', ['-?'], { stdio: 'ignore' }).error;
 
 describe('Git credential resolver', () => {
   it('derives the git-lfs repository-path alias only from /info/lfs endpoints', () => {
@@ -176,7 +178,7 @@ describe('Git credential resolver', () => {
     await expect(resolver.resolve({ mode: 'system' })).resolves.toEqual({ mode: 'system' });
   });
 
-  it('realpaths and verifies an unencrypted managed SSH key fingerprint', async () => {
+  it.skipIf(!hasSshKeygen)('realpaths and verifies an unencrypted managed SSH key fingerprint', async () => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'opencodesilver-git-key-'));
     temporaryDirectories.push(directory);
     const keyPath = path.join(directory, 'id_ed25519');

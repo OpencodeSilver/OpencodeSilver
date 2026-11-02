@@ -85,7 +85,7 @@ const download = async (url, destination) => {
 };
 
 const extractArchive = (archivePath, destination) => {
-  fs.rmSync(destination, { recursive: true, force: true });
+  fs.rmSync(destination, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   fs.mkdirSync(destination, { recursive: true });
   // npm tarballs are gzipped tar on every platform; Windows 10+ ships bsdtar.
   // The archive is addressed relative to the destination: under Git Bash on

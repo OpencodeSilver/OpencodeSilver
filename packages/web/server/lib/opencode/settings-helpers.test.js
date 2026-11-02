@@ -828,6 +828,7 @@ describe('settings registry gate', () => {
     pwaAppName: 'OpencodeSilver', pwaOrientation: 'portrait', mobileKeyboardMode: 'native', desktopWindowControlsPosition: 'left', desktopWindowControlsStyle: 'classic',
     inputBarOffset: 10,
     customProviderIcons: { 'campus-llm': 'cloud' },
+    autoUpdateOpenCodeOnStart: true,
   };
 
   it('accepts a valid value for every persistable registry key (no server-side drift)', () => {

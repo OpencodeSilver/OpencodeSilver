@@ -2591,6 +2591,9 @@ describe('git remote arguments with option-like names', () => {
     runGit(repository, ['remote', 'add', '--', OPTION_LIKE_REMOTE, remoteUrl]);
     if (fetch) {
       runGit(repository, ['fetch', '--', OPTION_LIKE_REMOTE]);
+      // git >= 2.48 records the remote HEAD on fetch; older git (Ubuntu 24.04
+      // ships 2.43) does not, so set it the same way for a stable fixture.
+      runGit(repository, ['symbolic-ref', `refs/remotes/${OPTION_LIKE_REMOTE}/HEAD`, `refs/remotes/${OPTION_LIKE_REMOTE}/react`]);
     }
   };
 

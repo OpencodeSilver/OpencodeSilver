@@ -13,7 +13,7 @@
 
 ## Overview
 
-**OpencodeSilver** is an advanced autonomous AI coding workspace and intelligence platform architected and developed by **Ahmed (GEMTM)**. Powered by the proprietary **Silver Intelligence Engine** (`@opencodesilver/core`), OpencodeSilver provides software engineers and development teams with full visibility, multi-model consensus, automated diff security inspections, and complete governance over autonomous coding agents.
+**OpencodeSilver** is an advanced autonomous AI coding workspace and intelligence platform architected and developed by **Ahmed (GEMTM)**. Powered by the proprietary **Silver Intelligence Engine** (`@opencodesilver/core`), OpencodeSilver provides software engineers and development teams with full visibility, multi-model consensus, automated AST security inspections, and complete governance over autonomous coding agents.
 
 ---
 
@@ -22,8 +22,8 @@
 At the heart of OpencodeSilver lies the **Silver Intelligence Engine**, a proprietary suite of autonomous systems designed by Ahmed (GEMTM) to bring enterprise-grade reasoning, multi-model consensus, and security to modern AI-driven software development:
 
 - 🎯 **Silver Mission Orchestrator:** Autonomously plans and decomposes complex multi-phase software goals into structured milestones with state checkpoints, rollbacks, and persistent mission recovery in `OPENCODESILVER_DATA_DIR`.
-- ⚖️ **Multi-Model Consensus Matrix:** Executes coding tasks across multiple models in parallel (dynamically populated from your active provider catalog and settings), scoring and synthesizing the optimal patch candidate using mathematical consensus, type check, test results, and lint metrics.
-- 🛡️ **Security & Blast Radius Diff Inspector:** Real-time unified diff analysis that proactively detects credential leaks (AWS, Anthropic, OpenAI, GitHub PATs, JWTs, PEM private keys), sensitive file modifications, and cross-file blast radius impact before changes touch production.
+- ⚖️ **Multi-Model Consensus Matrix:** Executes coding tasks across multiple models in parallel (dynamically populated from your active provider catalog and settings), scoring and synthesizing the optimal AST implementation using mathematical consensus, type check, test results, and lint metrics.
+- 🛡️ **AST Security & Blast Radius Inspector:** Real-time semantic diff analysis that proactively detects credential leaks (AWS, Anthropic, OpenAI, GitHub PATs, JWTs, PEM private keys), security regressions, and cross-file blast radius impact before changes touch production.
 - 🔌 **Claude Code Headless Bridge:** Native integration connecting the OpencodeSilver terminal with a locally installed Anthropic Claude Code CLI using your existing authenticated account, featuring live cost tracking (`total_cost_usd`) and session resumption.
 - 🌐 **Native Arabic NLP & BiDi Engine:** Full Unicode Bidirectional Algorithm (UBA) support, intelligent Alef normalization, and native right-to-left UI alignment for seamless Arabic developer workflows.
 
@@ -184,7 +184,18 @@ If you encounter a `FreeTierError` while generating responses, the bundled free 
 3. Select your preferred provider (such as OpenRouter, Anthropic, DeepSeek, or OpenAI) and enter your API key.
 
 ### Automatic Updates
-Automatic desktop updates check for releases via GitHub. For automated detection and installation, published releases must include `latest.yml`, the `.exe` installer, and `.blockmap` files.
+Automatic desktop updates check for releases via GitHub. A public GitHub Release must exist and include the update metadata and installers for each platform:
+- **Windows:** `latest.yml`, the `.exe` installer and its `.blockmap`
+- **macOS:** `latest-mac.yml` and the `.zip` (plus `.dmg` for first installs)
+- **Linux:** `latest-linux.yml` (`latest-linux-arm64.yml` on ARM) and the `.AppImage`
+
+Until a release is published, or while the machine is offline, the update check is skipped quietly (one `info`/`warn` line in the log, no error dialog).
+
+### Platform Notes
+- **Windows:** Windows 10 or later (x64 / ARM64). If SmartScreen warns about an unsigned build, choose *More info → Run anyway*. The installer closes a running copy (including the tray icon) before updating.
+- **macOS:** macOS 12 or later (Apple Silicon and Intel builds). Unsigned builds need *right-click → Open* the first time.
+- **Linux:** x64 / ARM64. The AppImage needs FUSE 2 (`libfuse2` on Ubuntu 22.04+); run `chmod +x OpencodeSilver-*.AppImage` before launching. A `.tar.gz` build is provided for systems without FUSE.
+- **Building from source on Windows:** use Bun's own shell (`bun run …`) from PowerShell or cmd. The repository's `.gitattributes` keeps shell scripts LF-only, so a fresh clone works without changing `core.autocrlf`.
 
 ---
 

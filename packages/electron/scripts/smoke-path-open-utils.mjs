@@ -73,5 +73,5 @@ try {
     unsupported,
   }, null, 2));
 } finally {
-  await fs.rm(tempRoot, { recursive: true, force: true });
+  await fs.rm(tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

@@ -32,6 +32,9 @@ export default defineConfig({
     // UI integration fixtures with Vite asset imports cannot execute in Bun's
     // raw TS loader. Keep them beside their UI owner and run them here.
     include: [...configDefaults.include, '../ui/src/**/*.vitest.tsx'],
+    // Bundled default skills carry their own `node:test` checks; they are not
+    // Vitest suites and would otherwise fail with "No test suite found".
+    exclude: [...configDefaults.exclude, 'server/lib/opencode/default-skills/**/tests/**'],
     // The Git suites drive a real `git` binary against temporary repositories.
     // Those subprocess round-trips routinely pass the 5s default, and which
     // cases exceed it shifts with machine load, so the default made a valid
@@ -47,6 +50,10 @@ export default defineConfig({
       OPENCODESILVER_JEV_URL: '',
       OPENCODESILVER_JEV_MODEL: '',
       OPENCODESILVER_JEV_API_KEY: '',
+      // Git config injected through the environment (CI runners and sandboxes
+      // use GIT_CONFIG_COUNT for url.insteadOf rewrites) would change the URLs
+      // the Git suites read back.
+      GIT_CONFIG_COUNT: '0',
     },
     coverage: {
       provider: 'v8',

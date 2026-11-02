@@ -200,7 +200,7 @@ export const checkAllGuestUpdates = async ({ persistPath, force = false, gitBina
 };
 
 const removeDir = async (dir) => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 };
 
 const exists = async (target) => {

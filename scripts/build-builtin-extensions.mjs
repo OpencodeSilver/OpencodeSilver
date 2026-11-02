@@ -93,10 +93,10 @@ export const buildBuiltInExtensions = async ({ sourceRoot = path.join(repoRoot, 
       if (movedPrevious) await fs.rename(previous, outDir);
       throw error;
     }
-    if (movedPrevious) await fs.rm(previous, { recursive: true, force: true });
+    if (movedPrevious) await fs.rm(previous, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     return registry;
   } finally {
-    await fs.rm(staging, { recursive: true, force: true });
+    await fs.rm(staging, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 };
 

@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const SECRET_PATTERNS = [
   { name: 'GitHub PAT', regex: /ghp_[a-zA-Z0-9]{36}/ },
@@ -59,7 +60,7 @@ export function runPrePackageScan(extensionDir = process.cwd()) {
   return errors;
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const errors = runPrePackageScan();
   if (errors.length > 0) {
     console.error('❌ VS Code extension pre-package secret scan FAILED:');

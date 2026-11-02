@@ -8,7 +8,7 @@ import path from 'node:path';
 const moduleUrl = new URL('./opencodeConfigPaths.ts', import.meta.url).href;
 const configUrl = new URL('./opencodeConfig.ts', import.meta.url).href;
 
-test('unset and blank XDG keep the existing global directory', () => {
+test('unset and blank XDG keep the existing global directory', { timeout: 30_000 }, () => {
   for (const value of [undefined, '', '   ']) {
     const env = { ...process.env };
     if (value === undefined) delete env.XDG_CONFIG_HOME;
@@ -22,7 +22,7 @@ test('unset and blank XDG keep the existing global directory', () => {
   }
 });
 
-test('global CRUD uses XDG while project writes stay in the project', () => {
+test('global CRUD uses XDG while project writes stay in the project', { timeout: 30_000 }, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'opencodesilver-vscode-xdg-'));
   const configHome = path.join(root, 'config');
   const project = path.join(root, 'project');

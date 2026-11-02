@@ -111,7 +111,7 @@ function clearViteCache() {
 
   for (const cacheDir of cacheDirs) {
     if (!existsSync(cacheDir)) continue;
-    rmSync(cacheDir, { recursive: true, force: true });
+    rmSync(cacheDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 

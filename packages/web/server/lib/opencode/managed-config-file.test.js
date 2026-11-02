@@ -108,7 +108,7 @@ describe('managed OpenCode config file', () => {
       includeWeb: true,
       includeMemory: false,
       includeNotify: false,
-      codeMode: false,
+      codeMode: true,
     });
   });
 
@@ -124,11 +124,11 @@ describe('managed OpenCode config file', () => {
       includeWeb: false,
       includeMemory: false,
       includeNotify: true,
-      codeMode: false,
+      codeMode: true,
     });
   });
 
-  it('puts the tools behind Code Mode only when the user asks for it', async () => {
+  it('puts the tools behind Code Mode when the setting is on (the default)', async () => {
     const { runtime, agentToolRuntime } = await createHarness({
       settings: { agentToolsCodeMode: true },
     });

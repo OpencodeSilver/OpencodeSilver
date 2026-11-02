@@ -8,6 +8,17 @@ export const isMissingUpdateFeedError = (error) => {
   return MISSING_UPDATE_FEED_RE.test(message);
 };
 
+const OFFLINE_UPDATE_ERROR_RE =
+  /net::ERR_(?:INTERNET_DISCONNECTED|NAME_NOT_RESOLVED|NETWORK_CHANGED|NETWORK_IO_SUSPENDED|CONNECTION_(?:REFUSED|RESET|TIMED_OUT|CLOSED)|PROXY_CONNECTION_FAILED|ADDRESS_UNREACHABLE|TIMED_OUT)|\b(?:EAI_AGAIN|ENETUNREACH|EHOSTUNREACH|ECONNREFUSED|ECONNRESET|ETIMEDOUT)\b/i;
+
+// True when the check failed only because the machine is offline or the
+// network is unreachable: expected on laptops and air-gapped machines, so it is
+// logged as a warning rather than an updater error.
+export const isOfflineUpdateError = (error) => {
+  const message = error instanceof Error ? `${error.message} ${error.code ?? ''}` : String(error ?? '');
+  return OFFLINE_UPDATE_ERROR_RE.test(message);
+};
+
 export const checkForDesktopUpdate = async ({ autoUpdater, currentVersion, pendingUpdate, compareVersions }) => {
   let updateResult;
   try {

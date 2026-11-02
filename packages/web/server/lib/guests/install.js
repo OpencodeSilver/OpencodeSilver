@@ -89,7 +89,7 @@ const persistGuest = async (guest, root, source, persistPath, { replace = false,
 };
 
 const removeDir = async (dir) => {
-  await fs.rm(dir, { recursive: true, force: true });
+  await fs.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 };
 
 const installCopiedGuest = async ({ source, prepare, persistPath, opencodesilverVersion, replace = false, origin = null }) => {
@@ -419,7 +419,7 @@ export const uninstallGuest = async (id, persistPath, { preserveStorageId = fals
   await stopGuestService(id);
   await removeGuestStorage(persistPath, id);
   if (removedRoot && isCopiedGuestRoot(removedRoot, persistPath)) {
-    await fs.rm(removedRoot, { recursive: true, force: true });
+    await fs.rm(removedRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
   return { ok: true };
 };

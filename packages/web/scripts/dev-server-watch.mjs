@@ -13,6 +13,10 @@ export function createDevServerWatchCommand(options = {}) {
   const platform = options.platform ?? process.platform;
   const env = options.env ?? process.env;
   const bunExecutable = options.bunExecutable ?? resolveBunExecutable({ env, platform });
+  // `watch: false` runs the server once (used by `dev:server`); this keeps the
+  // env defaults in JS instead of POSIX `${VAR:-default}` shell syntax, which
+  // is not portable to Windows shells.
+  const watch = options.watch ?? true;
   const configuredPort = env.OPENCODESILVER_PORT?.trim();
   const port = configuredPort || '3001';
 
@@ -22,7 +26,9 @@ export function createDevServerWatchCommand(options = {}) {
 
   return {
     command: bunExecutable,
-    args: platform === 'win32'
+    args: !watch
+      ? ['server/index.js', '--port', port]
+      : platform === 'win32'
       ? ['--watch', 'server/index.js', '--port', port]
       : [
           'x',
@@ -67,10 +73,10 @@ export function runDevServerWatch(options = {}) {
   return child;
 }
 
-const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (isMain) {
   try {
-    runDevServerWatch();
+    runDevServerWatch({ watch: !process.argv.includes('--once') });
   } catch (error) {
     console.error('[dev:web:server] Unable to configure server watcher:', error);
     process.exitCode = 1;

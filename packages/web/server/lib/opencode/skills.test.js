@@ -281,7 +281,9 @@ describe('skills', () => {
     }
   });
 
-  it('rolls back the directory rename when frontmatter write fails', async () => {
+  // Relies on a read-only file making the write fail, which root ignores and
+  // Windows does not enforce through chmod.
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)('rolls back the directory rename when frontmatter write fails', async () => {
     const tempRoot = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'oc-skills-rename-rollback-'));
     const projectRoot = path.join(tempRoot, 'project');
     const skillDir = path.join(projectRoot, '.opencode', 'skills', 'rollback-skill');

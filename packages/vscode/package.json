@@ -290,7 +290,7 @@
   "scripts": {
     "build": "bun run build:extension && bun run build:webview",
     "build:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify --main-fields=module,main && node -e \"const fs=require('fs'),path=require('path');const src=path.resolve('../web/server/lib/opencode/default-skills');const dst=path.resolve('dist/default-skills');if(fs.existsSync(src)){fs.rmSync(dst,{recursive:true,force:true});fs.cpSync(src,dst,{recursive:true});}\"",
-    "build:webview": "VITE_OPENCODE_URL=/api vite build",
+    "build:webview": "cross-env VITE_OPENCODE_URL=/api vite build",
     "dev": "concurrently -n \"ext,web\" -c \"cyan,magenta\" \"bun run watch:extension\" \"bun run dev:webview\"",
     "dev:webview": "vite --host localhost --port 5173 --strictPort",
     "watch:extension": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch --sourcemap --main-fields=module,main",

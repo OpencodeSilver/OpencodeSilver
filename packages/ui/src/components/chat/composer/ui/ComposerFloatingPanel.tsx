@@ -29,7 +29,9 @@ export function ComposerFloatingPanel({ header, children, compact = false, role,
         // never covers the last rows.
         const update = () => {
             const gap = Number.parseFloat(getComputedStyle(panel).marginBottom) || 0;
-            const clearance = `${Math.ceil(panel.getBoundingClientRect().height + gap)}px`;
+            // Layout height, not the rect: the chat surface is scaled with CSS
+            // `zoom`, and this value is used as a CSS length inside it.
+            const clearance = `${Math.ceil(panel.offsetHeight + gap)}px`;
             if (column.style.getPropertyValue('--chat-floating-panel-clearance') !== clearance) {
                 column.style.setProperty('--chat-floating-panel-clearance', clearance);
             }

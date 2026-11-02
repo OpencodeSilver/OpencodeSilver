@@ -381,7 +381,7 @@ const stopTree = async (root) => {
 }
 
 const launchOnce = async ({ build, run, layout, env, cdpPort, options, outputDir }) => {
-  if (options.fresh) rmSync(layout.home, { recursive: true, force: true })
+  if (options.fresh) rmSync(layout.home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   mkdirSync(layout.config, { recursive: true })
   seedWindowState(layout, options.windowAt)
   seedShellStartup(layout.home, options.shellDelayMs)

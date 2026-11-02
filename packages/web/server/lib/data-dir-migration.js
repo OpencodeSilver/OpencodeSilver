@@ -32,7 +32,7 @@ export const migrateLegacyUserDirs = async ({ fsPromises, path, dataDir, legacyR
       await fsPromises.cp(from, to, { recursive: true, errorOnExist: true, force: false });
       moved.push(entry);
     } catch (error) {
-      await fsPromises.rm(to, { recursive: true, force: true }).catch(() => {});
+      await fsPromises.rm(to, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(() => {});
       warn(`Failed to copy ${from} to ${to}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }

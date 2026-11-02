@@ -509,7 +509,7 @@ describe('Long paragraphs', () => {
     expect(hrefOf(html)).toBe('https://example.com/docs');
     expect(html).toContain('class="katex"');
     expect(settled.map((block) => block.html).join('')).toContain('item_1799');
-  });
+  }, 30_000);
 });
 
 describe('Many short paragraphs', () => {

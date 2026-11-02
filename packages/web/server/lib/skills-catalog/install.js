@@ -27,7 +27,7 @@ function validateSkillName(skillName) {
 
 async function safeRm(dir) {
   try {
-    await fs.promises.rm(dir, { recursive: true, force: true });
+    await fs.promises.rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   } catch {
     // ignore
   }

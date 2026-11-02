@@ -30,6 +30,21 @@ describe('createDevServerWatchCommand', () => {
     expect(command.spawnOptions.env.OPENCODESILVER_RELAY_HOST).toBe('relay.example.test');
   });
 
+  it('runs the server once without a watcher when watch is disabled', () => {
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      const command = createDevServerWatchCommand({
+        platform,
+        env: { OPENCODESILVER_PORT: '4100' },
+        bunExecutable: 'bun',
+        watch: false,
+      });
+
+      expect(command.args).toEqual(['server/index.js', '--port', '4100']);
+      expect(command.spawnOptions.env.OPENCODESILVER_RELAY_HOST).toBe('off');
+      expect(command.spawnOptions.env.OPENCODESILVER_ALLOW_DEV_ORIGINS).toBe('1');
+    }
+  });
+
   it('rejects an invalid configured port before spawning', () => {
     expect(() => createDevServerWatchCommand({
       platform: 'win32',

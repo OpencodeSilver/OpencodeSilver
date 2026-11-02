@@ -1,0 +1,34 @@
+# Normalize line endings so a Windows checkout does not break shell scripts,
+# checked-in bundles compared byte-for-byte in tests, or the installer.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary assets.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.icns  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.wasm  binary
+*.zip   binary
+*.gz    binary
+*.tgz   binary
+*.apk   binary
+*.aab   binary
+*.jar   binary
+*.exe   binary
+*.dll   binary
+*.node  binary
+*.mp3   binary
+*.wav   binary
+*.vsix  binary

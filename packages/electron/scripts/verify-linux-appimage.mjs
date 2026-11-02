@@ -151,7 +151,7 @@ const main = () => {
     console.log(`[electron] verified Linux ${target} AppImage: ${appImagePath}`);
     console.log(`[electron] verified OpenCode CLI ${result.openCodeVersion} and ${result.nativeModuleCount} native modules`);
   } finally {
-    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 };
 

@@ -2443,7 +2443,7 @@ export async function snapshotWorktree(directory: string, input: { ref?: string 
     await run(['update-ref', ref, commit], 'Failed to store snapshot ref', {});
     return { ref, commit, head };
   } finally {
-    await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
+    await fs.promises.rm(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }).catch(() => undefined);
   }
 }
 
@@ -2619,7 +2619,7 @@ export async function revertGitFile(
       if (target !== root && !target.startsWith(root + path.sep)) {
         throw new Error(`Path is outside repository: ${filePath}`);
       }
-      await fs.promises.rm(target, { recursive: true, force: true });
+      await fs.promises.rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     }
     return;
   }

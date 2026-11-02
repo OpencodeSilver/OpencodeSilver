@@ -1,12 +1,24 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnManagedOpenCodeProcess } from './managed-opencode-process';
 
+// A killed orphan stays a zombie until its new parent (init) reaps it. In
+// containers whose PID 1 reaps lazily, `kill(pid, 0)` still succeeds for such
+// a zombie even though the process is gone, so treat zombies as dead on Linux.
+const isZombie = (pid: number) => {
+  if (process.platform !== 'linux') return false;
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    return stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3) === 'Z';
+  } catch { return false; }
+};
 const alive = (pid: number) => {
-  try { process.kill(pid, 0); return true; } catch { return false; }
+  try { process.kill(pid, 0); } catch { return false; }
+  return !isZombie(pid);
 };
 const readPids = async (marker: string) => (await fs.readFile(marker, 'utf8').catch(() => ''))
   .trim().split('\n').filter(Boolean).map(Number);

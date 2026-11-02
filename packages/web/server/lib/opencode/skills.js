@@ -655,21 +655,21 @@ function deleteSkill(skillName, workingDirectory) {
   if (workingDirectory) {
     const projectDir = getProjectSkillDir(workingDirectory, skillName);
     if (fs.existsSync(projectDir)) {
-      fs.rmSync(projectDir, { recursive: true, force: true });
+      fs.rmSync(projectDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       console.log(`Deleted project-level skill directory: ${projectDir}`);
       deleted = true;
     }
     
     const claudeDir = getClaudeSkillDir(workingDirectory, skillName);
     if (fs.existsSync(claudeDir)) {
-      fs.rmSync(claudeDir, { recursive: true, force: true });
+      fs.rmSync(claudeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       console.log(`Deleted claude-compat skill directory: ${claudeDir}`);
       deleted = true;
     }
 
     const projectAgentsDir = getProjectAgentsSkillDir(workingDirectory, skillName);
     if (fs.existsSync(projectAgentsDir)) {
-      fs.rmSync(projectAgentsDir, { recursive: true, force: true });
+      fs.rmSync(projectAgentsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       console.log(`Deleted project-level agents skill directory: ${projectAgentsDir}`);
       deleted = true;
     }
@@ -677,21 +677,21 @@ function deleteSkill(skillName, workingDirectory) {
 
   const userDir = getUserSkillDir(skillName);
   if (fs.existsSync(userDir)) {
-    fs.rmSync(userDir, { recursive: true, force: true });
+    fs.rmSync(userDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     console.log(`Deleted user-level skill directory: ${userDir}`);
     deleted = true;
   }
 
   const userAgentsDir = getUserAgentsSkillDir(skillName);
   if (fs.existsSync(userAgentsDir)) {
-    fs.rmSync(userAgentsDir, { recursive: true, force: true });
+    fs.rmSync(userAgentsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     console.log(`Deleted user-level agents skill directory: ${userAgentsDir}`);
     deleted = true;
   }
 
   const userClaudeDir = getUserClaudeSkillDir(skillName);
   if (fs.existsSync(userClaudeDir)) {
-    fs.rmSync(userClaudeDir, { recursive: true, force: true });
+    fs.rmSync(userClaudeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     console.log(`Deleted user-level claude skill directory: ${userClaudeDir}`);
     deleted = true;
   }

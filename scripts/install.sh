@@ -222,9 +222,26 @@ main() {
   
   if eval "$INSTALL_CMD"; then
     echo ""
-    # Product name banner. Plain text so it renders on every terminal and
-    # font, without depending on Unicode block glyph support.
-    printf '%b\n' "${BLUE}OpencodeSilver${NC}"
+    # Wordmark ("OPEN" / "SILVER" stacked, block glyphs). Hardcoded so the
+    # user needs no extra tools. Falls back to plain text on terminals whose
+    # locale is not UTF-8 (block glyphs would render as garbage there).
+    case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+      *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*)
+        printf '%b' "$BLUE"
+        cat <<'EOF'
+  ░█▀█░█▀█░█▀▀░█▀█
+  ░█░█░█▀▀░█▀▀░█░█
+  ░▀▀▀░▀░░░▀▀▀░▀░▀
+  ░█▀▀░▀█▀░█░░░█░█░█▀▀░█▀▄
+  ░▀▀█░░█░░█░░░▀▄▀░█▀▀░█▀▄
+  ░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░▀░▀
+EOF
+        printf '%b\n' "$NC"
+        ;;
+      *)
+        printf '%b\n' "${BLUE}OPEN SILVER${NC}"
+        ;;
+    esac
     success "OpencodeSilver installed successfully!"
     echo ""
 

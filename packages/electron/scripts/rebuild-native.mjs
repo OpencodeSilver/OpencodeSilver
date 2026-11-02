@@ -116,18 +116,18 @@ const ensureWindowsNodeAddonApiForNodePty = async (rebuildRootPath) => {
   const exportedTempNodeAddonApiDir = path.join(rebuildRootPath, 'node_modules', '.opencodesilver-node-addon-api-7.1.1');
   const localNodeAddonApiDir = path.join(nodePtyDir, 'node_modules', 'node-addon-api');
 
-  await fsp.rm(tempNodeAddonApiDir, { recursive: true, force: true });
+  await fsp.rm(tempNodeAddonApiDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   await copyDirectory(rootNodeAddonApiDir, tempNodeAddonApiDir);
   await fsp.access(path.join(tempNodeAddonApiDir, 'package.json'));
 
-  await fsp.rm(localNodeAddonApiDir, { recursive: true, force: true });
+  await fsp.rm(localNodeAddonApiDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   await copyDirectory(rootNodeAddonApiDir, localNodeAddonApiDir);
   await writeWindowsNodeAddonApiIndex(localNodeAddonApiDir, exportedTempNodeAddonApiDir);
   await fsp.access(path.join(localNodeAddonApiDir, 'package.json'));
 
   return async () => {
-    await fsp.rm(localNodeAddonApiDir, { recursive: true, force: true });
-    await fsp.rm(tempNodeAddonApiDir, { recursive: true, force: true });
+    await fsp.rm(localNodeAddonApiDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    await fsp.rm(tempNodeAddonApiDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   };
 };
 

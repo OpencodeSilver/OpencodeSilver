@@ -1138,7 +1138,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         const update = () => {
             // +8 for the mb-2 gap between the row and the composer, which the
             // node's own box does not include.
-            const height = node.getBoundingClientRect().height + 8;
+            // Layout height (see --chat-composer-inset: the surface is zoomed).
+            const height = node.offsetHeight + 8;
             setStatusOverlayHeight((prev) => (Math.abs(prev - height) < 1 ? prev : height));
         };
         const observer = new ResizeObserver(update);
@@ -1508,7 +1509,13 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
         const column = slot?.parentElement;
         if (!floatingComposer || !slot || !column || !globalThis.ResizeObserver) return;
         const update = () => {
-            column.style.setProperty('--chat-composer-inset', `${Math.round(slot.getBoundingClientRect().height)}px`);
+            // offsetHeight, not getBoundingClientRect(): the chat surface is
+            // scaled with CSS `zoom` (.oc-chat-surface), so the rect reports the
+            // visual height while the spacer that reads this value is laid out
+            // in the surface's own CSS pixels and scaled again. Using the rect
+            // left the reserved band ~17% short, so the newest messages slid
+            // under the composer once the transcript filled the view.
+            column.style.setProperty('--chat-composer-inset', `${Math.ceil(slot.offsetHeight)}px`);
         };
         const observer = new ResizeObserver(update);
         observer.observe(slot);
@@ -1773,7 +1780,11 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
                 className={cn(
                     'z-10 flex min-h-0',
                     floatingComposer
-                        ? 'absolute inset-x-0 bottom-0'
+                        // Opaque band with a divider: the transcript scrolls
+                        // behind the floating composer, and without a solid
+                        // backing the messages showed through around the
+                        // input with nothing separating the two.
+                        ? 'absolute inset-x-0 bottom-0 bg-background border-t border-border/60'
                         : 'relative',
                     isDesktopExpandedInput
                         ? 'flex-1 min-h-0 bg-background'

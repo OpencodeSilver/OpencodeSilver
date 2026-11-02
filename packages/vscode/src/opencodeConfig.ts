@@ -3400,20 +3400,20 @@ export const deleteSkill = (skillName: string, workingDirectory?: string): void 
     // Project level .opencode/skill/
     const projectDir = getProjectSkillDir(workingDirectory, skillName);
     if (fs.existsSync(projectDir)) {
-      fs.rmSync(projectDir, { recursive: true, force: true });
+      fs.rmSync(projectDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       deleted = true;
     }
     
     // Claude-compat .claude/skills/
     const claudeDir = getClaudeSkillDir(workingDirectory, skillName);
     if (fs.existsSync(claudeDir)) {
-      fs.rmSync(claudeDir, { recursive: true, force: true });
+      fs.rmSync(claudeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       deleted = true;
     }
 
     const projectAgentsDir = getProjectAgentsSkillDir(workingDirectory, skillName);
     if (fs.existsSync(projectAgentsDir)) {
-      fs.rmSync(projectAgentsDir, { recursive: true, force: true });
+      fs.rmSync(projectAgentsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       deleted = true;
     }
   }
@@ -3421,13 +3421,13 @@ export const deleteSkill = (skillName: string, workingDirectory?: string): void 
   // User level
   const userDir = getUserSkillDir(skillName);
   if (fs.existsSync(userDir)) {
-    fs.rmSync(userDir, { recursive: true, force: true });
+    fs.rmSync(userDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     deleted = true;
   }
 
   const userAgentsDir = getUserAgentsSkillDir(skillName);
   if (fs.existsSync(userAgentsDir)) {
-    fs.rmSync(userAgentsDir, { recursive: true, force: true });
+    fs.rmSync(userAgentsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     deleted = true;
   }
   
